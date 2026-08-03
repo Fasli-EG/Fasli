@@ -37,6 +37,10 @@ jobs:
         working-directory: ./mobile
         run: npx cap add android
 
+      - name: Generate app icons (لوجو فَصلي بدل الأيقونة الافتراضية)
+        working-directory: ./mobile
+        run: npx @capacitor/assets generate --android
+
       - name: Sync Capacitor
         working-directory: ./mobile
         run: npx cap sync android
