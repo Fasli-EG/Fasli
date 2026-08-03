@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إدارة المساعدين - فَصلي</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#14171F">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon"><svg viewBox="0 0 120 120" fill="none"><path d="M35 62 L52 79 L86 41" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h1>فَصلي</h1>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
+        <a href="students.html" class="sidebar-item "><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item "><i class="fas fa-pen-to-square"></i> الدرجات</a>
+        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات</a>
+        <a href="books.html" class="sidebar-item "><i class="fas fa-book"></i> المذكرات</a>
+        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
+
+        <div class="sidebar-section-label">إدارة</div>
+        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
+        <a href="assistants-management.html" class="sidebar-item active" id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
+        <a href="wifi-config.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> الإعدادات</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar" id="userAvatar">م</div>
+          <div class="u-info">
+            <div class="u-name" id="userDisplayName">مرحباً، مدرس</div>
+            <div class="u-role" id="teacherBadge">حساب مدرس</div>
+            <div id="userRoleDisplay" style="display:none;"></div>
+            <span class="permission-badge" id="permissionBadge" style="display:none;font-size:10px;margin-top:4px;"></span>
+          </div>
+        </div>
+        <button class="sidebar-item" id="navResetSystem" onclick="openResetConfirm()" style="color:#FCA5A5;display:none;">
+          <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
+        </button>
+        <div class="sidebar-footer-actions">
+          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
+          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <div class="topbar">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h2>إدارة المساعدين</h2>
+        <div style="width:24px;"></div>
+      </div>
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="dashboard.html">الرئيسية</a>
+      <span class="separator">›</span>
+      <span>إدارة المساعدين</span>
+    </div>
+
+    <div class="page-header">
+      <div>
+        <h2>👥 إدارة المساعدين</h2>
+        <span class="sub">إضافة وتعديل صلاحيات المساعدين</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-user-plus" style="color:var(--success);"></i> إضافة مساعد جديد</h3>
+        <span style="font-size:12px;color:var(--gray-400);">
+          <i class="fas fa-info-circle"></i> الحقول التي تحمل <span style="color:var(--danger);">*</span> إجبارية
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>👤 اسم المستخدم <span class="required">*</span></label>
+            <input type="text" id="newUsername" placeholder="مثال: ahmed_assistant" dir="ltr">
+            <span class="hint">💡 اسم مستخدم فريد يستخدمه المساعد لتسجيل الدخول</span>
+          </div>
+          <div class="form-group">
+            <label>📝 الاسم الظاهر <span class="required">*</span></label>
+            <input type="text" id="newName" placeholder="مثال: أحمد مساعد">
+          </div>
+          <div class="form-group full">
+            <label>🔑 الصلاحيات</label>
+            <div class="permissions-grid">
+              <label><input type="checkbox" id="permViewStudents" checked> 👁️ عرض الطلاب</label>
+              <label><input type="checkbox" id="permAddStudents"> ➕ إضافة طلاب</label>
+              <label><input type="checkbox" id="permEditStudents"> ✏️ تعديل طلاب</label>
+              <label><input type="checkbox" id="permDeleteStudents"> 🗑️ حذف طلاب</label>
+              <label><input type="checkbox" id="permRecordGrades"> 📝 رصد الدرجات</label>
+              <label><input type="checkbox" id="permRecordPayments"> 💰 تسجيل المدفوعات</label>
+              <label><input type="checkbox" id="permViewReports"> 📊 عرض التقارير</label>
+              <label><input type="checkbox" id="permManageAttendance"> ✅ إدارة الحضور</label>
+              <label><input type="checkbox" id="permManageGroups"> 📚 إدارة المجموعات</label>
+              <label><input type="checkbox" id="permResetParentPassword"> 🔑 إعادة تعيين كلمة مرور ولي الأمر</label>
+              <label><input type="checkbox" id="permManageBooks"> 📖 إدارة المذكرات</label>
+              <label><input type="checkbox" id="permSendMessages"> 📨 الرسائل الجماعية</label>
+            </div>
+            <span class="hint">💡 اختر الصلاحيات التي تريد منحها للمساعد</span>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-success" onclick="addAssistant()">
+            <i class="fas fa-save"></i> إضافة مساعد
+          </button>
+          <button class="btn btn-outline" onclick="resetAddForm()">
+            <i class="fas fa-undo"></i> تفريغ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-users" style="color:var(--primary);"></i> قائمة المساعدين</h3>
+        <div class="search-bar">
+          <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو اسم المستخدم...">
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>اسم المستخدم</th>
+                <th>الاسم</th>
+                <th>الحالة</th>
+                <th>آخر دخول</th>
+                <th>الصلاحيات</th>
+                <th style="text-align:center;">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="assistantsBody">
+              <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">
+                <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                جاري تحميل البيانات...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fas fa-edit" style="color:var(--warning);"></i> تعديل بيانات المساعد</h3>
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editAssistantId">
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>👤 اسم المستخدم</label>
+          <input type="text" id="editUsername" readonly style="background:var(--gray-50);">
+          <span class="hint">🔒 لا يمكن تغيير اسم المستخدم</span>
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>📝 الاسم الظاهر <span class="required">*</span></label>
+          <input type="text" id="editName" placeholder="الاسم الظاهر">
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>📌 الحالة</label>
+          <select id="editStatus">
+            <option value="true">🟢 مفعل</option>
+            <option value="false">🔴 غير مفعل</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>🔑 الصلاحيات</label>
+          <div class="permissions-grid">
+            <label><input type="checkbox" id="editPermViewStudents"> 👁️ عرض الطلاب</label>
+            <label><input type="checkbox" id="editPermAddStudents"> ➕ إضافة طلاب</label>
+            <label><input type="checkbox" id="editPermEditStudents"> ✏️ تعديل طلاب</label>
+            <label><input type="checkbox" id="editPermDeleteStudents"> 🗑️ حذف طلاب</label>
+            <label><input type="checkbox" id="editPermRecordGrades"> 📝 رصد الدرجات</label>
+            <label><input type="checkbox" id="editPermRecordPayments"> 💰 تسجيل المدفوعات</label>
+            <label><input type="checkbox" id="editPermViewReports"> 📊 عرض التقارير</label>
+            <label><input type="checkbox" id="editPermManageAttendance"> ✅ إدارة الحضور</label>
+            <label><input type="checkbox" id="editPermManageGroups"> 📚 إدارة المجموعات</label>
+            <label><input type="checkbox" id="editPermResetParentPassword"> 🔑 إعادة تعيين كلمة مرور ولي الأمر</label>
+            <label><input type="checkbox" id="editPermManageBooks"> 📖 إدارة المذكرات</label>
+            <label><input type="checkbox" id="editPermSendMessages"> 📨 الرسائل الجماعية</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeEditModal()">إلغاء</button>
+        <button class="btn btn-warning" onclick="resetPasswordFromModal()" style="background:#8b5cf6;color:white;">
+          <i class="fas fa-key"></i> إعادة تعيين
+        </button>
+        <button class="btn btn-primary" onclick="updateAssistant()">
+          <i class="fas fa-save"></i> حفظ التعديلات
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="tempPasswordModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🔑 كلمة المرور المؤقتة</h3>
+        <button class="modal-close" onclick="closeTempPasswordModal()">&times;</button>
+      </div>
+      <div style="padding: 10px 0;">
+        <p style="font-size: 16px; color: var(--gray-700); margin-bottom: 10px;">
+          تم إنشاء كلمة المرور المؤقتة التالية للمساعد:
+        </p>
+        <div class="password-display">
+          <span id="tempPasswordDisplay">XXXXXXXX</span>
+        </div>
+        <p style="font-size: 14px; color: var(--gray-500); margin-bottom: 16px;">
+          <span style="color: var(--danger);">⚠️</span> يجب على المساعد تغيير هذه الكلمة عند أول تسجيل دخول
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-success" onclick="closeTempPasswordModal()" style="width: auto; padding: 10px 40px;">
+            ✅ موافق
+          </button>
+          <button class="btn btn-primary" onclick="copyTempPassword()" style="width: auto; padding: 10px 30px;">
+            📋 نسخ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+      </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+  // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
+  (function() {
+    if (window.__licenseInterceptorInstalled) return;
+    window.__licenseInterceptorInstalled = true;
+    const _origFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const res = await _origFetch.apply(this, args);
+      try {
+        const urlStr = String(args[0]);
+        if (res.status === 402 && urlStr.includes('/functions/v1/')) {
+          const clone = res.clone();
+          const data = await clone.json();
+          if (data && data.code === 'LICENSE_EXPIRED') {
+            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+          }
+        }
+      } catch (e) { /* تجاهل */ }
+      return res;
+    };
+  })();
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    function getToken() {
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const exp = payload.exp;
+          if (exp) {
+            const now = Math.floor(Date.now() / 1000);
+            if (exp < now) {
+              return token;
+            }
+          }
+        }
+      } catch (e) {
+      }
+      return token;
+    }
+
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      };
+    }
+
+    function isTokenValid() {
+      const token = getToken();
+      if (!token) return false;
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1]));
+        const exp = payload.exp;
+        if (exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (exp < now) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    let isLoggingOut = false;
+
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      if (isTokenValid()) {
+        showToast('⛔ ليس لديك صلاحية للوصول إلى هذه البيانات.', 'error');
+        return;
+      }
+
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+
+      showToast('⛔ ' + message + '، يرجى تسجيل الدخول مرة أخرى', 'error');
+
+      setTimeout(() => {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem('clientId');
+        sessionStorage.removeItem('teacherClientId');
+        sessionStorage.removeItem('userRole');
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    const clientId = sessionStorage.getItem('clientId') || sessionStorage.getItem('teacherClientId');
+    const userRole = sessionStorage.getItem('userRole') || 'teacher';
+    const teacherName = sessionStorage.getItem('teacherName') || 'مدرس';
+
+    ['navManageAssistants', 'navSettings', 'navResetSystem', 'navFinancial', 'navActivityLog'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'flex';
+    });
+
+    if (!clientId) {
+      sessionStorage.clear();
+      window.location.href = LOGIN_URL;
+    }
+
+    if (userRole === 'assistant') {
+      showToast('⛔ هذه الصفحة غير متاحة للمساعدين', 'error');
+      setTimeout(() => { window.location.href = 'assistant-dashboard.html'; }, 1500);
+    }
+
+    const displayName = teacherName;
+    document.getElementById('userDisplayName').textContent = 'مرحباً، ' + displayName;
+    document.getElementById('userAvatar').textContent = displayName.charAt(0);
+
+    function showToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'info');
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    let tempPasswordValue = '';
+
+    function showTempPassword(password, assistantName) {
+      tempPasswordValue = password;
+      document.getElementById('tempPasswordDisplay').textContent = password;
+      const title = document.querySelector('#tempPasswordModal .modal-header h3');
+      if (assistantName) {
+        title.textContent = '🔑 كلمة المرور المؤقتة لـ "' + assistantName + '"';
+      } else {
+        title.textContent = '🔑 كلمة المرور المؤقتة';
+      }
+      document.getElementById('tempPasswordModal').classList.add('open');
+    }
+
+    function closeTempPasswordModal() {
+      document.getElementById('tempPasswordModal').classList.remove('open');
+      tempPasswordValue = '';
+    }
+
+    function copyTempPassword() {
+      if (tempPasswordValue) {
+        navigator.clipboard.writeText(tempPasswordValue).then(() => {
+          showToast('✅ تم نسخ كلمة المرور إلى الحافظة', 'success');
+        }).catch(() => {
+          const textArea = document.createElement('textarea');
+          textArea.value = tempPasswordValue;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showToast('✅ تم نسخ كلمة المرور إلى الحافظة', 'success');
+        });
+      }
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { closeTempPasswordModal(); closeEditModal(); }
+    });
+    document.getElementById('tempPasswordModal').addEventListener('click', function(e) {
+      if (e.target === this) closeTempPasswordModal();
+    });
+
+    function resetAddForm() {
+      document.getElementById('newUsername').value = '';
+      document.getElementById('newName').value = '';
+      document.getElementById('permViewStudents').checked = true;
+      document.getElementById('permAddStudents').checked = false;
+      document.getElementById('permEditStudents').checked = false;
+      document.getElementById('permDeleteStudents').checked = false;
+      document.getElementById('permRecordGrades').checked = false;
+      document.getElementById('permRecordPayments').checked = false;
+      document.getElementById('permViewReports').checked = false;
+      document.getElementById('permManageAttendance').checked = false;
+      document.getElementById('permManageGroups').checked = false;
+    }
+
+    let currentAssistants = [];
+
+    async function loadAssistants() {
+      const tbody = document.getElementById('assistantsBody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
+        '<i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i> جاري التحميل...</td></tr>';
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-assistants', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ teacherId: clientId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          currentAssistants = result.data || [];
+
+          if (currentAssistants.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
+              '<i class="fas fa-user-slash" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i> لا يوجد مساعدين</td></tr>';
+            return;
+          }
+
+          let html = '';
+          currentAssistants.forEach(a => {
+            const statusClass = a.is_active ? 'status-active' : 'status-inactive';
+            const statusText = a.is_active ? '🟢 مفعل' : '🔴 غير مفعل';
+            const lastLogin = a.last_login ? new Date(a.last_login).toLocaleDateString('ar-EG') : '—';
+
+            const perms = a.permissions || {};
+            const permLabels = [];
+            if (perms.view_students) permLabels.push('عرض');
+            if (perms.add_students) permLabels.push('إضافة');
+            if (perms.edit_students) permLabels.push('تعديل');
+            if (perms.delete_students) permLabels.push('حذف');
+            if (perms.record_grades) permLabels.push('درجات');
+            if (perms.record_payments) permLabels.push('مدفوعات');
+            if (perms.view_reports) permLabels.push('تقارير');
+            if (perms.manage_attendance) permLabels.push('حضور');
+            if (perms.manage_groups) permLabels.push('📚 مجموعات');
+            if (perms.reset_parent_password) permLabels.push('🔑 إعادة تعيين كلمة مرور');
+            if (perms.manage_books) permLabels.push('📖 مذكرات');
+            if (perms.send_messages) permLabels.push('📨 رسائل');
+
+            const permHtml = permLabels.map(p => '<span class="permissions-tag">' + p + '</span>').join('');
+
+            html += `<tr>
+              <td><span class="uid-code">${a.username}</span></td>
+              <td><strong>${a.name}</strong></td>
+              <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+              <td>${lastLogin}</td>
+              <td>${permHtml || '—'}</td>
+              <td style="text-align:center;">
+                <div class="actions-cell">
+                  <button class="btn btn-warning btn-sm" onclick="openEditModal('${a.id}')" title="تعديل">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteAssistant('${a.id}', '${a.name}')" title="حذف">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>`;
+          });
+          tbody.innerHTML = html;
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">❌ خطأ في الاتصال بالخادم</td></tr>';
+      }
+    }
+
+    async function addAssistant() {
+      const username = document.getElementById('newUsername').value.trim();
+      const name = document.getElementById('newName').value.trim();
+
+      if (!username || !name) { showToast('⚠️ أدخل اسم المستخدم والاسم الظاهر', 'warning'); return; }
+      if (username.includes(' ')) { showToast('⚠️ اسم المستخدم لا يجب أن يحتوي على مسافات', 'warning'); return; }
+
+      const permissions = {
+        view_students: document.getElementById('permViewStudents').checked,
+        add_students: document.getElementById('permAddStudents').checked,
+        edit_students: document.getElementById('permEditStudents').checked,
+        delete_students: document.getElementById('permDeleteStudents').checked,
+        record_grades: document.getElementById('permRecordGrades').checked,
+        record_payments: document.getElementById('permRecordPayments').checked,
+        view_reports: document.getElementById('permViewReports').checked,
+        manage_attendance: document.getElementById('permManageAttendance').checked,
+        manage_groups: document.getElementById('permManageGroups').checked,
+        reset_parent_password: document.getElementById('permResetParentPassword').checked,
+        manage_books: document.getElementById('permManageBooks').checked,
+        send_messages: document.getElementById('permSendMessages').checked
+      };
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/add-assistant', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ teacherId: clientId, username, name, permissions })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          const tempPassword = result.data?.tempPassword || 'غير متوفرة';
+          showTempPassword(tempPassword, name);
+          resetAddForm();
+          loadAssistants();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل إضافة المساعد', 'error');
+      }
+    }
+
+    let editingAssistantId = null;
+
+    function openEditModal(assistantId) {
+      const assistant = currentAssistants.find(a => a.id == assistantId);
+      if (!assistant) { showToast('❌ لم يتم العثور على المساعد', 'error'); return; }
+
+      editingAssistantId = assistantId;
+      document.getElementById('editAssistantId').value = assistantId;
+      document.getElementById('editUsername').value = assistant.username;
+      document.getElementById('editName').value = assistant.name;
+      document.getElementById('editStatus').value = assistant.is_active ? 'true' : 'false';
+
+      const perms = assistant.permissions || {};
+      document.getElementById('editPermViewStudents').checked = perms.view_students || false;
+      document.getElementById('editPermAddStudents').checked = perms.add_students || false;
+      document.getElementById('editPermEditStudents').checked = perms.edit_students || false;
+      document.getElementById('editPermDeleteStudents').checked = perms.delete_students || false;
+      document.getElementById('editPermRecordGrades').checked = perms.record_grades || false;
+      document.getElementById('editPermRecordPayments').checked = perms.record_payments || false;
+      document.getElementById('editPermViewReports').checked = perms.view_reports || false;
+      document.getElementById('editPermManageAttendance').checked = perms.manage_attendance || false;
+      document.getElementById('editPermManageGroups').checked = perms.manage_groups || false;
+      document.getElementById('editPermResetParentPassword').checked = perms.reset_parent_password || false;
+      document.getElementById('editPermManageBooks').checked = perms.manage_books || false;
+      document.getElementById('editPermSendMessages').checked = perms.send_messages || false;
+
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('open');
+      editingAssistantId = null;
+    }
+
+    async function updateAssistant() {
+      const assistantId = document.getElementById('editAssistantId').value;
+      const name = document.getElementById('editName').value.trim();
+      const isActive = document.getElementById('editStatus').value === 'true';
+
+      if (!name) { showToast('⚠️ أدخل الاسم الظاهر', 'warning'); return; }
+
+      const permissions = {
+        view_students: document.getElementById('editPermViewStudents').checked,
+        add_students: document.getElementById('editPermAddStudents').checked,
+        edit_students: document.getElementById('editPermEditStudents').checked,
+        delete_students: document.getElementById('editPermDeleteStudents').checked,
+        record_grades: document.getElementById('editPermRecordGrades').checked,
+        record_payments: document.getElementById('editPermRecordPayments').checked,
+        view_reports: document.getElementById('editPermViewReports').checked,
+        manage_attendance: document.getElementById('editPermManageAttendance').checked,
+        manage_groups: document.getElementById('editPermManageGroups').checked,
+        reset_parent_password: document.getElementById('editPermResetParentPassword').checked,
+        manage_books: document.getElementById('editPermManageBooks').checked,
+        send_messages: document.getElementById('editPermSendMessages').checked
+      };
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-assistant', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ assistantId, name, isActive, permissions })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          closeEditModal();
+          loadAssistants();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل تحديث البيانات', 'error');
+      }
+    }
+
+    async function resetPasswordFromModal() {
+      const assistantId = document.getElementById('editAssistantId').value;
+      const assistant = currentAssistants.find(a => a.id == assistantId);
+      if (!assistant) { showToast('❌ لم يتم العثور على المساعد', 'error'); return; }
+
+      if (!confirm('⚠️ هل أنت متأكد من إعادة تعيين كلمة مرور المساعد "' + assistant.name + '"؟')) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/reset-assistant-password', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ assistantId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          const tempPassword = result.tempPassword || 'غير متوفرة';
+          showTempPassword(tempPassword, assistant.name);
+          closeEditModal();
+          loadAssistants();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل إعادة تعيين كلمة المرور', 'error');
+      }
+    }
+
+    async function deleteAssistant(assistantId, name) {
+      if (!confirm('⚠️ هل أنت متأكد من حذف المساعد "' + name + '"؟\n\nسيتم حذف جميع بياناته وسجلات نشاطاته.')) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/delete-assistant', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ assistantId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          loadAssistants();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل حذف المساعد', 'error');
+      }
+    }
+
+    function filterTable() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const rows = document.querySelectorAll('#assistantsBody tr');
+      rows.forEach(row => {
+        if (row.cells && row.cells.length > 1) {
+          const username = row.cells[0]?.textContent.toLowerCase() || '';
+          const name = row.cells[1]?.textContent.toLowerCase() || '';
+          row.style.display = (username.includes(q) || name.includes(q)) ? '' : 'none';
+        }
+      });
+    }
+
+    function logout() {
+      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+        sessionStorage.clear();
+        window.location.href = LOGIN_URL;
+      }
+    }
+
+    function getThemeKey() {
+      return 'theme_' + clientId;
+    }
+
+    (function() {
+      const savedTheme = localStorage.getItem(getThemeKey());
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      }
+      setTimeout(() => {
+        const theme = document.documentElement.getAttribute('data-theme') || 'light';
+        updateThemeIcon(theme);
+      }, 100);
+    })();
+
+    function goBackToDashboard() {
+      window.location.href = 'dashboard.html';
+    }
+
+    async function downloadBackup() {
+  const btn = document.getElementById('backupBtn');
+  const status = document.getElementById('backupStatus');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز النسخة الاحتياطية...';
+
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/export-backup', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ clientId })
+    });
+    if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+    const result = await response.json();
+
+    if (result.success) {
+      const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.href = url;
+      a.download = `نسخة-احتياطية-${teacherName}-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      status.style.display = 'block';
+      status.style.color = 'var(--success)';
+      status.innerHTML = '✅ تم تحميل النسخة الاحتياطية بنجاح';
+      btn.innerHTML = '<i class="fas fa-check"></i> تم التحميل — تقدر تحمّلها تاني لو حبيت';
+    } else {
+      status.style.display = 'block';
+      status.style.color = 'var(--danger)';
+      status.innerHTML = '❌ ' + result.message;
+      btn.innerHTML = '<i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)';
+    }
+  } catch (error) {
+    console.error('❌ خطأ في تحميل النسخة الاحتياطية:', error);
+    status.style.display = 'block';
+    status.style.color = 'var(--danger)';
+    status.innerHTML = '❌ فشل تحميل النسخة الاحتياطية: ' + error.message;
+    btn.innerHTML = '<i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function openResetConfirm() {
+  const overlay = document.createElement('div');
+  overlay.className = 'reset-modal-overlay open';
+  overlay.id = 'resetModalOverlay';
+
+  overlay.innerHTML = `
+    <div class="reset-modal-box">
+      <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
+      <h3>⚠️ تحذير خطير!</h3>
+      <p>أنت على وشك حذف <strong>جميع بيانات النظام</strong> بما في ذلك:</p>
+      <ul style="text-align:right;list-style:none;padding:8px 0;color:var(--gray-600);font-size:14px;">
+        <li>📋 <strong>جميع الطلاب</strong> المسجلين</li>
+        <li>📝 <strong>جميع الدرجات</strong> والامتحانات</li>
+        <li>💰 <strong>جميع المدفوعات</strong> (شهرية ومذكرات)</li>
+        <li>📖 <strong>جميع المذكرات</strong> وسجلاتها</li>
+        <li>✅ <strong>جميع سجلات الحضور</strong></li>
+      </ul>
+      <div class="warning-text">
+        <i class="fas fa-skull"></i> هذا الإجراء لا يمكن التراجع عنه!
+      </div>
+      <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
+        <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
+      </button>
+      <div id="backupStatus" style="font-size:12.5px;text-align:center;margin-bottom:12px;display:none;"></div>
+      <div class="form-group" style="text-align:right;margin-bottom:16px;">
+        <label for="resetPasswordInput" style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">
+          🔐 أدخل كلمة مرورك لتأكيد الحذف
+        </label>
+        <input type="password" id="resetPasswordInput" placeholder="كلمة المرور" autocomplete="current-password"
+          style="width:100%;padding:10px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel-reset" onclick="closeResetModal()">
+          <i class="fas fa-times"></i> إلغاء
+        </button>
+        <button class="btn btn-confirm-reset" onclick="confirmReset()">
+          <i class="fas fa-trash-alt"></i> تأكيد الحذف
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) closeResetModal();
+  });
+
+  setTimeout(() => {
+    const pwInput = document.getElementById('resetPasswordInput');
+    if (pwInput) pwInput.focus();
+  }, 50);
+}
+
+function closeResetModal() {
+  const modal = document.getElementById('resetModalOverlay');
+  if (modal) modal.remove();
+}
+
+async function confirmReset() {
+  const pwInput = document.getElementById('resetPasswordInput');
+  const password = pwInput ? pwInput.value : '';
+
+  if (!password) {
+    showToast('⚠️ يجب إدخال كلمة المرور لتأكيد الحذف', 'error');
+    if (pwInput) pwInput.focus();
+    return;
+  }
+
+  const btns = document.querySelectorAll('.reset-modal-box .btn');
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    if (!isTokenValid()) {
+      showToast('⚠️ انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+      handleUnauthorized();
+      closeResetModal();
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      closeResetModal();
+      return;
+    }
+
+    // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
+    const requestBody = JSON.stringify({ clientId: clientId, password: password });
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/json'
+      },
+      body: requestBody  // ✅ JSON صحيح
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      closeResetModal();
+      return;
+    }
+
+    const result = await response.json().catch(() => ({ success: false, message: 'استجابة غير متوقعة من الخادم' }));
+
+    if (!response.ok || !result.success) {
+      showToast('❌ ' + (result.message || 'فشل تنفيذ العملية'), 'error');
+      // نسيب المودال مفتوح (خصوصاً لو الباسورد غلط) عشان يقدر يحاول تاني
+      if (pwInput) { pwInput.value = ''; pwInput.focus(); }
+      btns.forEach(b => b.disabled = false);
+      return;
+    }
+
+    showToast('✅ ' + result.message, 'success');
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  } catch (error) {
+    console.error('❌ خطأ أثناء الحذف:', error);
+    showToast('❌ فشل حذف البيانات: ' + error.message, 'error');
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (window.innerWidth <= 900) {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem(getThemeKey(), newTheme);
+      updateThemeIcon(newTheme);
+    }
+
+    function updateThemeIcon(theme) {
+      const btn = document.getElementById('themeToggle');
+      if (!btn) return;
+      const icon = btn.querySelector('i');
+      if (!icon) return;
+      if (theme === 'dark') {
+        icon.className = 'fas fa-sun';
+        btn.title = 'الوضع النهاري';
+      } else {
+        icon.className = 'fas fa-moon';
+        btn.title = 'الوضع الليلي';
+      }
+    }
+
+    window.onload = function() {
+      loadAssistants();
+      setInterval(loadAssistants, 30000);
+    };
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
