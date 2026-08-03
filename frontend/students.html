@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إدارة الطلاب - فَصلي</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#14171F">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon"><svg viewBox="0 0 120 120" fill="none"><path d="M35 62 L52 79 L86 41" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h1>فَصلي</h1>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
+        <a href="students.html" class="sidebar-item active"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item "><i class="fas fa-pen-to-square"></i> الدرجات</a>
+        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات</a>
+        <a href="books.html" class="sidebar-item "><i class="fas fa-book"></i> المذكرات</a>
+        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
+
+        <div class="sidebar-section-label">إدارة</div>
+        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
+        <a href="assistants-management.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
+        <a href="wifi-config.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> الإعدادات</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar" id="userAvatar">م</div>
+          <div class="u-info">
+            <div class="u-name" id="userDisplayName">مرحباً، مدرس</div>
+            <div class="u-role" id="teacherBadge">حساب مدرس</div>
+            <span class="permission-badge" id="permissionBadge" style="display:none;font-size:10px;margin-top:4px;"></span>
+          </div>
+        </div>
+        <button class="sidebar-item" id="navResetSystem" onclick="openResetConfirm()" style="color:#FCA5A5;display:none;">
+          <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
+        </button>
+        <div class="sidebar-footer-actions">
+          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
+          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <div class="topbar">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h2>الطلاب</h2>
+        <div class="notif-wrap" id="notifWrap" style="display:none;">
+          <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+            <i class="fas fa-bell"></i>
+            <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+          </button>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-panel-header">
+              <span>الإشعارات</span>
+              <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+            </div>
+            <div class="notif-list" id="notifList">
+              <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+            </div>
+          </div>
+        </div>
+        <div class="realtime-status">
+          <span id="realtimeDot" class="dot"></span>
+          <span id="realtimeLabel">⏸ في انتظار التفعيل</span>
+        </div>
+      </div>
+  <div class="container">
+    <div class="breadcrumb"><a onclick="goBackToDashboard()">الرئيسية</a><span class="separator">›</span><span style="color:var(--gray-700);font-weight:500;">إدارة الطلاب</span></div>
+    <div class="page-header">
+      <div><h2>👥 إدارة الطلاب</h2></div>
+      <span id="roleIndicator" style="font-size:13px;color:var(--gray-500);"><i class="fas fa-user-tag"></i> دور: <strong id="userRoleDisplay">مدرس</strong></span>
+    </div>
+
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card"><div class="stat-label">👨‍🎓 إجمالي الطلاب</div><div class="stat-value primary" id="statTotal">0</div></div>
+      <div class="stat-card"><div class="stat-label">✅ حضور اليوم</div><div class="stat-value success" id="statToday">0</div></div>
+      <div class="stat-card"><div class="stat-label">📚 عدد المجموعات</div><div class="stat-value warning" id="statGroups">0</div></div>
+    </div>
+
+    <div class="card" id="addStudentCard">
+      <div class="card-header">
+        <h3><i class="fas fa-user-plus" style="color:var(--primary);"></i> تسجيل طالب جديد</h3>
+        <span style="font-size:12px;color:var(--gray-400);"><i class="fas fa-info-circle"></i> الحقول التي تحمل <span style="color:var(--danger);">*</span> إجبارية</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>المجموعة <span class="required">*</span></label>
+            <select id="addGroup"><option value="">-- اختر المجموعة --</option></select>
+          </div>
+          <div class="form-group">
+            <label>UID (رقم الكارت) <span class="required">*</span></label>
+            <div class="uid-input-wrapper">
+              <input type="text" id="addUid" placeholder="اضغط زر التفعيل ثم امسح الكارت..." dir="ltr" autofocus>
+              <button class="btn-read" id="toggleReadBtn" onclick="toggleReading()">
+                <i class="fas fa-fingerprint"></i> <span id="readBtnText">تفعيل القراءة</span>
+              </button>
+            </div>
+            <span class="hint" id="readHint">💡 اضغط زر "تفعيل القراءة" ثم امسح الكارت على القارئ</span>
+          </div>
+          <div class="form-group full">
+            <label>اسم الطالب <span class="required">*</span></label>
+            <input type="text" id="addName" placeholder="أدخل اسم الطالب بالكامل">
+          </div>
+          <div class="form-group">
+            <label>هاتف الطالب</label>
+            <input type="tel" id="addPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr">
+          </div>
+          <div class="form-group">
+            <label>هاتف ولي الأمر <span class="required">*</span></label>
+            <input type="tel" id="addParentPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr">
+            <span class="hint">📱 سيتم ربط ولي الأمر بهذا الرقم</span>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-success" id="addStudentBtn" onclick="submitStudent()"><i class="fas fa-save"></i> تسجيل الطالب</button>
+          <button class="btn btn-outline" onclick="resetForm()"><i class="fas fa-undo"></i> تفريغ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-users" style="color:var(--primary);"></i> قائمة الطلاب</h3>
+        <div class="search-bar">
+          <select id="filterGroup" onchange="loadStudents()"><option value="ALL">📚 جميع المجموعات</option></select>
+          <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو UID...">
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>UID</th><th>الاسم</th><th>هاتف الطالب</th><th>ولي الأمر</th><th>المجموعة</th><th style="text-align:center;">إجراءات</th></tr></thead>
+            <tbody id="studentsBody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>جاري تحميل البيانات...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+      <div class="modal-header"><h3><i class="fas fa-edit" style="color:var(--primary);"></i> تعديل بيانات الطالب</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        <div class="form-group" style="margin-bottom:16px;"><label>UID</label><input type="text" id="editUid" readonly style="background:var(--gray-50);"></div>
+        <div class="form-group" style="margin-bottom:16px;"><label>اسم الطالب <span class="required">*</span></label><input type="text" id="editName" placeholder="الاسم الكامل"></div>
+        <div class="form-group" style="margin-bottom:16px;"><label>هاتف الطالب</label><input type="tel" id="editPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr"></div>
+        <div class="form-group" style="margin-bottom:16px;"><label>هاتف ولي الأمر <span class="required">*</span></label><input type="tel" id="editParentPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-primary" id="editStudentBtn" onclick="submitEdit()"><i class="fas fa-save"></i> حفظ التعديلات</button></div>
+    </div>
+  </div>
+
+      </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+  // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
+  (function() {
+    if (window.__licenseInterceptorInstalled) return;
+    window.__licenseInterceptorInstalled = true;
+    const _origFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const res = await _origFetch.apply(this, args);
+      try {
+        const urlStr = String(args[0]);
+        if (res.status === 402 && urlStr.includes('/functions/v1/')) {
+          const clone = res.clone();
+          const data = await clone.json();
+          if (data && data.code === 'LICENSE_EXPIRED') {
+            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+          }
+        }
+      } catch (e) { /* تجاهل */ }
+      return res;
+    };
+  })();
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    function getToken() {
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const exp = payload.exp;
+          if (exp) {
+            const now = Math.floor(Date.now() / 1000);
+            if (exp < now) {
+              return token;
+            }
+          }
+        }
+      } catch (e) {
+      }
+      return token;
+    }
+
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      };
+    }
+
+    function isTokenValid() {
+      const token = getToken();
+      if (!token) return false;
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1]));
+        const exp = payload.exp;
+        if (exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (exp < now) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    let isLoggingOut = false;
+
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      if (isTokenValid()) {
+        showToast('⛔ ليس لديك صلاحية للوصول إلى هذه البيانات.', 'error');
+        return;
+      }
+
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+
+      showToast('⛔ ' + message + '، يرجى تسجيل الدخول مرة أخرى', 'error');
+
+      setTimeout(() => {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem('clientId');
+        sessionStorage.removeItem('teacherClientId');
+        sessionStorage.removeItem('userRole');
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    const clientId = sessionStorage.getItem('clientId') || sessionStorage.getItem('teacherClientId');
+    const userRole = sessionStorage.getItem('userRole') || 'teacher';
+    const teacherName = sessionStorage.getItem('teacherName') || 'مدرس';
+    const assistantName = sessionStorage.getItem('assistantName') || null;
+    const assistantId = sessionStorage.getItem('assistantId') || null;
+
+    if (!clientId) { sessionStorage.clear(); window.location.href = LOGIN_URL; }
+
+    const assistantPermissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
+    const isAssistant = userRole === 'assistant';
+    if (isAssistant) {
+      const notifWrap = document.getElementById('notifWrap');
+      if (notifWrap) {
+        notifWrap.style.display = 'block';
+        loadNotifications();
+        setInterval(loadNotifications, 20000);
+      }
+    }
+    if (!isAssistant) {
+      const navA = document.getElementById('navManageAssistants');
+      const navS = document.getElementById('navSettings');
+      const navR = document.getElementById('navResetSystem');
+      const navF = document.getElementById('navFinancial');
+      const navL = document.getElementById('navActivityLog');
+      if (navA) navA.style.display = 'flex';
+      if (navS) navS.style.display = 'flex';
+      if (navR) navR.style.display = 'flex';
+      if (navF) navF.style.display = 'flex';
+      if (navL) navL.style.display = 'flex';
+    }
+    const canViewStudents = isAssistant ? (assistantPermissions.view_students !== false) : true;
+    const canAddStudents = isAssistant ? (assistantPermissions.add_students === true) : true;
+    const canEditStudents = isAssistant ? (assistantPermissions.edit_students === true) : true;
+    const canDeleteStudents = isAssistant ? (assistantPermissions.delete_students === true) : true;
+    const canResetParentPassword = isAssistant ? (assistantPermissions.reset_parent_password === true) : true;
+
+    if (isAssistant && !canViewStudents) {
+      showToast('⛔ ليس لديك صلاحية لعرض الطلاب', 'error');
+      setTimeout(() => window.location.href = 'assistant-dashboard.html', 1500);
+    }
+
+    const displayName = isAssistant && assistantName ? assistantName : teacherName;
+    document.getElementById('userDisplayName').textContent = 'مرحباً، ' + displayName;
+    document.getElementById('userAvatar').textContent = displayName.charAt(0);
+    document.getElementById('userRoleDisplay').textContent = isAssistant ? 'مساعد' : 'مدرس';
+
+    if (isAssistant) {
+      document.getElementById('teacherBadge').style.display = 'inline-block';
+      document.getElementById('teacherBadge').textContent = '👤 مساعد: ' + teacherName;
+      const badge = document.getElementById('permissionBadge');
+      badge.style.display = 'inline-block';
+      const hasAnyPerm = canAddStudents || canEditStudents || canDeleteStudents || canResetParentPassword;
+      badge.textContent = hasAnyPerm ? '🔑 صلاحيات محدودة' : '🔒 عرض فقط';
+      badge.className = hasAnyPerm ? 'permission-badge full-access' : 'permission-badge view-only';
+    }
+
+    function applyPermissions() {
+      const addCard = document.getElementById('addStudentCard');
+      if (!canAddStudents) addCard.style.display = 'none';
+    }
+
+    function goBackToDashboard() {
+      window.location.href = isAssistant ? 'assistant-dashboard.html' : 'dashboard.html';
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    async function loadGroups() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          const groups = result.data || [];
+          const addSelect = document.getElementById('addGroup');
+          const filterSelect = document.getElementById('filterGroup');
+          addSelect.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+          filterSelect.innerHTML = '<option value="ALL">📚 جميع المجموعات</option>';
+          groups.forEach(g => {
+            const opt1 = document.createElement('option');
+            opt1.value = g; opt1.textContent = g;
+            addSelect.appendChild(opt1);
+            const opt2 = document.createElement('option');
+            opt2.value = g; opt2.textContent = g;
+            filterSelect.appendChild(opt2);
+          });
+        }
+      } catch (error) { console.error('❌ خطأ في تحميل المجموعات:', error); }
+    }
+
+    async function loadStudents() {
+      const filterGroup = document.getElementById('filterGroup').value;
+      const tbody = document.getElementById('studentsBody');
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>جاري التحميل...</td></tr>`;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-students', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          const students = result.data || [];
+          document.getElementById('statTotal').textContent = students.length;
+          document.getElementById('statGroups').textContent = [...new Set(students.map(s => s.group_name))].length;
+          if (students.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);"><i class="fas fa-user-slash" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا يوجد طلاب</td></tr>`;
+            return;
+          }
+          let html = '';
+          students.forEach(s => {
+            let actionsHtml = '';
+            if (canEditStudents) actionsHtml += `<button class="btn btn-warning btn-sm" onclick="openEditModal('${s.id}')" title="تعديل"><i class="fas fa-edit"></i></button>`;
+            if (canDeleteStudents) actionsHtml += `<button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}', '${s.name}')" title="حذف"><i class="fas fa-trash"></i></button>`;
+            if (canResetParentPassword) actionsHtml += `<button class="btn btn-info btn-sm" onclick="resetParentPassword('${s.uid}', '${s.name}')" title="إعادة تعيين كلمة مرور ولي الأمر"><i class="fas fa-key"></i></button>`;
+            if (!canEditStudents && !canDeleteStudents && !canResetParentPassword) actionsHtml = `<span style="color:var(--gray-400);font-size:12px;">🔒 عرض فقط</span>`;
+            html += `<tr><td><span class="uid-tag">${s.uid}</span></td><td><strong>${s.name}</strong></td><td>${s.phone || '—'}</td><td>${s.parent_phone || '—'}</td><td><span style="background:var(--gray-100);padding:2px 12px;border-radius:12px;font-size:12px;">${s.group_name}</span></td><td style="text-align:center;">${actionsHtml}</td></tr>`;
+          });
+          tbody.innerHTML = html;
+        } else { showToast('❌ ' + result.message, 'error'); }
+      } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل تحميل البيانات', 'error'); }
+    }
+
+    async function submitStudent() {
+      if (!canAddStudents) { showToast('⛔ ليس لديك صلاحية لإضافة طلاب', 'error'); return; }
+      const group = document.getElementById('addGroup').value;
+      const uid = document.getElementById('addUid').value.trim();
+      const name = document.getElementById('addName').value.trim();
+      const phone = document.getElementById('addPhone').value.trim();
+      const parentPhone = document.getElementById('addParentPhone').value.trim();
+
+      if (!group) { showToast('⚠️ اختر المجموعة', 'warning'); return; }
+      if (!uid) { showToast('⚠️ أدخل UID الطالب', 'warning'); return; }
+      if (!name) { showToast('⚠️ أدخل اسم الطالب', 'warning'); return; }
+      if (!parentPhone) { showToast('⚠️ أدخل رقم ولي الأمر', 'warning'); return; }
+
+      const phoneRegex = /^01[0125][0-9]{8}$/;
+      if (phone && !phoneRegex.test(phone)) { showToast('⚠️ رقم هاتف الطالب غير صحيح', 'warning'); return; }
+      if (!phoneRegex.test(parentPhone)) { showToast('⚠️ رقم هاتف ولي الأمر غير صحيح', 'warning'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/add-student', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId, groupName: group, uid, name, phone, parentPhone, assistantId, assistantName })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          resetForm();
+          loadStudents();
+        } else { showToast('❌ ' + result.message, 'error'); }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل تسجيل الطالب', 'error');
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('addUid').value = '';
+      document.getElementById('addName').value = '';
+      document.getElementById('addPhone').value = '';
+      document.getElementById('addParentPhone').value = '';
+      if (isReadingActive) { toggleReading(); }
+      document.getElementById('addUid').focus();
+    }
+
+    function filterTable() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const rows = document.querySelectorAll('#studentsBody tr');
+      rows.forEach(row => {
+        if (row.cells && row.cells.length > 1) {
+          const name = row.cells[1]?.textContent.toLowerCase() || '';
+          const uid = row.cells[0]?.textContent.toLowerCase() || '';
+          row.style.display = (name.includes(q) || uid.includes(q)) ? '' : 'none';
+        }
+      });
+    }
+
+    let editingStudentId = null;
+    function openEditModal(studentId) {
+      if (!canEditStudents) { showToast('⛔ ليس لديك صلاحية لتعديل الطلاب', 'error'); return; }
+      const rows = document.querySelectorAll('#studentsBody tr');
+      let student = null;
+      rows.forEach(row => {
+        if (row.cells && row.cells.length > 1) {
+          const btn = row.querySelector(`button[onclick*="openEditModal('${studentId}')"]`);
+          if (btn) {
+            student = {
+              id: studentId,
+              uid: row.cells[0].textContent.trim(),
+              name: row.cells[1].textContent.trim(),
+              phone: row.cells[2].textContent.trim() === '—' ? '' : row.cells[2].textContent.trim(),
+              parentPhone: row.cells[3].textContent.trim() === '—' ? '' : row.cells[3].textContent.trim()
+            };
+          }
+        }
+      });
+      if (!student) { showToast('❌ لم يتم العثور على الطالب', 'error'); return; }
+      editingStudentId = studentId;
+      document.getElementById('editId').value = student.id;
+      document.getElementById('editUid').value = student.uid;
+      document.getElementById('editName').value = student.name;
+      document.getElementById('editPhone').value = student.phone;
+      document.getElementById('editParentPhone').value = student.parentPhone;
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('editModal').classList.remove('open'); editingStudentId = null; }
+
+    async function submitEdit() {
+      if (!canEditStudents) { showToast('⛔ ليس لديك صلاحية لتعديل الطلاب', 'error'); return; }
+      const id = document.getElementById('editId').value;
+      const name = document.getElementById('editName').value.trim();
+      const phone = document.getElementById('editPhone').value.trim();
+      const parentPhone = document.getElementById('editParentPhone').value.trim();
+      if (!name) { showToast('⚠️ أدخل اسم الطالب', 'warning'); return; }
+      if (!parentPhone) { showToast('⚠️ أدخل رقم ولي الأمر', 'warning'); return; }
+
+      const payload = { studentId: parseInt(id), name, phone: phone || null, parentPhone, assistantId: assistantId || null, assistantName: assistantName || null };
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-student', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(payload)
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) { showToast('✅ ' + result.message, 'success'); closeModal(); loadStudents(); }
+        else { showToast('❌ ' + result.message, 'error'); }
+      } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل تحديث البيانات', 'error'); }
+    }
+
+    async function resetParentPassword(studentUid, studentName) {
+      if (!canResetParentPassword) { showToast('⛔ ليس لديك صلاحية لإعادة تعيين كلمة مرور ولي الأمر', 'error'); return; }
+      if (!confirm(`هل تريد إعادة تعيين كلمة مرور ولي أمر "${studentName}"؟ هيتم تحديدها برقم هاتف ولي الأمر، وهيحتاج يغيّرها بعد أول تسجيل دخول.`)) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/reset-parent-password', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId, studentUid })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إعادة تعيين كلمة مرور ولي الأمر:', error);
+        showToast('❌ فشل إعادة تعيين كلمة المرور: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteStudent(studentId, studentName) {
+      if (!canDeleteStudents) { showToast('⛔ ليس لديك صلاحية لحذف الطلاب', 'error'); return; }
+      if (!confirm(`⚠️ هل أنت متأكد من حذف الطالب "${studentName}"؟\n\nهذا الإجراء لا يمكن التراجع عنه!`)) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/delete-student', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ studentId, assistantId, assistantName })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) { showToast('✅ ' + result.message, 'success'); loadStudents(); }
+        else { showToast('❌ ' + result.message, 'error'); }
+      } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل حذف الطالب', 'error'); }
+    }
+
+    function logout() {
+      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) { sessionStorage.clear(); window.location.href = LOGIN_URL; }
+    }
+
+    let checkTimeout = null;
+    const uidField = document.getElementById('addUid');
+
+    uidField.addEventListener('input', function() {
+      const uid = this.value.trim();
+      if (uid.length < 4) return;
+      if (checkTimeout) clearTimeout(checkTimeout);
+      checkTimeout = setTimeout(async () => {
+        try {
+          const headers = getAuthHeaders();
+          if (!headers) return;
+
+          const response = await fetch(PROJECT_URL + '/functions/v1/check-student-uid', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ clientId, uid })
+          });
+
+          if (response.status === 401) {
+            handleUnauthorized('انتهت صلاحية الجلسة');
+            return;
+          }
+
+          const result = await response.json();
+          if (result.success && result.exists) {
+            const studentName = result.student?.name || 'غير معروف';
+            showToast(`⚠️ هذا الكارت مسجل بالفعل للطالب: ${studentName}`, 'warning');
+            uidField.style.borderColor = 'var(--danger)';
+            document.getElementById('addStudentBtn').disabled = true;
+          } else {
+            uidField.style.borderColor = 'var(--success)';
+            document.getElementById('addStudentBtn').disabled = false;
+          }
+        } catch (error) { console.error('❌ خطأ في التحقق من UID:', error); }
+      }, 500);
+    });
+
+    uidField.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); this.dispatchEvent(new Event('input')); }
+    });
+
+    let pollingInterval = null;
+    let isReadingActive = false;
+    let lastUID = '';
+
+    const toggleBtn = document.getElementById('toggleReadBtn');
+    const readHint = document.getElementById('readHint');
+    const realtimeDot = document.getElementById('realtimeDot');
+    const realtimeLabel = document.getElementById('realtimeLabel');
+
+    function updateReaderStatus(status) {
+      if (status === 'active') {
+        realtimeDot.className = 'dot online';
+        realtimeLabel.textContent = '🟢 جاهز للقراءة';
+        readHint.textContent = '⏳ امسح الكارت الآن... سيظهر UID تلقائياً';
+      } else if (status === 'idle') {
+        realtimeDot.className = 'dot idle';
+        realtimeLabel.textContent = '⏸ في انتظار التفعيل';
+        readHint.textContent = '💡 اضغط زر "تفعيل القراءة" ثم امسح الكارت على القارئ';
+      } else if (status === 'reading') {
+        realtimeDot.className = 'dot connecting';
+        realtimeLabel.textContent = '📡 جاري القراءة...';
+        readHint.textContent = '⏳ جاري قراءة الكارت...';
+      }
+    }
+
+    function toggleReading() {
+      if (isReadingActive) {
+        stopPolling();
+        isReadingActive = false;
+        toggleBtn.classList.remove('active');
+        toggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="readBtnText">تفعيل القراءة</span>';
+        updateReaderStatus('idle');
+        showToast('⏸ تم إيقاف قراءة الكارت', 'info');
+      } else {
+        isReadingActive = true;
+        toggleBtn.classList.add('active');
+        toggleBtn.innerHTML = '<i class="fas fa-stop"></i> <span id="readBtnText">إيقاف القراءة</span>';
+        updateReaderStatus('active');
+        showToast('✅ تم تفعيل قراءة الكارت، امسح الكارت الآن', 'success');
+        lastUID = '';
+        startPolling();
+      }
+    }
+
+    function startPolling() {
+      if (pollingInterval) clearInterval(pollingInterval);
+      fetchLatestUID();
+      pollingInterval = setInterval(() => {
+        if (isReadingActive) fetchLatestUID();
+        else { clearInterval(pollingInterval); pollingInterval = null; }
+      }, 1500);
+    }
+
+    async function fetchLatestUID() {
+      try {
+        const token = getToken();
+        if (!token) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-latest-rfid-scan', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const data = await response.json();
+        if (data && data.length > 0 && data[0].uid && data[0].uid !== lastUID) {
+          lastUID = data[0].uid;
+          const uid = lastUID;
+
+          const targetField = document.getElementById('addUid');
+          if (targetField) {
+            updateReaderStatus('reading');
+            targetField.value = uid;
+            targetField.style.borderColor = 'var(--success)';
+            targetField.dispatchEvent(new Event('input', { bubbles: true }));
+            showToast(`📇 تم قراءة الكارت: ${uid}`, 'info');
+
+            setTimeout(() => {
+              if (isReadingActive) updateReaderStatus('active');
+            }, 500);
+
+            if (isReadingActive) {
+              setTimeout(() => {
+                toggleReading();
+                showToast('⏸ تم إيقاف القراءة تلقائياً بعد قراءة الكارت', 'info');
+              }, 1500);
+            }
+          }
+        }
+      } catch (error) { /* تجاهل */ }
+    }
+
+    function stopPolling() {
+      if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+    }
+
+    function getThemeKey() {
+      const id = assistantId || clientId || 'guest';
+      return 'theme_' + id;
+    }
+
+    (function() {
+      const savedTheme = localStorage.getItem(getThemeKey());
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      }
+      setTimeout(() => {
+        const theme = document.documentElement.getAttribute('data-theme') || 'light';
+        updateThemeIcon(theme);
+      }, 100);
+    })();
+
+    async function downloadBackup() {
+  const btn = document.getElementById('backupBtn');
+  const status = document.getElementById('backupStatus');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز النسخة الاحتياطية...';
+
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/export-backup', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ clientId })
+    });
+    if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+    const result = await response.json();
+
+    if (result.success) {
+      const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.href = url;
+      a.download = `نسخة-احتياطية-${teacherName}-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      status.style.display = 'block';
+      status.style.color = 'var(--success)';
+      status.innerHTML = '✅ تم تحميل النسخة الاحتياطية بنجاح';
+      btn.innerHTML = '<i class="fas fa-check"></i> تم التحميل — تقدر تحمّلها تاني لو حبيت';
+    } else {
+      status.style.display = 'block';
+      status.style.color = 'var(--danger)';
+      status.innerHTML = '❌ ' + result.message;
+      btn.innerHTML = '<i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)';
+    }
+  } catch (error) {
+    console.error('❌ خطأ في تحميل النسخة الاحتياطية:', error);
+    status.style.display = 'block';
+    status.style.color = 'var(--danger)';
+    status.innerHTML = '❌ فشل تحميل النسخة الاحتياطية: ' + error.message;
+    btn.innerHTML = '<i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function openResetConfirm() {
+  const overlay = document.createElement('div');
+  overlay.className = 'reset-modal-overlay open';
+  overlay.id = 'resetModalOverlay';
+
+  overlay.innerHTML = `
+    <div class="reset-modal-box">
+      <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
+      <h3>⚠️ تحذير خطير!</h3>
+      <p>أنت على وشك حذف <strong>جميع بيانات النظام</strong> بما في ذلك:</p>
+      <ul style="text-align:right;list-style:none;padding:8px 0;color:var(--gray-600);font-size:14px;">
+        <li>📋 <strong>جميع الطلاب</strong> المسجلين</li>
+        <li>📝 <strong>جميع الدرجات</strong> والامتحانات</li>
+        <li>💰 <strong>جميع المدفوعات</strong> (شهرية ومذكرات)</li>
+        <li>📖 <strong>جميع المذكرات</strong> وسجلاتها</li>
+        <li>✅ <strong>جميع سجلات الحضور</strong></li>
+      </ul>
+      <div class="warning-text">
+        <i class="fas fa-skull"></i> هذا الإجراء لا يمكن التراجع عنه!
+      </div>
+      <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
+        <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
+      </button>
+      <div id="backupStatus" style="font-size:12.5px;text-align:center;margin-bottom:12px;display:none;"></div>
+      <div class="form-group" style="text-align:right;margin-bottom:16px;">
+        <label for="resetPasswordInput" style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">
+          🔐 أدخل كلمة مرورك لتأكيد الحذف
+        </label>
+        <input type="password" id="resetPasswordInput" placeholder="كلمة المرور" autocomplete="current-password"
+          style="width:100%;padding:10px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel-reset" onclick="closeResetModal()">
+          <i class="fas fa-times"></i> إلغاء
+        </button>
+        <button class="btn btn-confirm-reset" onclick="confirmReset()">
+          <i class="fas fa-trash-alt"></i> تأكيد الحذف
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) closeResetModal();
+  });
+
+  setTimeout(() => {
+    const pwInput = document.getElementById('resetPasswordInput');
+    if (pwInput) pwInput.focus();
+  }, 50);
+}
+
+function closeResetModal() {
+  const modal = document.getElementById('resetModalOverlay');
+  if (modal) modal.remove();
+}
+
+async function confirmReset() {
+  const pwInput = document.getElementById('resetPasswordInput');
+  const password = pwInput ? pwInput.value : '';
+
+  if (!password) {
+    showToast('⚠️ يجب إدخال كلمة المرور لتأكيد الحذف', 'error');
+    if (pwInput) pwInput.focus();
+    return;
+  }
+
+  const btns = document.querySelectorAll('.reset-modal-box .btn');
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    if (!isTokenValid()) {
+      showToast('⚠️ انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+      handleUnauthorized();
+      closeResetModal();
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      closeResetModal();
+      return;
+    }
+
+    // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
+    const requestBody = JSON.stringify({ clientId: clientId, password: password });
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/json'
+      },
+      body: requestBody  // ✅ JSON صحيح
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      closeResetModal();
+      return;
+    }
+
+    const result = await response.json().catch(() => ({ success: false, message: 'استجابة غير متوقعة من الخادم' }));
+
+    if (!response.ok || !result.success) {
+      showToast('❌ ' + (result.message || 'فشل تنفيذ العملية'), 'error');
+      // نسيب المودال مفتوح (خصوصاً لو الباسورد غلط) عشان يقدر يحاول تاني
+      if (pwInput) { pwInput.value = ''; pwInput.focus(); }
+      btns.forEach(b => b.disabled = false);
+      return;
+    }
+
+    showToast('✅ ' + result.message, 'success');
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  } catch (error) {
+    console.error('❌ خطأ أثناء الحذف:', error);
+    showToast('❌ فشل حذف البيانات: ' + error.message, 'error');
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+    let notifData = [];
+
+function timeAgo(dateStr) {
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 1) return 'الآن';
+      if (mins < 60) return `منذ ${mins} د`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `منذ ${hrs} س`;
+      const days = Math.floor(hrs / 24);
+      return `منذ ${days} يوم`;
+    }
+
+const NOTIF_ICONS = { bulk_message: '📨' };
+
+async function loadNotifications() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-notifications', {
+          method: 'POST', headers, body: JSON.stringify({})
+        });
+        if (response.status === 401) return;
+        const result = await response.json();
+        if (!result.success) return;
+
+        notifData = result.data || [];
+        const badge = document.getElementById('notifBadge');
+        if (result.unreadCount > 0) {
+          badge.style.display = 'flex';
+          badge.textContent = result.unreadCount > 9 ? '9+' : result.unreadCount;
+        } else {
+          badge.style.display = 'none';
+        }
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الإشعارات:', error);
+      }
+    }
+
+function renderNotifList() {
+      const list = document.getElementById('notifList');
+      if (notifData.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">مفيش إشعارات لسه</div>';
+        return;
+      }
+      list.innerHTML = notifData.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${n.title}</div>
+          <div class="n-msg">${n.message}</div>
+          <div class="n-time">${timeAgo(n.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+function toggleNotifPanel() {
+      document.getElementById('notifPanel').classList.toggle('open');
+    }
+
+document.addEventListener('click', function(e) {
+      const wrap = document.querySelector('.notif-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('notifPanel').classList.remove('open');
+      }
+    });
+
+async function markOneRead(id) {
+      const item = notifData.find(n => n.id === id);
+      if (item && item.is_read) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+          method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+        });
+        if (item) item.is_read = true;
+        const badge = document.getElementById('notifBadge');
+        const unread = notifData.filter(n => !n.is_read).length;
+        if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+        else badge.style.display = 'none';
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
+      }
+    }
+
+async function markAllRead() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+          method: 'POST', headers, body: JSON.stringify({ markAll: true })
+        });
+        notifData.forEach(n => n.is_read = true);
+        document.getElementById('notifBadge').style.display = 'none';
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الكل كمقروء:', error);
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (window.innerWidth <= 900) {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem(getThemeKey(), newTheme);
+      updateThemeIcon(newTheme);
+    }
+
+    function updateThemeIcon(theme) {
+      const btn = document.getElementById('themeToggle');
+      if (!btn) return;
+      const icon = btn.querySelector('i');
+      if (!icon) return;
+      if (theme === 'dark') {
+        icon.className = 'fas fa-sun';
+        btn.title = 'الوضع النهاري';
+      } else {
+        icon.className = 'fas fa-moon';
+        btn.title = 'الوضع الليلي';
+      }
+    }
+
+    window.onload = function() {
+      applyPermissions();
+      loadGroups();
+      loadStudents();
+      updateReaderStatus('idle');
+    };
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

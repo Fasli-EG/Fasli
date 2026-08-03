@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إدارة النظام - فَصلي</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#14171F">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+      background: #f0f4f8;
+      direction: rtl;
+    }
+    
+    .header {
+      background: white;
+      padding: 16px 32px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .admin-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 14px 32px 0;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .admin-tab {
+      background: transparent;
+      border: none;
+      padding: 10px 18px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: #718096;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .admin-tab:hover { color: #0F6B4F; }
+    .admin-tab.active { color: #0F6B4F; border-bottom-color: #0F6B4F; }
+    .header h1 { font-size: 20px; color: #1a202c; }
+    .header .user-info { display: flex; align-items: center; gap: 16px; }
+    .header .user-info span { color: #4a5568; font-weight: 500; }
+    .btn-logout {
+      background: #fc8181;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-logout:hover { background: #e53e3e; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 18px;
+      color: #2d3748;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 12px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      font-weight: 500;
+      color: #2d3748;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: #48bb78;
+      box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1);
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .field-hint {
+      font-size: 12px;
+      color: #a0aec0;
+      margin-top: 4px;
+    }
+    .perm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .perm-check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #2d3748;
+      cursor: pointer;
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #48bb78; color: white; }
+    .btn-primary:hover { background: #38a169; }
+    .btn-danger { background: #fc8181; color: white; }
+    .btn-danger:hover { background: #e53e3e; }
+    .btn-warning { background: #ecc94b; color: #2d3748; }
+    .btn-warning:hover { background: #d69e2e; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th {
+      background: #f7fafc;
+      padding: 12px 16px;
+      text-align: right;
+      font-weight: 600;
+      color: #4a5568;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    tr:hover td { background: #f7fafc; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-active {
+      background: #f0fff4;
+      color: #38a169;
+    }
+    .status-inactive {
+      background: #fff5f5;
+      color: #e53e3e;
+    }
+    .status-expired {
+      background: #fefcbf;
+      color: #d69e2e;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #718096;
+      padding: 30px;
+    }
+    .loading {
+      text-align: center;
+      color: #718096;
+      padding: 20px;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .message.success { display: block; background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5; }
+    .message.error { display: block; background: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; }
+    .message.info { display: block; background: #E3F1EC; color: #0F6B4F; border: 1px solid #B8DFCB; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 { font-size: 18px; color: #2d3748; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #a0aec0;
+    }
+    .modal-close:hover { color: #e53e3e; }
+
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .field-row { grid-template-columns: 1fr; }
+      .container { padding: 12px; }
+      .header { padding: 12px 16px; }
+    }
+    .btn-reset-password {
+      background: linear-gradient(135deg, #14171F, #0F6B4F);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+    }
+    .btn-reset-password:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+      background: linear-gradient(135deg, #0A0C10, #0B4E3A);
+    }
+    .btn-reset-password:active {
+      transform: scale(0.95);
+    }
+    .btn-reset-password i {
+      font-size: 13px;
+    }
+    .btn-reset-password .btn-label {
+      display: inline-block;
+    }
+    @media (max-width: 768px) {
+      .btn-reset-password .btn-label {
+        display: none;
+      }
+      .btn-reset-password {
+        padding: 6px 10px;
+      }
+      .btn-reset-password i {
+        font-size: 14px;
+      }
+    }
+    /* ============ الوضع الليلي ============ */
+    body.dark-mode { background: #14171F; color: #E8E9EE; }
+    body.dark-mode .header { background: #1C2029; border-bottom-color: #2A2F3A; }
+    body.dark-mode .header h1 { color: #E8E9EE; }
+    body.dark-mode .header .user-info span { color: #C3C8D0; }
+    body.dark-mode .admin-tabs { background: #1C2029; border-bottom-color: #2A2F3A; }
+    body.dark-mode .admin-tab { color: #9AA1AC; }
+    body.dark-mode .admin-tab.active { color: #3D9B7D; border-bottom-color: #3D9B7D; }
+    body.dark-mode .card { background: #1C2029; border: 1px solid #2A2F3A; }
+    body.dark-mode .card h2 { color: #E8E9EE; }
+    body.dark-mode .field label { color: #C3C8D0; }
+    body.dark-mode .field input,
+    body.dark-mode .field select { background: #14171F; border-color: #2A2F3A; color: #E8E9EE; }
+    body.dark-mode .perm-grid { background: #14171F; border-color: #2A2F3A; }
+    body.dark-mode .perm-check { color: #C3C8D0; }
+    body.dark-mode table { color: #E8E9EE; }
+    body.dark-mode th { background: #14171F !important; color: #C3C8D0 !important; }
+    body.dark-mode td { border-color: #2A2F3A !important; }
+    body.dark-mode .modal-box { background: #1C2029; }
+    body.dark-mode .modal-header h3 { color: #E8E9EE; }
+    body.dark-mode .field-hint { color: #7A8290; }
+    /* ============ القائمة الجانبية ============ */
+    .app-shell { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 240px; flex-shrink: 0; background: #14171F; color: #fff;
+      display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+      z-index: 100; transition: transform 0.25s ease;
+    }
+    .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-brand .logo-icon { width: 34px; height: 34px; background: #0F6B4F; border-radius: 9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .sidebar-brand .logo-icon svg { width: 18px; height: 18px; }
+    .sidebar-brand h1 { font-size: 17px; font-weight: 800; color: #fff; }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+    .sidebar-item {
+      display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 9px;
+      color: rgba(255,255,255,0.75); font-size: 13.5px; font-weight: 500;
+      transition: all 0.2s; cursor: pointer; border: none; background: transparent; width: 100%; text-align: right; font-family: inherit;
+    }
+    .sidebar-item i { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+    .sidebar-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .sidebar-item.active { background: #0F6B4F; color: #fff; }
+    .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .sidebar-user .avatar { width: 34px; height: 34px; border-radius: 50%; background: #0F6B4F; color: #fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
+    .sidebar-user .u-name { font-size: 13px; font-weight: 600; color: #fff; }
+    .sidebar-user .u-role { font-size: 11px; color: rgba(255,255,255,0.5); }
+    .sidebar-footer-actions { display: flex; gap: 8px; }
+    .sidebar-footer-actions button {
+      flex: 1; background: rgba(255,255,255,0.06); border: none; color: rgba(255,255,255,0.8);
+      border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 5px; font-family: inherit;
+    }
+    .sidebar-footer-actions button:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    .main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; padding: 14px 24px;
+      background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 90;
+    }
+    .topbar h2 { font-size: 17px; font-weight: 700; color: #1a202c; }
+.sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: var(--gray-700); cursor: pointer; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+    .sidebar-backdrop.open { display: block; }
+    .sidebar.collapsed { width: 0; overflow: hidden; }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; right: 0; top: 0; transform: translateX(100%); box-shadow: -8px 0 24px rgba(0,0,0,0.2); }
+      .sidebar.open { transform: translateX(0); }
+    }
+    body.dark-mode .topbar { background: #1C2029; border-bottom-color: #2A2F3A; }
+    body.dark-mode .topbar h2 { color: #E8E9EE; }
+  </style>
+</head>
+<body>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon"><svg viewBox="0 0 120 120" fill="none"><path d="M35 62 L52 79 L86 41" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h1>فَصلي</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="sidebar-item active" id="tabBtnTeachers" onclick="switchAdminTab('teachers')"><i class="fas fa-chalkboard-user"></i> إدارة المدرسين</button>
+        <button class="sidebar-item" id="tabBtnSettings" onclick="switchAdminTab('settings')"><i class="fas fa-gear"></i> إعدادات النظام</button>
+        <button class="sidebar-item" id="tabBtnProfile" onclick="switchAdminTab('profile')"><i class="fas fa-user-shield"></i> الملف الشخصي</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar">🛡️</div>
+          <div>
+            <div class="u-name" id="adminName">مرحباً، المشرف</div>
+            <div class="u-role">حساب المشرف</div>
+          </div>
+        </div>
+        <div class="sidebar-footer-actions">
+          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
+          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <div class="topbar">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h2>إدارة النظام</h2>
+        <div style="width:24px;"></div>
+      </div>
+
+  <div id="panelTeachers" class="container">
+    <div id="message" class="message"></div>
+
+    <div class="card">
+      <h2>➕ إضافة مدرس جديد</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>كود المدرس (Client ID)</label>
+          <input type="text" id="newClientId" placeholder="مثال: teacher_001">
+        </div>
+        <div class="field">
+          <label>اسم المدرس</label>
+          <input type="text" id="newName" placeholder="الاسم الكامل">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>تاريخ انتهاء الصلاحية</label>
+          <input type="date" id="newExpiryDate">
+          <div class="field-hint">💡 اتركها فارغة لصلاحية غير محدودة</div>
+        </div>
+        <div class="field">
+          <label>الحد الأقصى للطلاب</label>
+          <input type="number" id="newMaxStudents" placeholder="مثال: 50 (اتركها 0 لغير محدود)" min="0">
+        </div>
+        <div class="field">
+          <label>الحد الأقصى للمساعدين</label>
+          <input type="number" id="newMaxAssistants" placeholder="مثال: 3" min="0" value="3">
+        </div>
+      </div>
+      <div class="field">
+        <label>صلاحيات الحساب (مميزات الباقة)</label>
+        <div class="perm-grid" id="newPermGrid">
+          <label class="perm-check"><input type="checkbox" value="can_manage_students" checked> إدارة الطلاب (إضافة/تعديل/حذف/حضور)</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_groups" checked> إدارة المجموعات</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_grades" checked> إدارة الدرجات (تسجيل/تعديل/حذف)</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_payments" checked> إدارة المدفوعات (تسجيل/تعديل/حذف)</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_books" checked> إدارة المذكرات (إضافة/تعديل/حذف)</label>
+          <label class="perm-check"><input type="checkbox" value="can_send_messages" checked> الرسائل الجماعية</label>
+          <label class="perm-check"><input type="checkbox" value="can_view_reports" checked> التقارير</label>
+          <label class="perm-check"><input type="checkbox" value="can_view_financial" checked> الدخل الشهري</label>
+          <label class="perm-check"><input type="checkbox" value="can_use_backup" checked> النسخ الاحتياطي</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_assistants" checked> إدارة المساعدين</label>
+          <label class="perm-check"><input type="checkbox" value="can_use_rfid" checked> قارئ الكروت (RFID)</label>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addTeacher()">➕ إضافة مدرس</button>
+    </div>
+
+    <div class="card">
+      <h2>📋 قائمة المدرسين</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>كود المدرس</th>
+              <th>الاسم</th>
+              <th>الحالة</th>
+              <th>تاريخ الانتهاء</th>
+              <th>الأيام المتبقية</th>
+              <th>الطلاب</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="teachersBody">
+            <tr><td colspan="7" class="loading">⏳ جاري التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="panelSettings" class="container" style="display:none;">
+    <div id="settingsMessage" class="message"></div>
+    <div class="card">
+      <h2>⚙️ بيانات التواصل الظاهرة للمستخدمين</h2>
+      <p style="color:#718096;font-size:13px;margin-bottom:16px;">
+        تظهر هذه البيانات في صفحة تسجيل الدخول، ولصفحة "الحساب غير مفعّل" اللي بتظهر للمدرسين اللي انتهى ترخيصهم.
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>رقم الواتساب (بصيغة دولية بدون + أو مسافات)</label>
+          <input type="text" id="settingsWhatsapp" placeholder="مثال: 201143264206" dir="ltr">
+        </div>
+        <div class="field">
+          <label>رقم الهاتف (للعرض والاتصال المباشر)</label>
+          <input type="text" id="settingsPhone" placeholder="مثال: 01143264206" dir="ltr">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>رابط صفحة الفيسبوك</label>
+          <input type="text" id="settingsFacebook" placeholder="https://facebook.com/..." dir="ltr">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
+    </div>
+
+    <div class="card">
+      <h2>📥 روابط تحميل النظام</h2>
+      <p style="color:#718096;font-size:13px;margin-bottom:16px;">
+        تظهر هذي الروابط ككارتين إعلانيين في صفحة تسجيل الدخول. اتركها فاضية لو مش عايز الكارت يظهر.
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>رابط تحميل نسخة الكمبيوتر</label>
+          <input type="text" id="settingsDesktopUrl" placeholder="https://..." dir="ltr">
+        </div>
+        <div class="field">
+          <label>رابط تحميل تطبيق الهاتف</label>
+          <input type="text" id="settingsMobileUrl" placeholder="https://..." dir="ltr">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
+    </div>
+  </div>
+
+  <div id="panelProfile" class="container" style="display:none;">
+    <div id="profileMessage" class="message"></div>
+    <div class="card">
+      <h2>👤 بيانات المشرف</h2>
+      <div class="field">
+        <label>الاسم</label>
+        <input type="text" id="profileName" placeholder="اسم المشرف">
+      </div>
+      <button class="btn btn-primary" onclick="saveAdminName()">💾 حفظ الاسم</button>
+    </div>
+
+    <div class="card">
+      <h2>🔐 تغيير كلمة المرور</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>كلمة المرور الجديدة</label>
+          <input type="password" id="profileNewPassword" placeholder="4 أحرف على الأقل">
+        </div>
+        <div class="field">
+          <label>تأكيد كلمة المرور</label>
+          <input type="password" id="profileConfirmPassword" placeholder="أعد إدخال كلمة المرور">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveAdminPassword()">💾 تغيير كلمة المرور</button>
+    </div>
+  </div>
+
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>✏️ تعديل صلاحيات المدرس</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <input type="hidden" id="editClientId">
+      <div class="field">
+        <label>اسم المدرس</label>
+        <input type="text" id="editName">
+      </div>
+      <div class="field">
+        <label>الحالة</label>
+        <select id="editStatus">
+          <option value="true">🟢 مفعل</option>
+          <option value="false">🔴 غير مفعل</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>تاريخ الانتهاء</label>
+          <input type="date" id="editExpiryDate">
+        </div>
+        <div class="field">
+          <label>الحد الأقصى للطلاب</label>
+          <input type="number" id="editMaxStudents" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>ملاحظات</label>
+        <input type="text" id="editNotes" placeholder="ملاحظات إضافية">
+      </div>
+
+      <div class="field">
+        <label>الحد الأقصى للمساعدين</label>
+        <input type="number" id="editMaxAssistants" min="0">
+      </div>
+
+      <div class="field">
+        <label>صلاحيات الحساب (مميزات الباقة)</label>
+        <div class="perm-grid" id="editPermGrid">
+          <label class="perm-check"><input type="checkbox" value="can_manage_students"> إدارة الطلاب (إضافة/تعديل/حذف/حضور)</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_groups"> إدارة المجموعات</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_grades"> إدارة الدرجات (تسجيل/تعديل/حذف)</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_payments"> إدارة المدفوعات (تسجيل/تعديل/حذف)</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_books"> إدارة المذكرات (إضافة/تعديل/حذف)</label>
+          <label class="perm-check"><input type="checkbox" value="can_send_messages"> الرسائل الجماعية</label>
+          <label class="perm-check"><input type="checkbox" value="can_view_reports"> التقارير</label>
+          <label class="perm-check"><input type="checkbox" value="can_view_financial"> الدخل الشهري</label>
+          <label class="perm-check"><input type="checkbox" value="can_use_backup"> النسخ الاحتياطي</label>
+          <label class="perm-check"><input type="checkbox" value="can_manage_assistants"> إدارة المساعدين</label>
+          <label class="perm-check"><input type="checkbox" value="can_use_rfid"> قارئ الكروت (RFID)</label>
+        </div>
+      </div>
+
+      <div class="field" style="border-top:1px solid #e2e8f0;padding-top:14px;margin-top:6px;">
+        <label>🔑 مفتاح الجهاز (CLIENT_ID + DEVICE_SECRET) — لتجهيز بورد قارئ الكروت قبل التسليم للمدرس</label>
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <input type="text" id="editDeviceClientId" readonly dir="ltr" style="font-family:monospace;background:#f7fafc;flex:1;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="editDeviceSecret" readonly dir="ltr" style="font-family:monospace;background:#f7fafc;flex:1;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="copyDeviceSecretAdmin()" title="نسخ">📋</button>
+          <button type="button" class="btn btn-warning btn-sm" onclick="regenerateDeviceSecretAdmin()" title="توليد مفتاح جديد">🔄</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="updateTeacher()">💾 حفظ التعديلات</button>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // CONFIG
+    // ============================================
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+    const teacherName = sessionStorage.getItem('teacherName') || 'المشرف';
+
+    // ============================================
+    // TOKEN HELPERS
+    // ============================================
+    function getToken() {
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const exp = payload.exp;
+          if (exp) {
+            const now = Math.floor(Date.now() / 1000);
+            if (exp < now) {
+              console.warn('⚠️ التوكن منتهي الصلاحية');
+              return token;
+            }
+          }
+          console.log('✅ التوكن صالح، clientId:', payload.clientId, '، role:', payload.role);
+        }
+      } catch (e) {
+        console.warn('⚠️ فشل فك تشفير التوكن:', e.message);
+      }
+      return token;
+    }
+
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      };
+    }
+
+    function isTokenValid() {
+      const token = getToken();
+      if (!token) return false;
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1]));
+        const exp = payload.exp;
+        if (exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (exp < now) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // ============================================
+    // HANDLE UNAUTHORIZED
+    // ============================================
+    let isLoggingOut = false;
+
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      if (isTokenValid()) {
+        console.warn('⚠️ 401 مع توكن صالح - عدم صلاحية');
+        showMessage('⛔ ليس لديك صلاحية للوصول إلى هذه البيانات.', 'error');
+        return;
+      }
+
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+
+      showMessage('⛔ ' + message + '، يرجى تسجيل الدخول مرة أخرى', 'error');
+
+      setTimeout(() => {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem('clientId');
+        sessionStorage.removeItem('teacherClientId');
+        sessionStorage.removeItem('userRole');
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    // ============================================
+    // SESSION
+    // ============================================
+    const clientId = sessionStorage.getItem('clientId');
+    const isAdmin = sessionStorage.getItem('isAdmin');
+
+    if (clientId !== 'master_admin' || isAdmin !== 'true') {
+      window.location.href = LOGIN_URL;
+    }
+
+    document.getElementById('adminName').textContent = '👤 مرحباً،'+ teacherName;
+
+    function showMessage(text, type = 'info') {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = 'message ' + type;
+      setTimeout(() => {
+        msg.className = 'message';
+        msg.textContent = '';
+      }, 4000);
+    }
+
+    // ============================================
+    // LOAD TEACHERS
+    // ============================================
+    async function loadTeachers() {
+      const tbody = document.getElementById('teachersBody');
+      tbody.innerHTML = '<tr><td colspan="7" class="loading">⏳ جاري التحميل...</td></tr>';
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teachers', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ adminId: clientId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        console.log('📦 Teachers:', result);
+
+        if (result.success) {
+          const teachers = result.data || [];
+          if (teachers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">📭 لا يوجد مدرسون</td></tr>';
+            return;
+          }
+
+          let html = '';
+          teachers.forEach(t => {
+            const today = new Date().toISOString().split('T')[0];
+            let status = '';
+            let statusClass = '';
+            let daysRemaining = '—';
+
+            if (t.client_id === 'master_admin') {
+              status = '👑 مشرف';
+              statusClass = 'status-active';
+              daysRemaining = 'غير محدود';
+            } else if (t.is_active === false) {
+              status = 'غير مفعل';
+              statusClass = 'status-inactive';
+            } else if (t.expiry_date && t.expiry_date < today) {
+              status = 'منتهي';
+              statusClass = 'status-expired';
+            } else {
+              status = 'مفعل';
+              statusClass = 'status-active';
+              if (t.expiry_date) {
+                const diff = Math.ceil((new Date(t.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                daysRemaining = diff > 0 ? diff + ' يوم' : '0';
+              } else {
+                daysRemaining = 'غير محدود';
+              }
+            }
+
+            html += `
+            <tr>
+              <td><code style="background:#edf2f7;padding:2px 8px;border-radius:4px;font-size:12px;">${t.client_id}</code></td>
+              <td>${t.name}</td>
+              <td><span class="status-badge ${statusClass}">${status}</span></td>
+              <td>${t.expiry_date || 'غير محدود'}</td>
+              <td>${daysRemaining}</td>
+              <td>${t.student_count || 0}</td>
+              <td class="actions-cell">
+                ${t.client_id !== 'master_admin' ? `
+                  <button class="btn btn-warning btn-sm" onclick="openEditModal('${t.client_id}')"><i class="fas fa-edit"></i> تعديل</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteTeacher('${t.client_id}', '${t.name}')"><i class="fas fa-trash"></i> حذف</button>
+                  <button class="btn btn-reset-password btn-sm" onclick="resetTeacherPassword('${t.client_id}', '${t.name}')" title="إعادة تعيين كلمة المرور"><i class="fas fa-key"></i>🔑إعادة تعيين<span class="btn-label">كلمة مرور</span></button>
+                ` : `
+                  <span style="color:#a0aec0;font-size:12px;">🔒 غير قابل للتعديل</span>
+                `}
+              </td>
+            </tr>
+          `;
+          });
+          tbody.innerHTML = html;
+        } else {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty-state">❌ ' + result.message + '</td></tr>';
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">❌ خطأ في الاتصال بالخادم</td></tr>';
+      }
+    }
+
+    // ============================================
+    // ADD TEACHER
+    // ============================================
+    function collectPermGrid(gridId) {
+      const perms = {};
+      document.querySelectorAll(`#${gridId} input[type="checkbox"]`).forEach(cb => {
+        perms[cb.value] = cb.checked;
+      });
+      return perms;
+    }
+
+    function fillPermGrid(gridId, permissions) {
+      const perms = permissions || {};
+      document.querySelectorAll(`#${gridId} input[type="checkbox"]`).forEach(cb => {
+        cb.checked = perms[cb.value] !== false; // افتراضياً مفعّلة لو مش موجودة في البيانات القديمة
+      });
+    }
+
+    async function addTeacher() {
+      const newClientId = document.getElementById('newClientId').value.trim();
+      const name = document.getElementById('newName').value.trim();
+      const expiryDate = document.getElementById('newExpiryDate').value.trim();
+      const maxStudents = document.getElementById('newMaxStudents').value.trim();
+      const maxAssistants = document.getElementById('newMaxAssistants').value.trim();
+      const permissions = collectPermGrid('newPermGrid');
+
+      if (!newClientId || !name) {
+        showMessage('⚠️ أدخل كود المدرس والاسم', 'error');
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-add-teacher', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            adminId: 'master_admin',
+            clientId: newClientId,
+            name: name,
+            expiryDate: expiryDate || null,
+            maxStudents: maxStudents ? parseInt(maxStudents) : 0,
+            maxAssistants: maxAssistants !== '' ? parseInt(maxAssistants) : 3,
+            permissions: permissions
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          const deviceSecret = result.data?.[0]?.device_secret || '';
+          showMessage(
+            '✅ ' + result.message +
+            (deviceSecret ? ` — مفتاح الجهاز: ${deviceSecret} (انسخه دلوقتي لتجهيز البورد، أو من "تعديل" لاحقاً)` : ''),
+            'success'
+          );
+          document.getElementById('newClientId').value = '';
+          document.getElementById('newName').value = '';
+          document.getElementById('newExpiryDate').value = '';
+          document.getElementById('newMaxStudents').value = '';
+          document.getElementById('newMaxAssistants').value = '3';
+          document.querySelectorAll('#newPermGrid input[type="checkbox"]').forEach(cb => cb.checked = true);
+          loadTeachers();
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل إضافة المدرس: ' + error.message, 'error');
+      }
+    }
+
+    let currentTeacher = null;
+
+    async function openEditModal(teacherClientId) {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teacher', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            adminId: 'master_admin',
+            clientId: teacherClientId
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          currentTeacher = result.data;
+          document.getElementById('editClientId').value = currentTeacher.client_id;
+          document.getElementById('editName').value = currentTeacher.name;
+          document.getElementById('editStatus').value = currentTeacher.is_active ? 'true' : 'false';
+          document.getElementById('editExpiryDate').value = currentTeacher.expiry_date || '';
+          document.getElementById('editMaxStudents').value = currentTeacher.max_students || 0;
+          document.getElementById('editMaxAssistants').value = currentTeacher.max_assistants !== null && currentTeacher.max_assistants !== undefined ? currentTeacher.max_assistants : 3;
+          document.getElementById('editNotes').value = currentTeacher.notes || '';
+          document.getElementById('editDeviceClientId').value = currentTeacher.client_id;
+          document.getElementById('editDeviceSecret').value = currentTeacher.device_secret || '(لسه معملوش)';
+          fillPermGrid('editPermGrid', currentTeacher.permissions);
+
+          document.getElementById('editModal').classList.add('open');
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل تحميل بيانات المدرس: ' + error.message, 'error');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').classList.remove('open');
+      currentTeacher = null;
+    }
+
+    function copyDeviceSecretAdmin() {
+      const value = document.getElementById('editDeviceSecret').value;
+      if (!value) return;
+      navigator.clipboard.writeText(value).then(() => {
+        showMessage('✅ تم نسخ المفتاح', 'success');
+      }).catch(() => {
+        showMessage('⚠️ تعذر النسخ التلقائي، انسخه يدوياً', 'error');
+      });
+    }
+
+    async function regenerateDeviceSecretAdmin() {
+      if (!currentTeacher) return;
+      if (!confirm(`توليد مفتاح جديد للمدرس "${currentTeacher.name}" هيوقف أي بورد شغّال بالمفتاح الحالي. متأكد؟`)) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-regenerate-device-secret', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId: currentTeacher.client_id })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('editDeviceSecret').value = result.data.deviceSecret;
+          showMessage('✅ تم توليد مفتاح جديد — جهّز البورد بيه قبل ما تسلّمه للمدرس', 'success');
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل توليد مفتاح جديد: ' + error.message, 'error');
+      }
+    }
+
+    async function updateTeacher() {
+      const teacherClientId = document.getElementById('editClientId').value;
+      const name = document.getElementById('editName').value.trim();
+      const isActiveParam = document.getElementById('editStatus').value === 'true';
+      const expiryDate = document.getElementById('editExpiryDate').value || null;
+      const maxStudents = parseInt(document.getElementById('editMaxStudents').value) || 0;
+      const maxAssistants = parseInt(document.getElementById('editMaxAssistants').value);
+      const notes = document.getElementById('editNotes').value.trim();
+
+      if (!name) {
+        showMessage('⚠️ أدخل اسم المدرس', 'error');
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-update-teacher', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            adminId: 'master_admin',
+            clientId: teacherClientId,
+            name: name,
+            isActive: isActiveParam,
+            expiryDate: expiryDate,
+            maxStudents: maxStudents,
+            maxAssistants: isNaN(maxAssistants) ? 3 : maxAssistants,
+            notes: notes,
+            permissions: collectPermGrid('editPermGrid')
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          showMessage('✅ ' + result.message, 'success');
+          closeModal();
+          loadTeachers();
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل تحديث البيانات: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteTeacher(teacherClientId, name) {
+      if (!confirm(`⚠️ هل أنت متأكد من حذف المدرس "${name}" (${teacherClientId})؟\n\nسيتم حذف جميع بياناته (طلاب، درجات، مدفوعات، إلخ).\nهذا الإجراء لا يمكن التراجع عنه!`)) {
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-delete-teacher', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            adminId: 'master_admin',
+            clientId: teacherClientId
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          showMessage('✅ ' + result.message, 'success');
+          loadTeachers();
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل حذف المدرس: ' + error.message, 'error');
+      }
+    }
+
+    function logout() {
+      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+        sessionStorage.clear();
+        window.location.href = LOGIN_URL;
+      }
+    }
+
+    window.onload = function() {
+      loadTeachers();
+      setInterval(loadTeachers, 30000);
+    };
+
+    // ============================================
+    // تبديل التابات (المدرسين / إعدادات النظام)
+    // ============================================
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (window.innerWidth <= 900) {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+
+    function switchAdminTab(tab) {
+      document.getElementById('panelTeachers').style.display = tab === 'teachers' ? '' : 'none';
+      document.getElementById('panelSettings').style.display = tab === 'settings' ? '' : 'none';
+      document.getElementById('panelProfile').style.display = tab === 'profile' ? '' : 'none';
+      document.getElementById('tabBtnTeachers').classList.toggle('active', tab === 'teachers');
+      document.getElementById('tabBtnSettings').classList.toggle('active', tab === 'settings');
+      document.getElementById('tabBtnProfile').classList.toggle('active', tab === 'profile');
+      if (tab === 'settings') loadSystemSettings();
+      if (tab === 'profile') loadAdminProfile();
+    }
+
+    function showProfileMessage(text, type) {
+      const el = document.getElementById('profileMessage');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      el.style.display = 'block';
+    }
+
+    async function loadAdminProfile() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teacher', {
+          method: 'POST', headers,
+          body: JSON.stringify({ adminId: 'master_admin', clientId: 'master_admin' })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('profileName').value = result.data.name || '';
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل بيانات المشرف:', error);
+      }
+    }
+
+    async function saveAdminName() {
+      const name = document.getElementById('profileName').value.trim();
+      if (!name) { showProfileMessage('⚠️ أدخل الاسم', 'error'); return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-admin-profile', {
+          method: 'POST', headers, body: JSON.stringify({ name })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showProfileMessage('✅ ' + result.message, 'success');
+          document.getElementById('adminName').textContent = '👤 مرحباً، ' + name;
+          sessionStorage.setItem('teacherName', name);
+        } else {
+          showProfileMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حفظ الاسم:', error);
+        showProfileMessage('❌ فشل حفظ الاسم: ' + error.message, 'error');
+      }
+    }
+
+    async function saveAdminPassword() {
+      const newPassword = document.getElementById('profileNewPassword').value;
+      const confirmPassword = document.getElementById('profileConfirmPassword').value;
+
+      if (!newPassword || newPassword.length < 4) { showProfileMessage('⚠️ كلمة المرور يجب أن تكون 4 أحرف على الأقل', 'error'); return; }
+      if (newPassword !== confirmPassword) { showProfileMessage('⚠️ كلمتا المرور غير متطابقتين', 'error'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/change-password', {
+          method: 'POST', headers,
+          body: JSON.stringify({ username: 'master_admin', newPassword, role: 'teacher' })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showProfileMessage('✅ تم تغيير كلمة المرور بنجاح', 'success');
+          document.getElementById('profileNewPassword').value = '';
+          document.getElementById('profileConfirmPassword').value = '';
+        } else {
+          showProfileMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تغيير كلمة المرور:', error);
+        showProfileMessage('❌ فشل تغيير كلمة المرور: ' + error.message, 'error');
+      }
+    }
+
+    // ============================================
+    // الوضع الليلي
+    // ============================================
+    function getAdminThemeKey() { return 'theme_master_admin'; }
+    (function() {
+      const savedTheme = localStorage.getItem(getAdminThemeKey());
+      if (savedTheme === 'dark') document.body.classList.add('dark-mode');
+    })();
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem(getAdminThemeKey(), isDark ? 'dark' : 'light');
+      document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const isDark = document.body.classList.contains('dark-mode');
+      document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+    });
+
+    function showSettingsMessage(text, type) {
+      const el = document.getElementById('settingsMessage');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      el.style.display = 'block';
+    }
+
+    async function loadSystemSettings() {
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-system-settings');
+        const result = await response.json();
+        const data = result.data || {};
+        document.getElementById('settingsWhatsapp').value = data.whatsapp_number || '';
+        document.getElementById('settingsPhone').value = data.phone_number || '';
+        document.getElementById('settingsFacebook').value = data.facebook_url || '';
+        document.getElementById('settingsDesktopUrl').value = data.desktop_download_url || '';
+        document.getElementById('settingsMobileUrl').value = data.mobile_app_url || '';
+      } catch (error) {
+        console.error('❌ خطأ في تحميل إعدادات النظام:', error);
+        showSettingsMessage('❌ تعذر تحميل الإعدادات الحالية', 'error');
+      }
+    }
+
+    async function saveSystemSettings() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const whatsappNumber = document.getElementById('settingsWhatsapp').value.trim();
+      const phoneNumber = document.getElementById('settingsPhone').value.trim();
+      const facebookUrl = document.getElementById('settingsFacebook').value.trim();
+      const desktopDownloadUrl = document.getElementById('settingsDesktopUrl').value.trim();
+      const mobileAppUrl = document.getElementById('settingsMobileUrl').value.trim();
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-system-settings', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ whatsappNumber, phoneNumber, facebookUrl, desktopDownloadUrl, mobileAppUrl })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حفظ الإعدادات:', error);
+        showSettingsMessage('❌ فشل حفظ الإعدادات: ' + error.message, 'error');
+      }
+    }
+
+    async function resetTeacherPassword(teacherClientId, teacherName) {
+      const newPassword = prompt(`🔑 إعادة تعيين كلمة مرور المدرس "${teacherName}"\n\nأدخل كلمة المرور الجديدة (4 أحرف على الأقل):`);
+      if (newPassword === null) {
+        showMessage('❌ تم إلغاء العملية', 'info');
+        return;
+      }
+      if (newPassword.length < 4) {
+        showMessage('⚠️ كلمة المرور يجب أن تكون 4 أحرف على الأقل', 'error');
+        return;
+      }
+      if (!confirm(`⚠️ هل أنت متأكد من إعادة تعيين كلمة مرور المدرس "${teacherName}"؟`)) {
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-reset-teacher-password', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            adminId: 'master_admin',
+            clientId: teacherClientId,
+            newPassword: newPassword
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        console.log('📦 Reset response:', result);
+
+        if (result.success) {
+          showMessage('✅ ' + result.message, 'success');
+          loadTeachers();
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل إعادة تعيين كلمة المرور: ' + error.message, 'error');
+      }
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
