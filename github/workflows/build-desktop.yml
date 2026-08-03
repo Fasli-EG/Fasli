@@ -1,0 +1,44 @@
+# .github/workflows/build-desktop.yml
+# بناء تلقائي مجاني لنسخة Windows و Mac + نشرهم تلقائياً كـ Release على GitHub
+# مثال: git tag v1.0.0 && git push origin v1.0.0
+
+name: Build Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # مطلوبة عشان الـ workflow يقدر ينشئ Release تلقائي
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: ./electron
+        run: npm install
+
+      - name: Build
+        working-directory: ./electron
+        run: npx electron-builder --publish never
+
+      - name: Upload to GitHub Release (رابط ثابت دايماً)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            electron/dist/*.exe
+            electron/dist/*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
