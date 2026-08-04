@@ -67,7 +67,29 @@
   </div>
 
   <script>
-    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+        const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
 
     const lockReason = sessionStorage.getItem('lockReason');
     const lockWhatsapp = sessionStorage.getItem('lockWhatsapp');

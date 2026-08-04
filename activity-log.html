@@ -161,10 +161,42 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    // ============================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            // ============================================
     // CONFIG
     // ============================================
     const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
     const TOKEN_KEY = 'jwtToken';
     const LOGIN_URL = 'login.html';
 
@@ -252,7 +284,7 @@
     const assistantName = sessionStorage.getItem('assistantName') || null;
 
     if (!clientId) {
-      sessionStorage.clear();
+      sessionStorage.clear(); localStorage.clear();
       window.location.href = LOGIN_URL;
     }
 
@@ -439,7 +471,7 @@
     // ============================================
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear();
+        sessionStorage.clear(); localStorage.clear();
         window.location.href = LOGIN_URL;
       }
     }
@@ -690,8 +722,8 @@ function renderNotifList() {
       }
       list.innerHTML = notifData.map(n => `
         <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
-          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${n.title}</div>
-          <div class="n-msg">${n.message}</div>
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
           <div class="n-time">${timeAgo(n.created_at)}</div>
         </div>
       `).join('');

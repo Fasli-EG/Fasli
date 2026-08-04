@@ -8,7 +8,6 @@
   <meta name="theme-color" content="#14171F">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -364,7 +363,7 @@
       background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 90;
     }
     .topbar h2 { font-size: 17px; font-weight: 700; color: #1a202c; }
-.sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: var(--gray-700); cursor: pointer; }
+    .sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: #4a5568; cursor: pointer; }
     .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
     .sidebar-backdrop.open { display: block; }
     .sidebar.collapsed { width: 0; overflow: hidden; }
@@ -630,13 +629,44 @@
   </div>
 
   <script>
-    // ============================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            // ============================================
     // CONFIG
     // ============================================
     const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
     const TOKEN_KEY = 'jwtToken';
     const LOGIN_URL = 'login.html';
-    const teacherName = sessionStorage.getItem('teacherName') || 'المشرف';
 
     // ============================================
     // TOKEN HELPERS
@@ -727,7 +757,7 @@
       window.location.href = LOGIN_URL;
     }
 
-    document.getElementById('adminName').textContent = '👤 مرحباً،'+ teacherName;
+    document.getElementById('adminName').textContent = '👤 مرحباً، المشرف';
 
     function showMessage(text, type = 'info') {
       const msg = document.getElementById('message');
@@ -1088,7 +1118,7 @@
 
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear();
+        sessionStorage.clear(); localStorage.clear();
         window.location.href = LOGIN_URL;
       }
     }

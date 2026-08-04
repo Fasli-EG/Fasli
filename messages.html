@@ -232,10 +232,42 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    // ============================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            // ============================================
     // CONFIG
     // ============================================
     const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
     const TOKEN_KEY = 'jwtToken';
     const LOGIN_URL = 'login.html';
 
@@ -280,7 +312,6 @@
     const userRole = sessionStorage.getItem('userRole') || 'teacher';
     const teacherName = sessionStorage.getItem('teacherName') || 'مدرس';
     const assistantName = sessionStorage.getItem('assistantName') || null;
-    const assistantId = sessionStorage.getItem('assistantId') || null;
 
     if (!clientId) { sessionStorage.clear(); window.location.href = LOGIN_URL; }
 
@@ -318,7 +349,7 @@
       window.location.href = isAssistant ? 'assistant-dashboard.html' : 'dashboard.html';
     }
     function logout() {
-      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) { sessionStorage.clear(); window.location.href = LOGIN_URL; }
+      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) { sessionStorage.clear(); localStorage.clear(); window.location.href = LOGIN_URL; }
     }
 
     function showToast(message, type) {
@@ -334,27 +365,15 @@
     // ============================================
     // DARK MODE
     // ============================================
-    function getThemeKey() {
-      const id = assistantId || clientId || 'guest';
-      return 'theme_' + id;
-    }
-
+    function getThemeKey() { return 'theme_' + clientId; }
     (function() {
       const savedTheme = localStorage.getItem(getThemeKey());
-      if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
-      } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          document.documentElement.setAttribute('data-theme', 'dark');
-        }
-      }
+      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
       setTimeout(() => {
         const theme = document.documentElement.getAttribute('data-theme') || 'light';
         updateThemeIcon(theme);
-      }, 100);
+      }, 0);
     })();
-    
 async function downloadBackup() {
   const btn = document.getElementById('backupBtn');
   const status = document.getElementById('backupStatus');
@@ -578,8 +597,8 @@ function renderNotifList() {
       }
       list.innerHTML = notifData.map(n => `
         <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
-          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${n.title}</div>
-          <div class="n-msg">${n.message}</div>
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
           <div class="n-time">${timeAgo(n.created_at)}</div>
         </div>
       `).join('');
@@ -698,7 +717,7 @@ async function markAllRead() {
       picker.innerHTML = currentAssistants.map(a => `
         <label class="student-check">
           <input type="checkbox" class="assistant-checkbox" value="${a.id}" onchange="updateRecipientsNote()">
-          ${a.name}
+          ${escapeHtml(a.name)}
         </label>
       `).join('');
     }
@@ -812,7 +831,7 @@ async function markAllRead() {
       picker.innerHTML = currentGroupStudents.map(s => `
         <label class="student-check">
           <input type="checkbox" class="student-checkbox" value="${s.uid}" onchange="updateRecipientsNote()">
-          ${s.name}${s.parent_phone ? '' : ' <span style="color:var(--danger);font-size:11px;">(بدون رقم ولي أمر)</span>'}
+          ${escapeHtml(s.name)}${s.parent_phone ? '' : ' <span style="color:var(--danger);font-size:11px;">(بدون رقم ولي أمر)</span>'}
         </label>
       `).join('');
     }

@@ -211,7 +211,39 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
 
   // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
   (function() {
@@ -312,7 +344,7 @@
     const assistantId = sessionStorage.getItem('assistantId') || null;
 
     if (!clientId) {
-      sessionStorage.clear();
+      sessionStorage.clear(); localStorage.clear();
       window.location.href = LOGIN_URL;
     }
 
@@ -416,14 +448,14 @@
               <div class="book-item">
                 <div class="book-info">
                   <span class="book-icon">📘</span>
-                  <span class="book-name">${b.name}</span>
+                  <span class="book-name">${escapeHtml(b.name)}</span>
                   <span class="book-price">${b.price} ج.م</span>
                 </div>
                 <div class="book-actions">
-                  <button class="btn btn-warning btn-sm" onclick="editBookName('${b.id}', '${b.name}', ${b.price})" title="تعديل المذكرة">
+                  <button class="btn btn-warning btn-sm" onclick="editBookName('${b.id}', '${escapeAttr(b.name)}', ${b.price})" title="تعديل المذكرة">
                     <i class="fas fa-edit"></i> تعديل
                   </button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteBook('${b.id}', '${b.name}')" title="حذف المذكرة">
+                  <button class="btn btn-danger btn-sm" onclick="deleteBook('${b.id}', '${escapeAttr(b.name)}')" title="حذف المذكرة">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
@@ -674,7 +706,7 @@
       box.innerHTML = '';
       matches.forEach(s => {
         const div = document.createElement('div');
-        div.innerHTML = '<strong>' + s.name + '</strong> <span class="suggestion-uid">' + s.uid + '</span> <span style="color:var(--gray-400);font-size:12px;">(' + s.group_name + ')</span>';
+        div.innerHTML = '<strong>' + escapeHtml(s.name) + '</strong> <span class="suggestion-uid">' + escapeHtml(s.uid) + '</span> <span style="color:var(--gray-400);font-size:12px;">(' + escapeHtml(s.group_name) + ')</span>';
         div.onclick = function() {
           document.getElementById('bookStudentSearch').value = s.name;
           document.getElementById('bookSelectedUid').value = s.uid;
@@ -896,12 +928,12 @@
             if (item.payment_id) {
               let buttons = '';
               if (showEditButton) {
-                buttons += `<button class="btn btn-warning btn-sm" onclick="editBookPayment('${item.payment_id}', '${item.student_name}', '${item.book_name}', ${item.amount}, ${item.price})" title="تعديل المبلغ">
+                buttons += `<button class="btn btn-warning btn-sm" onclick="editBookPayment('${item.payment_id}', '${escapeAttr(item.student_name)}', '${escapeAttr(item.book_name)}', ${item.amount}, ${item.price})" title="تعديل المبلغ">
                   <i class="fas fa-edit"></i>
                 </button> `;
               }
               if (showDeleteButton) {
-                buttons += `<button class="btn btn-danger btn-sm" onclick="deleteBookPayment('${item.payment_id}', '${item.student_name}', '${item.book_name}')" title="حذف السداد">
+                buttons += `<button class="btn btn-danger btn-sm" onclick="deleteBookPayment('${item.payment_id}', '${escapeAttr(item.student_name)}', '${escapeAttr(item.book_name)}')" title="حذف السداد">
                   <i class="fas fa-trash"></i>
                 </button>`;
               }
@@ -910,7 +942,7 @@
 
             html += `
               <tr>
-                <td><strong>${item.student_name}</strong></td>
+                <td><strong>${escapeHtml(item.student_name)}</strong></td>
                 <td>${item.amount || 0} / ${item.price} ج.م</td>
                 <td>${dateStr}</td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
@@ -979,7 +1011,7 @@
 
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear();
+        sessionStorage.clear(); localStorage.clear();
         window.location.href = LOGIN_URL;
       }
     }
@@ -1228,8 +1260,8 @@ function renderNotifList() {
       }
       list.innerHTML = notifData.map(n => `
         <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
-          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${n.title}</div>
-          <div class="n-msg">${n.message}</div>
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
           <div class="n-time">${timeAgo(n.created_at)}</div>
         </div>
       `).join('');

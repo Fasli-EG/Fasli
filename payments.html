@@ -241,7 +241,39 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
 
   // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
   (function() {
@@ -342,7 +374,7 @@
     const assistantId = sessionStorage.getItem('assistantId') || null;
 
     if (!clientId) {
-      sessionStorage.clear();
+      sessionStorage.clear(); localStorage.clear();
       window.location.href = LOGIN_URL;
     }
 
@@ -492,7 +524,7 @@
       box.innerHTML = '';
       matches.forEach(s => {
         const div = document.createElement('div');
-        div.innerHTML = `<strong>${s.name}</strong> <span class="suggestion-uid">${s.uid}</span> <span style="color:var(--gray-400);font-size:12px;">(${s.group_name})</span>`;
+        div.innerHTML = `<strong>${escapeHtml(s.name)}</strong> <span class="suggestion-uid">${escapeHtml(s.uid)}</span> <span style="color:var(--gray-400);font-size:12px;">(${escapeHtml(s.group_name)})</span>`;
         div.onclick = () => {
           document.getElementById('studentSearch').value = s.name;
           document.getElementById('selectedStudentUid').value = s.uid;
@@ -672,8 +704,8 @@
             }
 
             html += `<tr>
-              <td><strong>${p.student_name}</strong></td>
-              <td>${p.title}</td>
+              <td><strong>${escapeHtml(p.student_name)}</strong></td>
+              <td>${escapeHtml(p.title)}</td>
               <td><strong>${p.amount}</strong> / ${p.total_amount} ج.م</td>
               <td><span style="background:var(--gray-100);padding:2px 12px;border-radius:12px;font-size:12px;">${p.group_name}</span></td>
               <td><span class="status-badge ${statusClass}">${statusText}</span></td>
@@ -836,7 +868,7 @@
 
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear();
+        sessionStorage.clear(); localStorage.clear();
         window.location.href = LOGIN_URL;
       }
     }
@@ -1085,8 +1117,8 @@ function renderNotifList() {
       }
       list.innerHTML = notifData.map(n => `
         <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
-          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${n.title}</div>
-          <div class="n-msg">${n.message}</div>
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
           <div class="n-time">${timeAgo(n.created_at)}</div>
         </div>
       `).join('');

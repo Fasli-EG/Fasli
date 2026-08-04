@@ -200,6 +200,18 @@
 
             const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
 
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
+
   // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
   (function() {
     if (window.__licenseInterceptorInstalled) return;
@@ -299,7 +311,7 @@
     const assistantId = sessionStorage.getItem('assistantId') || null;
 
     if (!clientId) {
-      sessionStorage.clear();
+      sessionStorage.clear(); localStorage.clear();
       window.location.href = LOGIN_URL;
     }
 
@@ -701,7 +713,7 @@
 
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear();
+        sessionStorage.clear(); localStorage.clear();
         window.location.href = LOGIN_URL;
       }
     }

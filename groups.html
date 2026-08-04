@@ -137,7 +137,39 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
 
   // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
   (function() {
@@ -238,7 +270,7 @@
     const assistantId = sessionStorage.getItem('assistantId') || null;
 
     if (!clientId) {
-      sessionStorage.clear();
+      sessionStorage.clear(); localStorage.clear();
       window.location.href = LOGIN_URL;
     }
 
@@ -346,12 +378,12 @@
           groups.forEach(g => {
             html += `
               <div class="group-item">
-                <span class="name">📁 ${g}</span>
+                <span class="name">📁 ${escapeHtml(g)}</span>
                 <div class="actions">
-                  <button class="btn btn-warning btn-sm" onclick="renameGroup('${g}')" title="تعديل">
+                  <button class="btn btn-warning btn-sm" onclick="renameGroup('${escapeAttr(g)}')" title="تعديل">
                     <i class="fas fa-edit"></i> تعديل
                   </button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteGroup('${g}')" title="حذف">
+                  <button class="btn btn-danger btn-sm" onclick="deleteGroup('${escapeAttr(g)}')" title="حذف">
                     <i class="fas fa-trash"></i> حذف
                   </button>
                 </div>
@@ -502,7 +534,7 @@
 
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear();
+        sessionStorage.clear(); localStorage.clear();
         window.location.href = LOGIN_URL;
       }
     }
@@ -751,8 +783,8 @@ function renderNotifList() {
       }
       list.innerHTML = notifData.map(n => `
         <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
-          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${n.title}</div>
-          <div class="n-msg">${n.message}</div>
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
           <div class="n-time">${timeAgo(n.created_at)}</div>
         </div>
       `).join('');

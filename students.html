@@ -155,6 +155,28 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="transferModal">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-header">
+        <h3>🔄 نقل طالب لمجموعة تانية</h3>
+        <button class="modal-close" onclick="closeTransferModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13.5px;color:var(--gray-600);margin-bottom:14px;">
+          نقل <strong id="transferStudentName"></strong> من مجموعة <strong id="transferOldGroup"></strong> — هيتم نقل كل بياناته (درجات، مدفوعات، سداد مذكرات، حضور) معاه.
+        </p>
+        <div class="field">
+          <label>المجموعة الجديدة</label>
+          <select id="transferNewGroup"></select>
+        </div>
+        <input type="hidden" id="transferStudentUid">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px;" onclick="confirmTransfer()">
+          <i class="fas fa-right-left"></i> تأكيد النقل
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="editModal">
     <div class="modal-box">
       <div class="modal-header"><h3><i class="fas fa-edit" style="color:var(--primary);"></i> تعديل بيانات الطالب</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
@@ -175,7 +197,39 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
 
   // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
   (function() {
@@ -410,10 +464,11 @@
           students.forEach(s => {
             let actionsHtml = '';
             if (canEditStudents) actionsHtml += `<button class="btn btn-warning btn-sm" onclick="openEditModal('${s.id}')" title="تعديل"><i class="fas fa-edit"></i></button>`;
-            if (canDeleteStudents) actionsHtml += `<button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}', '${s.name}')" title="حذف"><i class="fas fa-trash"></i></button>`;
-            if (canResetParentPassword) actionsHtml += `<button class="btn btn-info btn-sm" onclick="resetParentPassword('${s.uid}', '${s.name}')" title="إعادة تعيين كلمة مرور ولي الأمر"><i class="fas fa-key"></i></button>`;
+            if (canEditStudents) actionsHtml += `<button class="btn btn-info btn-sm" onclick="openTransferModal('${s.uid}', '${escapeHtml(s.name)}', '${escapeHtml(s.group_name)}')" title="نقل لمجموعة تانية"><i class="fas fa-right-left"></i></button>`;
+            if (canDeleteStudents) actionsHtml += `<button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}', '${escapeAttr(s.name)}')" title="حذف"><i class="fas fa-trash"></i></button>`;
+            if (canResetParentPassword) actionsHtml += `<button class="btn btn-info btn-sm" onclick="resetParentPassword('${s.uid}', '${escapeAttr(s.name)}')" title="إعادة تعيين كلمة مرور ولي الأمر"><i class="fas fa-key"></i></button>`;
             if (!canEditStudents && !canDeleteStudents && !canResetParentPassword) actionsHtml = `<span style="color:var(--gray-400);font-size:12px;">🔒 عرض فقط</span>`;
-            html += `<tr><td><span class="uid-tag">${s.uid}</span></td><td><strong>${s.name}</strong></td><td>${s.phone || '—'}</td><td>${s.parent_phone || '—'}</td><td><span style="background:var(--gray-100);padding:2px 12px;border-radius:12px;font-size:12px;">${s.group_name}</span></td><td style="text-align:center;">${actionsHtml}</td></tr>`;
+            html += `<tr><td><span class="uid-tag">${escapeHtml(s.uid)}</span></td><td><strong>${escapeHtml(s.name)}</strong></td><td>${escapeHtml(s.phone) || '—'}</td><td>${escapeHtml(s.parent_phone) || '—'}</td><td><span style="background:var(--gray-100);padding:2px 12px;border-radius:12px;font-size:12px;">${escapeHtml(s.group_name)}</span></td><td style="text-align:center;">${actionsHtml}</td></tr>`;
           });
           tbody.innerHTML = html;
         } else { showToast('❌ ' + result.message, 'error'); }
@@ -548,6 +603,52 @@
       } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل تحديث البيانات', 'error'); }
     }
 
+    function openTransferModal(studentUid, studentName, currentGroup) {
+      document.getElementById('transferStudentUid').value = studentUid;
+      document.getElementById('transferStudentName').textContent = studentName;
+      document.getElementById('transferOldGroup').textContent = currentGroup;
+
+      const filterGroupOptions = document.getElementById('filterGroup').innerHTML;
+      const select = document.getElementById('transferNewGroup');
+      select.innerHTML = filterGroupOptions.replace('<option value="ALL">📚 جميع المجموعات</option>', '');
+      // نشيل المجموعة الحالية من القائمة عشان مايختارش نفس المجموعة
+      Array.from(select.options).forEach(opt => { if (opt.value === currentGroup) opt.remove(); });
+
+      document.getElementById('transferModal').classList.add('open');
+    }
+
+    function closeTransferModal() {
+      document.getElementById('transferModal').classList.remove('open');
+    }
+
+    async function confirmTransfer() {
+      const studentUid = document.getElementById('transferStudentUid').value;
+      const newGroupName = document.getElementById('transferNewGroup').value;
+      if (!newGroupName) { showToast('⚠️ اختر مجموعة جديدة', 'error'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/transfer-student', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId, studentUid, newGroupName })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          closeTransferModal();
+          loadStudents();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في نقل الطالب:', error);
+        showToast('❌ فشل نقل الطالب: ' + error.message, 'error');
+      }
+    }
+
     async function resetParentPassword(studentUid, studentName) {
       if (!canResetParentPassword) { showToast('⛔ ليس لديك صلاحية لإعادة تعيين كلمة مرور ولي الأمر', 'error'); return; }
       if (!confirm(`هل تريد إعادة تعيين كلمة مرور ولي أمر "${studentName}"؟ هيتم تحديدها برقم هاتف ولي الأمر، وهيحتاج يغيّرها بعد أول تسجيل دخول.`)) return;
@@ -598,7 +699,7 @@
     }
 
     function logout() {
-      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) { sessionStorage.clear(); window.location.href = LOGIN_URL; }
+      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) { sessionStorage.clear(); localStorage.clear(); window.location.href = LOGIN_URL; }
     }
 
     let checkTimeout = null;
@@ -985,8 +1086,8 @@ function renderNotifList() {
       }
       list.innerHTML = notifData.map(n => `
         <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
-          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${n.title}</div>
-          <div class="n-msg">${n.message}</div>
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
           <div class="n-time">${timeAgo(n.created_at)}</div>
         </div>
       `).join('');

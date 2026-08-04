@@ -956,7 +956,7 @@ tr:hover td { background: var(--gray-50); }
   color: var(--gray-500);
 }
 .grade-chart-wrapper canvas {
-  max-height: 500px;
+  max-height: 250px;
   width: 100% !important;
 }
 

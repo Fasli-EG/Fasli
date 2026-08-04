@@ -236,10 +236,42 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    // ============================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            // ============================================
     // CONFIG
     // ============================================
     const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
 
   // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
   (function() {
@@ -549,7 +581,7 @@
             totalMax += Number(max);
             html += `
               <tr>
-                <td>${grade.exam_name}</td>
+                <td>${escapeHtml(grade.exam_name)}</td>
                 <td><strong>${grade.score}</strong> / ${max}</td>
                 <td>${dateStr}</td>
               </tr>
@@ -618,7 +650,7 @@
               totalPaid += Number(payment.amount);
               html += `
                 <tr>
-                  <td>${payment.title}</td>
+                  <td>${escapeHtml(payment.title)}</td>
                   <td><strong>${payment.amount}</strong> / ${payment.total_amount} ج.م</td>
                   <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                   <td>${dateStr}</td>
@@ -708,7 +740,7 @@
             const statusText = isFull ? '✅ مدفوع بالكامل' : '🟡 دفعة جزئية';
             html += `
               <tr>
-                <td><strong>${book.book_name || 'مذكرة'}</strong></td>
+                <td><strong>${escapeHtml(book.book_name || 'مذكرة')}</strong></td>
                 <td>${book.price || 0} ج.م</td>
                 <td>${book.amount || 0} ج.م</td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>

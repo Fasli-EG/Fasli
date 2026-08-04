@@ -204,6 +204,14 @@
     </ul>
   </div>
 
+  <button id="pwaInstallBtn" class="download-card" style="display:none;width:100%;cursor:pointer;font-family:inherit;border:1px solid rgba(255,255,255,0.14);margin-top:22px;" onclick="triggerPwaInstall()">
+    <span class="dc-icon">⬇️</span>
+    <div>
+      <div class="dc-title">تثبيت فَصلي كتطبيق</div>
+      <div class="dc-sub">مباشرة من المتصفح، بدون تحميل ملف</div>
+    </div>
+  </button>
+
   <div class="download-cards" id="downloadCards" style="display:none;">
     <a href="#" id="desktopDownloadCard" class="download-card" style="display:none;" target="_blank" rel="noopener">
       <span class="dc-icon">💻</span>
@@ -245,6 +253,11 @@
         <div class="hint" id="passwordHint">لأول مرة، استخدم <strong>نفس الكود</strong> ككلمة مرور</div>
       </div>
 
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#4a5568;cursor:pointer;margin-bottom:4px;">
+        <input type="checkbox" id="rememberMe" style="width:16px;height:16px;cursor:pointer;">
+        تذكرني (متطلبش تسجيل دخول تاني على الجهاز ده)
+      </label>
+
       <button type="submit" class="submit" id="loginBtn">
         <span id="loginText">تسجيل الدخول</span>
       </button>
@@ -259,7 +272,17 @@
 </div>
 
 <script>
-  // ============================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+      // ============================================
   // CONFIG
   // ============================================
   const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
@@ -423,6 +446,14 @@
   // ============================================
   // توجيه المستخدم حسب صلاحياته
   // ============================================
+  function saveAuth(key, value) {
+    sessionStorage.setItem(key, value);
+    if (document.getElementById('rememberMe')?.checked) {
+      localStorage.setItem(key, value);
+      localStorage.setItem('fasliRememberMe', 'true');
+    }
+  }
+
   function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience) {
     if (forceChange) {
       let redirectUrl = 'change-password.html?';
@@ -451,34 +482,34 @@
     }
 
     if (role === 'teacher' && username === 'master_admin') {
-      sessionStorage.setItem('clientId', username);
-      sessionStorage.setItem('teacherName', 'المشرف الرئيسي');
-      sessionStorage.setItem('isAdmin', 'true');
+      saveAuth('clientId', username);
+      saveAuth('teacherName', 'المشرف الرئيسي');
+      saveAuth('isAdmin', 'true');
       window.location.href = 'admin-teachers.html';
       return;
     }
     if (role === 'teacher') {
-      sessionStorage.setItem('clientId', username);
-      sessionStorage.setItem('teacherName', data?.name || 'مدرس');
-      sessionStorage.setItem('isAdmin', 'false');
-      sessionStorage.setItem('userRole', 'teacher');
+      saveAuth('clientId', username);
+      saveAuth('teacherName', data?.name || 'مدرس');
+      saveAuth('isAdmin', 'false');
+      saveAuth('userRole', 'teacher');
       window.location.href = 'dashboard.html';
       return;
     }
     if (role === 'assistant') {
-      sessionStorage.setItem('assistantId', data?.id || username);
-      sessionStorage.setItem('assistantName', data?.name || 'مساعد');
-      sessionStorage.setItem('assistantPermissions', JSON.stringify(data?.permissions || {}));
-      sessionStorage.setItem('teacherClientId', data?.teacherId || '');
-      sessionStorage.setItem('teacherName', data?.teacherName || 'مدرس');
-      sessionStorage.setItem('userRole', 'assistant');
+      saveAuth('assistantId', data?.id || username);
+      saveAuth('assistantName', data?.name || 'مساعد');
+      saveAuth('assistantPermissions', JSON.stringify(data?.permissions || {}));
+      saveAuth('teacherClientId', data?.teacherId || '');
+      saveAuth('teacherName', data?.teacherName || 'مدرس');
+      saveAuth('userRole', 'assistant');
       window.location.href = 'assistant-dashboard.html';
       return;
     }
     if (role === 'parent') {
-      sessionStorage.setItem('parentPhone', username);
-      sessionStorage.setItem('parentName', data?.name || 'ولي أمر');
-      sessionStorage.setItem('userRole', 'parent');
+      saveAuth('parentPhone', username);
+      saveAuth('parentName', data?.name || 'ولي أمر');
+      saveAuth('userRole', 'parent');
       window.location.href = 'parent-dashboard.html';
       return;
     }
@@ -521,7 +552,7 @@
       const data = await response.json();
 
       if (data.success) {
-        if (data.token) sessionStorage.setItem('jwtToken', data.token);
+        if (data.token) saveAuth('jwtToken', data.token);
         showMessage(data.message, 'success');
         setTimeout(() => redirectUser(selectedRole, username, data.data, data.forceChange, data.licenseExpired, data.licenseReason, data.contactWhatsapp, data.contactPhone, data.contactAudience), 900);
       } else {
