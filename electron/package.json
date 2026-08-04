@@ -1,35 +1,38 @@
-{
-  "name": "fasli-desktop",
-  "version": "1.0.0",
-  "description": "فَصلي - إدارة الدروس الخصوصية (نسخة سطح المكتب)",
-  "main": "main.js",
-  "author": "فَصلي",
-  "scripts": {
-    "start": "electron .",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:all": "electron-builder -mw"
-  },
-  "devDependencies": {
-    "electron": "^31.0.0",
-    "electron-builder": "^24.13.3"
-  },
-  "build": {
-    "appId": "com.fasli.desktop",
-    "productName": "فَصلي",
-    "directories": { "output": "dist" },
-    "files": ["main.js", "icons/**/*"],
-    "win": {
-      "target": "nsis",
-      "icon": "icons/icon.ico"
+// main.js — نافذة سطح المكتب بتاعة فَصلي (Electron)
+const { app, BrowserWindow } = require('electron');
+const path = require('path');
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 1000,
+    minHeight: 700,
+    icon: path.join(__dirname, 'icons', process.platform === 'win32' ? 'icon.ico' : process.platform === 'darwin' ? 'icon.icns' : 'icon-512.png'),
+    autoHideMenuBar: true, // نخفي شريط القوائم العلوي (File, Edit...) عشان يبان زي برنامج حقيقي
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
     },
-    "mac": {
-      "target": "dmg",
-      "icon": "icons/icon.icns"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
-  }
+  });
+
+  // ✅ مهم: غيّر الرابط ده لموقعك المنشور فعلياً (لازم HTTPS)
+  win.loadURL('https://fasli-eg.github.io/Fasli/login.html');
+
+  // لو عايز تفتح رابط خارجي (زي واتساب) في متصفح النظام بدل نافذة التطبيق
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    require('electron').shell.openExternal(url);
+    return { action: 'deny' };
+  });
 }
+
+app.whenReady().then(() => {
+  createWindow();
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
