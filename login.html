@@ -467,13 +467,17 @@
       alert('🔍 تشخيص: كل حاجة تمام لحد هنا، هطلب الإذن دلوقتي...');
 
       const permStatus = await PushNotifications.checkPermissions();
+      alert('🔍 تشخيص: حالة الإذن الحالية = ' + permStatus.receive);
       let granted = permStatus.receive === 'granted';
       if (!granted) {
+        alert('🔍 تشخيص: هطلب الإذن دلوقتي (المفروض المربع يظهر بعد الرسالة دي على طول)...');
         const req = await PushNotifications.requestPermissions();
+        alert('🔍 تشخيص: نتيجة الطلب = ' + req.receive);
         granted = req.receive === 'granted';
       }
-      if (!granted) return;
+      if (!granted) { alert('🔍 تشخيص: الإذن مش متاح (' + permStatus.receive + ')، مش هنكمل التسجيل'); return; }
 
+      alert('🔍 تشخيص: الإذن اتوافق عليه! هسجّل الجهاز دلوقتي...');
       await PushNotifications.register();
 
       PushNotifications.addListener('registration', async (token) => {
