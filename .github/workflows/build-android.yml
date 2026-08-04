@@ -37,6 +37,24 @@ jobs:
         working-directory: ./mobile
         run: npx cap add android
 
+      - name: Add Firebase (google-services.json) for Push Notifications
+        working-directory: ./mobile
+        run: |
+          if [ -f "google-services.json" ]; then
+            cp google-services.json android/app/google-services.json
+            # نضيف classpath خدمات جوجل لملف build.gradle على مستوى المشروع لو مش موجود بالفعل
+            if ! grep -q "com.google.gms:google-services" android/build.gradle; then
+              sed -i "/classpath 'com.android.tools.build:gradle/a\\        classpath 'com.google.gms:google-services:4.4.2'" android/build.gradle
+            fi
+            # نفعّل الـ plugin على مستوى التطبيق نفسه لو مش مفعّل بالفعل
+            if ! grep -q "com.google.gms.google-services" android/app/build.gradle; then
+              echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+            fi
+            echo "✅ تم ربط Firebase بمشروع الأندرويد"
+          else
+            echo "⚠️ ملف mobile/google-services.json مش موجود - الإشعارات مش هتشتغل في النسخة دي"
+          fi
+
       - name: Generate app icons (لوجو فَصلي بدل الأيقونة الافتراضية)
         working-directory: ./mobile
         run: npx @capacitor/assets generate --android
