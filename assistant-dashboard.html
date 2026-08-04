@@ -439,7 +439,7 @@
     const permissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
 
     if (!assistantId || !teacherClientId) {
-      sessionStorage.clear(); localStorage.clear();
+      sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
       window.location.href = LOGIN_URL;
     }
 
@@ -1310,7 +1310,7 @@
     // ============================================
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear(); localStorage.clear();
+        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
         window.location.href = LOGIN_URL;
       }
     }

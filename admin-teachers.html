@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#14171F">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -325,7 +326,7 @@
     body.dark-mode .modal-box { background: #1C2029; }
     body.dark-mode .modal-header h3 { color: #E8E9EE; }
     body.dark-mode .field-hint { color: #7A8290; }
-    /* ============ القائمة الجانبية ============ */
+    /* ============ القائمة الجانبية (موحّدة مع باقي صفحات النظام) ============ */
     .app-shell { display: flex; min-height: 100vh; }
     .sidebar {
       width: 240px; flex-shrink: 0; background: #14171F; color: #fff;
@@ -348,7 +349,8 @@
     .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
     .sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .sidebar-user .avatar { width: 34px; height: 34px; border-radius: 50%; background: #0F6B4F; color: #fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
-    .sidebar-user .u-name { font-size: 13px; font-weight: 600; color: #fff; }
+    .sidebar-user .u-info { overflow: hidden; }
+    .sidebar-user .u-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sidebar-user .u-role { font-size: 11px; color: rgba(255,255,255,0.5); }
     .sidebar-footer-actions { display: flex; gap: 8px; }
     .sidebar-footer-actions button {
@@ -360,10 +362,10 @@
     .main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .topbar {
       display: flex; align-items: center; justify-content: space-between; padding: 14px 24px;
-      background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 90;
+      background: #F7F8FA; border-bottom: 1px solid #E1E4E9; position: sticky; top: 0; z-index: 90;
     }
-    .topbar h2 { font-size: 17px; font-weight: 700; color: #1a202c; }
-    .sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: #4a5568; cursor: pointer; }
+    .topbar h2 { font-size: 17px; font-weight: 700; color: #14171F; }
+    .sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: #333B47; cursor: pointer; padding: 4px; }
     .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
     .sidebar-backdrop.open { display: block; }
     .sidebar.collapsed { width: 0; overflow: hidden; }
@@ -391,7 +393,7 @@
       <div class="sidebar-footer">
         <div class="sidebar-user">
           <div class="avatar">🛡️</div>
-          <div>
+          <div class="u-info">
             <div class="u-name" id="adminName">مرحباً، المشرف</div>
             <div class="u-role">حساب المشرف</div>
           </div>
@@ -629,42 +631,10 @@
   </div>
 
   <script>
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    function escapeAttr(str) {
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
-
-            // ============================================
+    // ============================================
     // CONFIG
     // ============================================
     const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
-
-    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
-    (function restoreRememberedSession() {
-      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key === 'fasliRememberMe') continue;
-          sessionStorage.setItem(key, localStorage.getItem(key));
-        }
-      }
-    })();
-
     const TOKEN_KEY = 'jwtToken';
     const LOGIN_URL = 'login.html';
 
@@ -1118,13 +1088,14 @@
 
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear(); localStorage.clear();
+        sessionStorage.clear();
         window.location.href = LOGIN_URL;
       }
     }
 
     window.onload = function() {
       loadTeachers();
+      loadAdminProfile();
       setInterval(loadTeachers, 30000);
     };
 
@@ -1172,6 +1143,9 @@
         const result = await response.json();
         if (result.success) {
           document.getElementById('profileName').value = result.data.name || '';
+          if (result.data.name) {
+            document.getElementById('adminName').textContent = '👤 مرحباً، ' + result.data.name;
+          }
         }
       } catch (error) {
         console.error('❌ خطأ في تحميل بيانات المشرف:', error);

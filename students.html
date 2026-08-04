@@ -699,7 +699,7 @@
     }
 
     function logout() {
-      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) { sessionStorage.clear(); localStorage.clear(); window.location.href = LOGIN_URL; }
+      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) { sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.location.href = LOGIN_URL; }
     }
 
     let checkTimeout = null;
@@ -1039,6 +1039,7 @@ async function confirmReset() {
 }
 
     let notifData = [];
+    let lastUnreadCount = 0;
 
 function timeAgo(dateStr) {
       const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -1053,7 +1054,27 @@ function timeAgo(dateStr) {
 
 const NOTIF_ICONS = { bulk_message: '📨' };
 
-async function loadNotifications() {
+    function playNotificationSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [880, 1175].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          const start = now + i * 0.12;
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.18, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.25);
+        });
+      } catch (e) { /* بعض المتصفحات بتمنع الصوت قبل أي تفاعل من المستخدم، نتجاهل بهدوء */ }
+    }
+
+    async function loadNotifications() {
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
@@ -1063,6 +1084,11 @@ async function loadNotifications() {
         if (response.status === 401) return;
         const result = await response.json();
         if (!result.success) return;
+
+        if (result.unreadCount > lastUnreadCount && lastUnreadCount !== undefined) {
+          playNotificationSound();
+        }
+        lastUnreadCount = result.unreadCount;
 
         notifData = result.data || [];
         const badge = document.getElementById('notifBadge');

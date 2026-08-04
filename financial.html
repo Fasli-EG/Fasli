@@ -482,7 +482,7 @@ async function confirmReset() {
 
     function logout() {
       if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-        sessionStorage.clear(); localStorage.clear();
+        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
         window.location.href = LOGIN_URL;
       }
     }
@@ -546,7 +546,7 @@ async function confirmReset() {
 
     window.onload = function() {
       if (!isTokenValid()) {
-        sessionStorage.clear(); localStorage.clear();
+        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
         window.location.href = LOGIN_URL;
         return;
       }
