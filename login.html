@@ -460,9 +460,11 @@
   async function registerPushIfNative() {
     try {
       const Capacitor = window.Capacitor;
-      if (!Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
+      if (!Capacitor) { alert('🔍 تشخيص: Capacitor مش موجود خالص - التطبيق شغّال كموقع عادي مش كتطبيق'); return; }
+      if (!Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) { alert('🔍 تشخيص: Capacitor موجود لكن isNativePlatform() بيرجع false'); return; }
       const PushNotifications = Capacitor.Plugins?.PushNotifications;
-      if (!PushNotifications) return;
+      if (!PushNotifications) { alert('🔍 تشخيص: بلاجن PushNotifications مش موجود في التطبيق'); return; }
+      alert('🔍 تشخيص: كل حاجة تمام لحد هنا، هطلب الإذن دلوقتي...');
 
       const permStatus = await PushNotifications.checkPermissions();
       let granted = permStatus.receive === 'granted';
@@ -485,7 +487,7 @@
           });
         } catch (e) { /* تجاهل - مش أساسي لتسجيل الدخول */ }
       });
-    } catch (e) { /* تجاهل - التطبيق ممكن يكون بيشتغل كموقع عادي مش تطبيق */ }
+    } catch (e) { alert('🔍 تشخيص: حصل استثناء - ' + e.message); }
   }
 
   function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience) {
