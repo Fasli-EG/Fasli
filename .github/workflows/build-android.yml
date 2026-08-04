@@ -65,4 +65,3 @@ jobs:
         with:
           name: fasli-android-apk
           path: mobile/android/app/build/outputs/apk/debug/فصلي.apk
- 
