@@ -1081,6 +1081,35 @@
       window.location.href = isAssistant ? 'assistant-dashboard.html' : 'dashboard.html';
     }
 
+    
+    async function registerPushIfNative() {
+      try {
+        const Capacitor = window.Capacitor;
+        if (!Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
+        const PushNotifications = Capacitor.Plugins?.PushNotifications;
+        if (!PushNotifications) return;
+        const permStatus = await PushNotifications.checkPermissions();
+        let granted = permStatus.receive === 'granted';
+        if (!granted) {
+          const req = await PushNotifications.requestPermissions();
+          granted = req.receive === 'granted';
+        }
+        if (!granted) return;
+        await PushNotifications.register();
+        PushNotifications.addListener('registration', async (token) => {
+          try {
+            const jwt = sessionStorage.getItem('jwtToken');
+            if (!jwt || !token?.value) return;
+            await fetch(PROJECT_URL + '/functions/v1/register-push-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+              body: JSON.stringify({ token: token.value, platform: 'android' })
+            });
+          } catch (e) { /* تجاهل */ }
+        });
+      } catch (e) { /* تجاهل */ }
+    }
+
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
       const backdrop = document.getElementById('sidebarBackdrop');
@@ -1857,6 +1886,7 @@ async function confirmReset() {
 
       loadDashboard();
       loadTodayAttendance();
+      registerPushIfNative();
       setInterval(loadDashboard, 30000);
       setInterval(loadTodayAttendance, 10000);
     };

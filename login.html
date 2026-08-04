@@ -254,7 +254,7 @@
       </div>
 
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#4a5568;cursor:pointer;margin-bottom:4px;">
-        <input type="checkbox" id="rememberMe" style="width:16px;height:16px;cursor:pointer;">
+        <input type="checkbox" id="rememberMe" checked style="width:16px;height:16px;cursor:pointer;">
         تذكرني (متطلبش تسجيل دخول تاني على الجهاز ده)
       </label>
 
@@ -454,7 +454,42 @@
     }
   }
 
+  // ============================================
+  // تسجيل جهاز الموبايل للإشعارات (بس لو التطبيق شغّال كتطبيق حقيقي مش موقع عادي)
+  // ============================================
+  async function registerPushIfNative() {
+    try {
+      const Capacitor = window.Capacitor;
+      if (!Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
+      const PushNotifications = Capacitor.Plugins?.PushNotifications;
+      if (!PushNotifications) return;
+
+      const permStatus = await PushNotifications.checkPermissions();
+      let granted = permStatus.receive === 'granted';
+      if (!granted) {
+        const req = await PushNotifications.requestPermissions();
+        granted = req.receive === 'granted';
+      }
+      if (!granted) return;
+
+      await PushNotifications.register();
+
+      PushNotifications.addListener('registration', async (token) => {
+        try {
+          const jwt = sessionStorage.getItem('jwtToken');
+          if (!jwt || !token?.value) return;
+          await fetch(PROJECT_URL + '/functions/v1/register-push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ token: token.value, platform: 'android' })
+          });
+        } catch (e) { /* تجاهل - مش أساسي لتسجيل الدخول */ }
+      });
+    } catch (e) { /* تجاهل - التطبيق ممكن يكون بيشتغل كموقع عادي مش تطبيق */ }
+  }
+
   function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience) {
+    registerPushIfNative();
     if (forceChange) {
       let redirectUrl = 'change-password.html?';
       if (role === 'teacher') {
