@@ -451,6 +451,13 @@
     if (document.getElementById('rememberMe')?.checked) {
       localStorage.setItem(key, value);
       localStorage.setItem('fasliRememberMe', 'true');
+      // ✅ في التطبيق (Capacitor)، بنحفظ كمان في تخزين النظام الحقيقي (SharedPreferences)
+      // ده بيفضل موجود حتى بعد Force Stop أو إعادة تشغيل الموبايل، عكس تخزين المتصفح العادي
+      const Preferences = window.Capacitor?.Plugins?.Preferences;
+      if (Preferences) {
+        Preferences.set({ key, value }).catch(() => {});
+        Preferences.set({ key: 'fasliRememberMe', value: 'true' }).catch(() => {});
+      }
     }
   }
 
@@ -621,9 +628,32 @@
   }
 
   // ============================================
-  // التحقق من الجلسة عند فتح الصفحة
+  // التحقق من الجلسة عند فتح الصفحة (بما فيها الجلسة المحفوظة "تذكرني")
   // ============================================
-  window.onload = function () {
+  async function restoreAndCheckSession() {
+    // ✅ لو التطبيق (Capacitor) وعنده جلسة محفوظة في التخزين الحقيقي، نسترجعها الأول
+    const Preferences = window.Capacitor?.Plugins?.Preferences;
+    if (Preferences && !sessionStorage.getItem('jwtToken')) {
+      try {
+        const remembered = await Preferences.get({ key: 'fasliRememberMe' });
+        if (remembered?.value === 'true') {
+          const { keys } = await Preferences.keys();
+          for (const key of keys) {
+            const { value } = await Preferences.get({ key });
+            if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
+          }
+        }
+      } catch (e) { /* تجاهل */ }
+    }
+    // ✅ نفس الفكرة لنسخة الموقع العادية (localStorage)
+    if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key === 'fasliRememberMe') continue;
+        sessionStorage.setItem(key, localStorage.getItem(key));
+      }
+    }
+
     if (isTokenValid()) {
       const token = getToken();
       let payload = null;
@@ -643,7 +673,8 @@
         window.location.href = 'parent-dashboard.html'; return;
       }
     }
-  };
+  }
+  window.onload = function () { restoreAndCheckSession(); };
 </script>
   <script>
     if ('serviceWorker' in navigator) {
