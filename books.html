@@ -723,7 +723,7 @@
     function renderSelectedBookStudentsChips() {
       const container = document.getElementById('selectedBookStudentsChips');
       container.innerHTML = selectedBookStudents.map((s, i) => `
-        <span style="display:inline-flex;align-items:center;gap:6px;background:var(--gray-100);border-radius:16px;padding:4px 6px 4px 12px;font-size:12.5px;">
+        <span style="display:inline-flex;align-items:center;gap:6px;background:var(--gray-100);color:var(--gray-800);border-radius:16px;padding:4px 6px 4px 12px;font-size:12.5px;">
           ${escapeHtml(s.name)}
           <button type="button" onclick="removeSelectedBookStudent(${i})" style="background:none;border:none;color:var(--gray-500);cursor:pointer;font-size:14px;line-height:1;padding:2px;">&times;</button>
         </span>

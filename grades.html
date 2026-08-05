@@ -141,12 +141,11 @@
             <input type="number" id="examScore" placeholder="مثال: 45" min="0">
           </div>
           <div class="form-group full field-with-suggestions">
-            <label>البحث عن طالب <span class="required">*</span></label>
+            <label>البحث عن طلاب (تقدر تختار أكتر من طالب لو نفس الدرجة) <span class="required">*</span></label>
             <input type="text" id="studentSearch" placeholder="اكتب اسم الطالب أو UID..." autocomplete="off" oninput="filterStudents()">
-            <input type="hidden" id="selectedStudentUid">
-            <input type="hidden" id="selectedStudentName">
             <div id="suggestions" class="suggestions-box"></div>
-            <span class="hint">💡 ابدأ بكتابة اسم الطالب أو UID للبحث</span>
+            <div id="selectedStudentsChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+            <span class="hint">💡 اختار كل الطلاب اللي هيتسجّل لهم نفس الدرجة في نفس الامتحان</span>
           </div>
         </div>
         <div class="form-actions">
@@ -505,25 +504,43 @@
       }
     }
 
+    let selectedStudents = [];
+
     function filterStudents() {
       const query = document.getElementById('studentSearch').value.trim().toLowerCase();
       const box = document.getElementById('suggestions');
       if (query.length < 1) { box.style.display = 'none'; return; }
-      const matches = allStudents.filter(s => s.name.toLowerCase().includes(query) || s.uid.toLowerCase().includes(query));
+      const selectedUids = new Set(selectedStudents.map(s => s.uid));
+      const matches = allStudents.filter(s => !selectedUids.has(s.uid) && (s.name.toLowerCase().includes(query) || s.uid.toLowerCase().includes(query)));
       if (matches.length === 0) { box.style.display = 'none'; return; }
       box.innerHTML = '';
       matches.forEach(s => {
         const div = document.createElement('div');
         div.innerHTML = `<strong>${escapeHtml(s.name)}</strong> <span class="suggestion-uid">${escapeHtml(s.uid)}</span> <span style="color:var(--gray-400);font-size:12px;">(${escapeHtml(s.group_name)})</span>`;
         div.onclick = () => {
-          document.getElementById('studentSearch').value = s.name;
-          document.getElementById('selectedStudentUid').value = s.uid;
-          document.getElementById('selectedStudentName').value = s.name;
+          selectedStudents.push({ uid: s.uid, name: s.name });
+          document.getElementById('studentSearch').value = '';
           box.style.display = 'none';
+          renderSelectedStudentsChips();
         };
         box.appendChild(div);
       });
       box.style.display = 'block';
+    }
+
+    function renderSelectedStudentsChips() {
+      const container = document.getElementById('selectedStudentsChips');
+      container.innerHTML = selectedStudents.map((s, i) => `
+        <span style="display:inline-flex;align-items:center;gap:6px;background:var(--gray-100);color:var(--gray-800);border-radius:16px;padding:4px 6px 4px 12px;font-size:12.5px;">
+          ${escapeHtml(s.name)}
+          <button type="button" onclick="removeSelectedStudent(${i})" style="background:none;border:none;color:var(--gray-500);cursor:pointer;font-size:14px;line-height:1;padding:2px;">&times;</button>
+        </span>
+      `).join('');
+    }
+
+    function removeSelectedStudent(index) {
+      selectedStudents.splice(index, 1);
+      renderSelectedStudentsChips();
     }
 
     document.addEventListener('click', (e) => {
@@ -542,12 +559,11 @@
         : examNameSelect;
       const maxScore = document.getElementById('examMaxScore').value.trim();
       const score = document.getElementById('examScore').value.trim();
-      const studentUid = document.getElementById('selectedStudentUid').value;
 
       if (!group) { showToast('⚠️ اختر المجموعة', 'warning'); return; }
       if (!examName) { showToast('⚠️ أدخل اسم الامتحان', 'warning'); return; }
       if (!maxScore || isNaN(maxScore) || Number(maxScore) <= 0) { showToast('⚠️ أدخل درجة نهائية صحيحة', 'warning'); return; }
-      if (!studentUid) { showToast('⚠️ اختر طالباً من القائمة', 'warning'); return; }
+      if (selectedStudents.length === 0) { showToast('⚠️ اختر طالب واحد على الأقل', 'warning'); return; }
       if (!score || isNaN(score) || Number(score) < 0) { showToast('⚠️ أدخل درجة الطالب', 'warning'); return; }
       if (Number(score) > Number(maxScore)) { showToast('⚠️ درجة الطالب لا يمكن أن تتجاوز الدرجة النهائية', 'warning'); return; }
 
@@ -560,7 +576,7 @@
           headers: headers,
           body: JSON.stringify({
             clientId,
-            studentUid,
+            studentUids: selectedStudents.map(s => s.uid),
             examName,
             maxScore: Number(maxScore),
             score: Number(score),
@@ -594,8 +610,8 @@
       document.getElementById('examMaxScore').value = '';
       document.getElementById('examScore').value = '';
       document.getElementById('studentSearch').value = '';
-      document.getElementById('selectedStudentUid').value = '';
-      document.getElementById('selectedStudentName').value = '';
+      selectedStudents = [];
+      renderSelectedStudentsChips();
     }
 
     function onExamNameChange() {

@@ -739,7 +739,7 @@ tr:hover td { background: var(--gray-50); }
   top: 100%;
   right: 0;
   left: 0;
-  background: white;
+  background: var(--gray-50);
   border: 1px solid var(--gray-200);
   border-radius: 8px;
   max-height: 200px;
@@ -753,9 +753,10 @@ tr:hover td { background: var(--gray-50); }
   cursor: pointer;
   border-bottom: 1px solid var(--gray-100);
   font-size: 14px;
+  color: var(--gray-800);
   transition: var(--transition);
 }
-.suggestions-box div:hover { background: var(--gray-50); }
+.suggestions-box div:hover { background: var(--gray-100); }
 .suggestions-box .suggestion-uid { color: var(--gray-400); font-size: 12px; margin-right: 8px; }
 .field-with-suggestions { position: relative; }
 
