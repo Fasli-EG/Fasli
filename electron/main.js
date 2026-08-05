@@ -29,7 +29,20 @@ function createWindow() {
   // ✅ إجراء وقائي: نتأكد إن النافذة بتاخد التركيز فعلياً بعد أي تنقل بين الصفحات
   // (زي تسجيل الخروج)، عشان نتفادى أي حالة "تجمّد" ظاهرية في الحقول لو حصلت
   win.webContents.on('did-finish-load', () => {
-    win.focus();
+    // ✅ تأخير بسيط قبل أخذ التركيز، عشان نضمن إن نظام التشغيل خلّص يجهّز النافذة قبل ما نجبرها تاخد التركيز
+    setTimeout(() => {
+      win.show();
+      win.focus();
+      win.webContents.focus();
+      // كمان نجبر أول حقل إدخال في الصفحة ياخد التركيز فعلياً على مستوى الـDOM
+      win.webContents.executeJavaScript(
+        `document.getElementById('username')?.focus();`
+      ).catch(() => {});
+    }, 150);
+  });
+
+  // ✅ حماية إضافية: لو النافذة رجعت تاخد تركيز (من التاسك بار مثلاً)، نتأكد إن حقول الإدخال شغّالة
+  win.on('focus', () => {
     win.webContents.focus();
   });
 
