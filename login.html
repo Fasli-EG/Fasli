@@ -702,12 +702,16 @@
         const remembered = await Preferences.get({ key: 'fasliRememberMe' });
         if (remembered?.value === 'true') {
           const { keys } = await Preferences.keys();
+          const assistantIdRaw = await Preferences.get({ key: 'assistantId' });
+          alert('🔍 تشخيص (استرجاع): المفاتيح = ' + keys.join(', ') + ' || assistantId مباشرة = ' + JSON.stringify(assistantIdRaw));
           for (const key of keys) {
             const { value } = await Preferences.get({ key });
             if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
           }
+        } else {
+          alert('🔍 تشخيص (استرجاع): fasliRememberMe مش true - القيمة = ' + JSON.stringify(remembered));
         }
-      } catch (e) { /* تجاهل */ }
+      } catch (e) { alert('🔍 تشخيص (استرجاع): استثناء - ' + e.message); }
     }
     // ✅ نفس الفكرة بالظبط لتطبيق سطح المكتب (Electron)
     if (window.electronStore && !sessionStorage.getItem('jwtToken')) {
