@@ -499,7 +499,7 @@ async function confirmReset() {
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
       {
-        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
+        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
         window.location.href = LOGIN_URL;
       }
     }
@@ -563,7 +563,7 @@ async function confirmReset() {
 
     window.onload = function() {
       if (!isTokenValid()) {
-        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
+        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
         window.location.href = LOGIN_URL;
         return;
       }

@@ -237,7 +237,7 @@
     const parentName = sessionStorage.getItem('parentName') || 'ولي أمر';
 
     if (!parentPhone) {
-      sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
+      sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
       window.location.href = LOGIN_URL;
     }
 
@@ -407,7 +407,7 @@
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
       {
-        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
+        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
         window.location.href = LOGIN_URL;
       }
     }
@@ -563,6 +563,10 @@
 
         if (result.unreadCount > lastUnreadCount && lastUnreadCount !== undefined) {
           playNotificationSound();
+          // ✅ في تطبيق سطح المكتب، نعرض إشعار نظام حقيقي في درج الإشعارات زي أي برنامج
+          if (window.electronNotify && result.data && result.data[0]) {
+            window.electronNotify.show(result.data[0].title || 'إشعار جديد', result.data[0].message || '').catch(() => {});
+          }
         }
         lastUnreadCount = result.unreadCount;
 

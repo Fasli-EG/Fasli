@@ -466,13 +466,18 @@
     if (document.getElementById('rememberMe')?.checked) {
       localStorage.setItem(key, value);
       localStorage.setItem('fasliRememberMe', 'true');
-      // ✅ في التطبيق (Capacitor)، بنحفظ كمان في تخزين النظام الحقيقي (SharedPreferences)
+      // ✅ في تطبيق الموبايل (Capacitor)، بنحفظ كمان في تخزين النظام الحقيقي (SharedPreferences)
       // ده بيفضل موجود حتى بعد Force Stop أو إعادة تشغيل الموبايل، عكس تخزين المتصفح العادي
       // مهم: لازم نستنى (await) الكتابة دي تخلص فعلياً قبل أي تنقل لصفحة تانية، وإلا ممكن تتقطع نص الطريق
       const Preferences = window.Capacitor?.Plugins?.Preferences;
       if (Preferences) {
         await Preferences.set({ key, value }).catch(() => {});
         await Preferences.set({ key: 'fasliRememberMe', value: 'true' }).catch(() => {});
+      }
+      // ✅ نفس الفكرة بالظبط لتطبيق سطح المكتب (Electron) — تخزين حقيقي على القرص، مش تخزين متصفح
+      if (window.electronStore) {
+        await window.electronStore.set(key, value).catch(() => {});
+        await window.electronStore.set('fasliRememberMe', 'true').catch(() => {});
       }
     }
   }
@@ -699,6 +704,19 @@
           const { keys } = await Preferences.keys();
           for (const key of keys) {
             const { value } = await Preferences.get({ key });
+            if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
+          }
+        }
+      } catch (e) { /* تجاهل */ }
+    }
+    // ✅ نفس الفكرة بالظبط لتطبيق سطح المكتب (Electron)
+    if (window.electronStore && !sessionStorage.getItem('jwtToken')) {
+      try {
+        const remembered = await window.electronStore.get('fasliRememberMe');
+        if (remembered === 'true') {
+          const keys = await window.electronStore.keys();
+          for (const key of keys) {
+            const value = await window.electronStore.get(key);
             if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
           }
         }
