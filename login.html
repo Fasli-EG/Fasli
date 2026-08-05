@@ -461,17 +461,18 @@
   // ============================================
   // توجيه المستخدم حسب صلاحياته
   // ============================================
-  function saveAuth(key, value) {
+  async function saveAuth(key, value) {
     sessionStorage.setItem(key, value);
     if (document.getElementById('rememberMe')?.checked) {
       localStorage.setItem(key, value);
       localStorage.setItem('fasliRememberMe', 'true');
       // ✅ في التطبيق (Capacitor)، بنحفظ كمان في تخزين النظام الحقيقي (SharedPreferences)
       // ده بيفضل موجود حتى بعد Force Stop أو إعادة تشغيل الموبايل، عكس تخزين المتصفح العادي
+      // مهم: لازم نستنى (await) الكتابة دي تخلص فعلياً قبل أي تنقل لصفحة تانية، وإلا ممكن تتقطع نص الطريق
       const Preferences = window.Capacitor?.Plugins?.Preferences;
       if (Preferences) {
-        Preferences.set({ key, value }).catch(() => {});
-        Preferences.set({ key: 'fasliRememberMe', value: 'true' }).catch(() => {});
+        await Preferences.set({ key, value }).catch(() => {});
+        await Preferences.set({ key: 'fasliRememberMe', value: 'true' }).catch(() => {});
       }
     }
   }
@@ -556,7 +557,7 @@
     } catch (e) { /* تجاهل */ }
   }
 
-  function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience) {
+  async function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience) {
     // ملحوظة: تسجيل جهاز الإشعارات بيحصل في صفحة اللوحة نفسها بعد التنقل (dashboard.html/assistant-dashboard.html/parent-dashboard.html)
     // مش هنا، لأن الصفحة دي هتتنقل فوراً وأي كود async هنا ممكن ينقطع نص الطريق قبل ما يخلص
     if (forceChange) {
@@ -585,35 +586,37 @@
       return;
     }
 
+    // ✅ مهم جداً: كل استدعاءات saveAuth هنا لازم تُستنى (await) بالترتيب قبل أي تنقل،
+    // لأن الكتابة في التخزين الدائم (Preferences) عملية async، ولو الصفحة اتنقلت قبل ما تخلص، البيانات ممكن تضيع جزئياً
     if (role === 'teacher' && username === 'master_admin') {
-      saveAuth('clientId', username);
-      saveAuth('teacherName', 'المشرف الرئيسي');
-      saveAuth('isAdmin', 'true');
+      await saveAuth('clientId', username);
+      await saveAuth('teacherName', 'المشرف الرئيسي');
+      await saveAuth('isAdmin', 'true');
       window.location.href = 'admin-teachers.html';
       return;
     }
     if (role === 'teacher') {
-      saveAuth('clientId', username);
-      saveAuth('teacherName', data?.name || 'مدرس');
-      saveAuth('isAdmin', 'false');
-      saveAuth('userRole', 'teacher');
+      await saveAuth('clientId', username);
+      await saveAuth('teacherName', data?.name || 'مدرس');
+      await saveAuth('isAdmin', 'false');
+      await saveAuth('userRole', 'teacher');
       window.location.href = 'dashboard.html';
       return;
     }
     if (role === 'assistant') {
-      saveAuth('assistantId', data?.id || username);
-      saveAuth('assistantName', data?.name || 'مساعد');
-      saveAuth('assistantPermissions', JSON.stringify(data?.permissions || {}));
-      saveAuth('teacherClientId', data?.teacherId || '');
-      saveAuth('teacherName', data?.teacherName || 'مدرس');
-      saveAuth('userRole', 'assistant');
+      await saveAuth('assistantId', data?.id || username);
+      await saveAuth('assistantName', data?.name || 'مساعد');
+      await saveAuth('assistantPermissions', JSON.stringify(data?.permissions || {}));
+      await saveAuth('teacherClientId', data?.teacherId || '');
+      await saveAuth('teacherName', data?.teacherName || 'مدرس');
+      await saveAuth('userRole', 'assistant');
       window.location.href = 'assistant-dashboard.html';
       return;
     }
     if (role === 'parent') {
-      saveAuth('parentPhone', username);
-      saveAuth('parentName', data?.name || 'ولي أمر');
-      saveAuth('userRole', 'parent');
+      await saveAuth('parentPhone', username);
+      await saveAuth('parentName', data?.name || 'ولي أمر');
+      await saveAuth('userRole', 'parent');
       window.location.href = 'parent-dashboard.html';
       return;
     }
@@ -689,21 +692,17 @@
   async function restoreAndCheckSession() {
     // ✅ لو التطبيق (Capacitor) وعنده جلسة محفوظة في التخزين الحقيقي، نسترجعها الأول
     const Preferences = window.Capacitor?.Plugins?.Preferences;
-    alert('🔍 تشخيص: Preferences = ' + (Preferences ? 'موجود' : 'مش موجود') + ' | jwtToken حالياً = ' + (sessionStorage.getItem('jwtToken') ? 'موجود' : 'فاضي'));
     if (Preferences && !sessionStorage.getItem('jwtToken')) {
       try {
         const remembered = await Preferences.get({ key: 'fasliRememberMe' });
-        alert('🔍 تشخيص: fasliRememberMe في التخزين الدائم = ' + JSON.stringify(remembered));
         if (remembered?.value === 'true') {
           const { keys } = await Preferences.keys();
-          alert('🔍 تشخيص: عدد المفاتيح المخزنة = ' + keys.length + ' | ' + keys.join(', '));
           for (const key of keys) {
             const { value } = await Preferences.get({ key });
             if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
           }
-          alert('🔍 تشخيص: بعد الاسترجاع، jwtToken = ' + (sessionStorage.getItem('jwtToken') ? 'موجود' : 'لسه فاضي'));
         }
-      } catch (e) { alert('🔍 تشخيص: حصل استثناء أثناء الاسترجاع - ' + e.message); }
+      } catch (e) { /* تجاهل */ }
     }
     // ✅ نفس الفكرة لنسخة الموقع العادية (localStorage)
     if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
@@ -714,7 +713,6 @@
       }
     }
 
-    alert('🔍 تشخيص: isTokenValid() = ' + isTokenValid());
     if (isTokenValid()) {
       const token = getToken();
       let payload = null;
