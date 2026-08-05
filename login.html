@@ -462,6 +462,9 @@
   // توجيه المستخدم حسب صلاحياته
   // ============================================
   async function saveAuth(key, value) {
+    // ✅ مهم جداً: نضمن إن القيمة نص دايماً — Preferences.set() في التطبيق بيرفض القيم الرقمية بصمت
+    // من غير أي خطأ ظاهر، فأي رقم (زي ID من قاعدة البيانات) لازم يتحول لنص هنا قبل أي حفظ
+    value = String(value);
     sessionStorage.setItem(key, value);
     if (document.getElementById('rememberMe')?.checked) {
       localStorage.setItem(key, value);
@@ -609,7 +612,7 @@
       return;
     }
     if (role === 'assistant') {
-      await saveAuth('assistantId', data?.id || username);
+      await saveAuth('assistantId', String(data?.id || username));
       await saveAuth('assistantName', data?.name || 'مساعد');
       await saveAuth('assistantPermissions', JSON.stringify(data?.permissions || {}));
       await saveAuth('teacherClientId', data?.teacherId || '');
@@ -702,16 +705,12 @@
         const remembered = await Preferences.get({ key: 'fasliRememberMe' });
         if (remembered?.value === 'true') {
           const { keys } = await Preferences.keys();
-          const assistantIdRaw = await Preferences.get({ key: 'assistantId' });
-          alert('🔍 تشخيص (استرجاع): المفاتيح = ' + keys.join(', ') + ' || assistantId مباشرة = ' + JSON.stringify(assistantIdRaw));
           for (const key of keys) {
             const { value } = await Preferences.get({ key });
             if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
           }
-        } else {
-          alert('🔍 تشخيص (استرجاع): fasliRememberMe مش true - القيمة = ' + JSON.stringify(remembered));
         }
-      } catch (e) { alert('🔍 تشخيص (استرجاع): استثناء - ' + e.message); }
+      } catch (e) { /* تجاهل */ }
     }
     // ✅ نفس الفكرة بالظبط لتطبيق سطح المكتب (Electron)
     if (window.electronStore && !sessionStorage.getItem('jwtToken')) {
@@ -744,8 +743,6 @@
       const clientId = payload?.clientId || sessionStorage.getItem('clientId');
       const assistantId = sessionStorage.getItem('assistantId');
       const parentPhone = sessionStorage.getItem('parentPhone');
-
-      alert('🔍 تشخيص (صفحة الدخول): role=' + role + ' | assistantId=' + assistantId + ' | clientId=' + clientId);
 
       if (role === 'teacher') {
         if (clientId === 'master_admin') { window.location.href = 'admin-teachers.html'; return; }

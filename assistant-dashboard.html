@@ -438,8 +438,6 @@
     const teacherName = sessionStorage.getItem('teacherName') || 'مدرس';
     const permissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
 
-    alert('🔍 تشخيص (صفحة المساعد): assistantId=' + assistantId + ' | teacherClientId=' + teacherClientId + ' | jwtToken=' + (sessionStorage.getItem('jwtToken') ? 'موجود' : 'فاضي'));
-
     if (!assistantId || !teacherClientId) {
       sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
       window.location.href = LOGIN_URL;
