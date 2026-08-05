@@ -725,7 +725,17 @@
       }
     }
   }
-  window.onload = function () { restoreAndCheckSession(); };
+  window.onload = function () {
+    // ✅ إجراء وقائي: نتأكد إن أي نافذة منبثقة (زي ديالوج الإشعارات) مقفولة، وإن حقول الفورم شغّالة
+    // فعلياً، عشان نمنع أي حالة "تجمّد" لو حصل أي تعليق في حالة الصفحة القديمة (خصوصاً في تطبيق سطح المكتب)
+    const dlg = document.getElementById('permissionDialog');
+    if (dlg) dlg.style.display = 'none';
+    ['username', 'password'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) { el.disabled = false; el.readOnly = false; }
+    });
+    restoreAndCheckSession();
+  };
 </script>
   <script>
     if ('serviceWorker' in navigator) {
