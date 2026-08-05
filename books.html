@@ -155,12 +155,11 @@
             </select>
           </div>
           <div class="form-group full field-with-suggestions">
-            <label>البحث عن طالب <span class="required">*</span></label>
+            <label>البحث عن طلاب (تقدر تختار أكتر من طالب) <span class="required">*</span></label>
             <input type="text" id="bookStudentSearch" placeholder="اكتب اسم الطالب أو UID..." autocomplete="off" oninput="filterBookStudents()">
-            <input type="hidden" id="bookSelectedUid">
-            <input type="hidden" id="bookSelectedName">
             <div id="bookSuggestions" class="suggestions-box"></div>
-            <span class="hint">💡 ابدأ بكتابة اسم الطالب أو UID للبحث</span>
+            <div id="selectedBookStudentsChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+            <span class="hint">💡 اختار كل الطلاب اللي هيدفعوا نفس المذكرة بنفس المبلغ، وهيتسجّلوا كلهم دفعة واحدة</span>
           </div>
           <div class="form-group full">
             <label>المبلغ المدفوع الآن (ج.م) <span class="required">*</span></label>
@@ -697,25 +696,43 @@
       } catch (error) { console.error('❌ خطأ في تحميل الطلاب:', error); }
     }
 
+    let selectedBookStudents = [];
+
     function filterBookStudents() {
       const query = document.getElementById('bookStudentSearch').value.trim().toLowerCase();
       const box = document.getElementById('bookSuggestions');
       if (query.length < 1) { box.style.display = 'none'; return; }
-      const matches = bookStudentsList.filter(s => s.name.toLowerCase().includes(query) || s.uid.toLowerCase().includes(query));
+      const selectedUids = new Set(selectedBookStudents.map(s => s.uid));
+      const matches = bookStudentsList.filter(s => !selectedUids.has(s.uid) && (s.name.toLowerCase().includes(query) || s.uid.toLowerCase().includes(query)));
       if (matches.length === 0) { box.style.display = 'none'; return; }
       box.innerHTML = '';
       matches.forEach(s => {
         const div = document.createElement('div');
         div.innerHTML = '<strong>' + escapeHtml(s.name) + '</strong> <span class="suggestion-uid">' + escapeHtml(s.uid) + '</span> <span style="color:var(--gray-400);font-size:12px;">(' + escapeHtml(s.group_name) + ')</span>';
         div.onclick = function() {
-          document.getElementById('bookStudentSearch').value = s.name;
-          document.getElementById('bookSelectedUid').value = s.uid;
-          document.getElementById('bookSelectedName').value = s.name;
+          selectedBookStudents.push({ uid: s.uid, name: s.name });
+          document.getElementById('bookStudentSearch').value = '';
           box.style.display = 'none';
+          renderSelectedBookStudentsChips();
         };
         box.appendChild(div);
       });
       box.style.display = 'block';
+    }
+
+    function renderSelectedBookStudentsChips() {
+      const container = document.getElementById('selectedBookStudentsChips');
+      container.innerHTML = selectedBookStudents.map((s, i) => `
+        <span style="display:inline-flex;align-items:center;gap:6px;background:var(--gray-100);border-radius:16px;padding:4px 6px 4px 12px;font-size:12.5px;">
+          ${escapeHtml(s.name)}
+          <button type="button" onclick="removeSelectedBookStudent(${i})" style="background:none;border:none;color:var(--gray-500);cursor:pointer;font-size:14px;line-height:1;padding:2px;">&times;</button>
+        </span>
+      `).join('');
+    }
+
+    function removeSelectedBookStudent(index) {
+      selectedBookStudents.splice(index, 1);
+      renderSelectedBookStudentsChips();
     }
 
     document.addEventListener('click', function(e) {
@@ -727,13 +744,11 @@
     async function submitBookPayment() {
       const group = document.getElementById('bookGroup').value;
       const bookId = document.getElementById('bookSelect').value;
-      const studentUid = document.getElementById('bookSelectedUid').value;
-      const studentName = document.getElementById('bookSelectedName').value;
       const paymentAmount = document.getElementById('bookPaymentAmount').value.trim();
 
       if (!group) { showToast('⚠️ اختر المجموعة', 'warning'); return; }
       if (!bookId) { showToast('⚠️ اختر المذكرة', 'warning'); return; }
-      if (!studentUid) { showToast('⚠️ اختر طالباً من القائمة', 'warning'); return; }
+      if (selectedBookStudents.length === 0) { showToast('⚠️ اختر طالب واحد على الأقل', 'warning'); return; }
       if (!paymentAmount || isNaN(paymentAmount) || Number(paymentAmount) <= 0) {
         showToast('⚠️ أدخل مبلغاً صحيحاً أكبر من صفر', 'warning');
         return;
@@ -741,36 +756,9 @@
 
       const amount = Number(paymentAmount);
       const price = bookPrices[bookId];
-
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-
-        const checkResponse = await fetch(PROJECT_URL + '/functions/v1/get-book-payment', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify({ teacherId: clientId, bookId: bookId, studentUid: studentUid })
-        });
-
-        if (checkResponse.status === 401) {
-          handleUnauthorized('انتهت صلاحية الجلسة');
-          return;
-        }
-
-        const checkResult = await checkResponse.json();
-        const totalPaid = checkResult.data?.amount || 0;
-
-        if (totalPaid > 0) {
-          showToast(`⚠️ ${studentName} سبق أن دفع هذه المذكرة من قبل (${totalPaid} ج.م) — لا يمكن تسجيل دفعة أخرى لنفس المذكرة`, 'warning');
-          return;
-        }
-
-        if (price && amount > price) {
-          showToast(`⚠️ المبلغ (${amount} ج.م) يتجاوز سعر المذكرة (${price} ج.م)`, 'warning');
-          return;
-        }
-      } catch (error) {
-        console.error('❌ خطأ في التحقق من الدفعة:', error);
+      if (price && amount > price) {
+        showToast(`⚠️ المبلغ (${amount} ج.م) يتجاوز سعر المذكرة (${price} ج.م)`, 'warning');
+        return;
       }
 
       try {
@@ -783,7 +771,7 @@
           body: JSON.stringify({
             teacherId: clientId,
             bookId: bookId,
-            studentUid: studentUid,
+            studentUids: selectedBookStudents.map(s => s.uid),
             amount: amount,
             assistantId: assistantId,
             assistantName: assistantName
@@ -799,8 +787,8 @@
         if (result.success) {
           showToast('✅ ' + result.message, 'success');
           document.getElementById('bookStudentSearch').value = '';
-          document.getElementById('bookSelectedUid').value = '';
-          document.getElementById('bookSelectedName').value = '';
+          selectedBookStudents = [];
+          renderSelectedBookStudentsChips();
           document.getElementById('bookPaymentAmount').value = '';
           loadBookStatus();
         } else {

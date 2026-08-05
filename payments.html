@@ -146,12 +146,11 @@
             <span class="hint">💡 إذا كان المبلغ = المبلغ الكامل، يعتبر مدفوع بالكامل</span>
           </div>
           <div class="form-group full field-with-suggestions">
-            <label>البحث عن طالب <span class="required">*</span></label>
+            <label>البحث عن طلاب (تقدر تختار أكتر من طالب) <span class="required">*</span></label>
             <input type="text" id="studentSearch" placeholder="اكتب اسم الطالب أو UID..." autocomplete="off" oninput="filterStudents()">
-            <input type="hidden" id="selectedStudentUid">
-            <input type="hidden" id="selectedStudentName">
             <div id="suggestions" class="suggestions-box"></div>
-            <span class="hint">💡 ابدأ بكتابة اسم الطالب أو UID للبحث</span>
+            <div id="selectedStudentsChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+            <span class="hint">💡 اختار كل الطلاب اللي هيدفعوا نفس البند بنفس المبلغ، وهيتسجّلوا كلهم دفعة واحدة</span>
           </div>
         </div>
         <div class="form-actions" id="formActions">
@@ -515,25 +514,43 @@
       }
     }
 
+    let selectedStudents = [];
+
     function filterStudents() {
       const query = document.getElementById('studentSearch').value.trim().toLowerCase();
       const box = document.getElementById('suggestions');
       if (query.length < 1) { box.style.display = 'none'; return; }
-      const matches = allStudents.filter(s => s.name.toLowerCase().includes(query) || s.uid.toLowerCase().includes(query));
+      const selectedUids = new Set(selectedStudents.map(s => s.uid));
+      const matches = allStudents.filter(s => !selectedUids.has(s.uid) && (s.name.toLowerCase().includes(query) || s.uid.toLowerCase().includes(query)));
       if (matches.length === 0) { box.style.display = 'none'; return; }
       box.innerHTML = '';
       matches.forEach(s => {
         const div = document.createElement('div');
         div.innerHTML = `<strong>${escapeHtml(s.name)}</strong> <span class="suggestion-uid">${escapeHtml(s.uid)}</span> <span style="color:var(--gray-400);font-size:12px;">(${escapeHtml(s.group_name)})</span>`;
         div.onclick = () => {
-          document.getElementById('studentSearch').value = s.name;
-          document.getElementById('selectedStudentUid').value = s.uid;
-          document.getElementById('selectedStudentName').value = s.name;
+          selectedStudents.push({ uid: s.uid, name: s.name });
+          document.getElementById('studentSearch').value = '';
           box.style.display = 'none';
+          renderSelectedStudentsChips();
         };
         box.appendChild(div);
       });
       box.style.display = 'block';
+    }
+
+    function renderSelectedStudentsChips() {
+      const container = document.getElementById('selectedStudentsChips');
+      container.innerHTML = selectedStudents.map((s, i) => `
+        <span style="display:inline-flex;align-items:center;gap:6px;background:var(--gray-100);border-radius:16px;padding:4px 6px 4px 12px;font-size:12.5px;">
+          ${escapeHtml(s.name)}
+          <button type="button" onclick="removeSelectedStudent(${i})" style="background:none;border:none;color:var(--gray-500);cursor:pointer;font-size:14px;line-height:1;padding:2px;">&times;</button>
+        </span>
+      `).join('');
+    }
+
+    function removeSelectedStudent(index) {
+      selectedStudents.splice(index, 1);
+      renderSelectedStudentsChips();
     }
 
     document.addEventListener('click', (e) => {
@@ -551,12 +568,11 @@
         : titleSelect;
       const total = document.getElementById('paymentTotal').value.trim();
       const amount = document.getElementById('paymentAmount').value.trim();
-      const studentUid = document.getElementById('selectedStudentUid').value;
 
       if (!group) { showToast('⚠️ اختر المجموعة', 'warning'); return; }
       if (!title) { showToast('⚠️ أدخل بند السداد', 'warning'); return; }
       if (!total || isNaN(total) || Number(total) <= 0) { showToast('⚠️ أدخل المبلغ الكامل', 'warning'); return; }
-      if (!studentUid) { showToast('⚠️ اختر طالباً من القائمة', 'warning'); return; }
+      if (selectedStudents.length === 0) { showToast('⚠️ اختر طالب واحد على الأقل', 'warning'); return; }
       if (!amount || isNaN(amount) || Number(amount) < 0) { showToast('⚠️ أدخل المبلغ المدفوع', 'warning'); return; }
       if (Number(amount) > Number(total)) { showToast('⚠️ المبلغ المدفوع لا يمكن أن يتجاوز المبلغ الكامل', 'warning'); return; }
 
@@ -569,7 +585,7 @@
           headers: headers,
           body: JSON.stringify({
             clientId,
-            studentUid,
+            studentUids: selectedStudents.map(s => s.uid),
             title,
             totalAmount: Number(total),
             amount: Number(amount),
@@ -597,9 +613,19 @@
     }
 
     function onPaymentTitleChange() {
-      const isNew = document.getElementById('paymentTitle').value === '__new__';
+      const select = document.getElementById('paymentTitle');
+      const isNew = select.value === '__new__';
       document.getElementById('paymentTitleNew').style.display = isNew ? 'block' : 'none';
-      if (isNew) document.getElementById('paymentTitleNew').focus();
+      if (isNew) {
+        document.getElementById('paymentTitleNew').focus();
+      } else {
+        const selectedOption = select.options[select.selectedIndex];
+        const defaultAmount = selectedOption?.dataset?.defaultAmount;
+        if (defaultAmount) {
+          document.getElementById('paymentTotal').value = defaultAmount;
+          showToast('💡 اتعبّى المبلغ الكامل تلقائياً (' + defaultAmount + ' ج.م) — تقدر تعدّله لو حابب', 'success');
+        }
+      }
     }
 
     async function loadPaymentTitles() {
@@ -617,7 +643,8 @@
         if (result.success) {
           (result.data || []).forEach(t => {
             const opt = document.createElement('option');
-            opt.value = t; opt.textContent = t;
+            opt.value = t.title; opt.textContent = t.title;
+            if (t.defaultAmount) opt.dataset.defaultAmount = t.defaultAmount;
             select.appendChild(opt);
           });
         }
@@ -634,8 +661,8 @@
       document.getElementById('paymentTotal').value = '';
       document.getElementById('paymentAmount').value = '';
       document.getElementById('studentSearch').value = '';
-      document.getElementById('selectedStudentUid').value = '';
-      document.getElementById('selectedStudentName').value = '';
+      selectedStudents = [];
+      renderSelectedStudentsChips();
     }
 
     async function loadPayments() {

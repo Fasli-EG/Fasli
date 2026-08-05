@@ -599,9 +599,19 @@
     }
 
     function onExamNameChange() {
-      const isNew = document.getElementById('examName').value === '__new__';
+      const select = document.getElementById('examName');
+      const isNew = select.value === '__new__';
       document.getElementById('examNameNew').style.display = isNew ? 'block' : 'none';
-      if (isNew) document.getElementById('examNameNew').focus();
+      if (isNew) {
+        document.getElementById('examNameNew').focus();
+      } else {
+        const selectedOption = select.options[select.selectedIndex];
+        const defaultMaxScore = selectedOption?.dataset?.defaultMaxScore;
+        if (defaultMaxScore) {
+          document.getElementById('examMaxScore').value = defaultMaxScore;
+          showToast('💡 اتعبّت الدرجة النهائية تلقائياً (' + defaultMaxScore + ') — تقدر تعدّلها لو حابب', 'success');
+        }
+      }
     }
 
     async function loadExamNames() {
@@ -619,7 +629,8 @@
         if (result.success) {
           (result.data || []).forEach(t => {
             const opt = document.createElement('option');
-            opt.value = t; opt.textContent = t;
+            opt.value = t.title; opt.textContent = t.title;
+            if (t.defaultMaxScore) opt.dataset.defaultMaxScore = t.defaultMaxScore;
             select.appendChild(opt);
           });
         }
