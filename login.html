@@ -689,17 +689,21 @@
   async function restoreAndCheckSession() {
     // ✅ لو التطبيق (Capacitor) وعنده جلسة محفوظة في التخزين الحقيقي، نسترجعها الأول
     const Preferences = window.Capacitor?.Plugins?.Preferences;
+    alert('🔍 تشخيص: Preferences = ' + (Preferences ? 'موجود' : 'مش موجود') + ' | jwtToken حالياً = ' + (sessionStorage.getItem('jwtToken') ? 'موجود' : 'فاضي'));
     if (Preferences && !sessionStorage.getItem('jwtToken')) {
       try {
         const remembered = await Preferences.get({ key: 'fasliRememberMe' });
+        alert('🔍 تشخيص: fasliRememberMe في التخزين الدائم = ' + JSON.stringify(remembered));
         if (remembered?.value === 'true') {
           const { keys } = await Preferences.keys();
+          alert('🔍 تشخيص: عدد المفاتيح المخزنة = ' + keys.length + ' | ' + keys.join(', '));
           for (const key of keys) {
             const { value } = await Preferences.get({ key });
             if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
           }
+          alert('🔍 تشخيص: بعد الاسترجاع، jwtToken = ' + (sessionStorage.getItem('jwtToken') ? 'موجود' : 'لسه فاضي'));
         }
-      } catch (e) { /* تجاهل */ }
+      } catch (e) { alert('🔍 تشخيص: حصل استثناء أثناء الاسترجاع - ' + e.message); }
     }
     // ✅ نفس الفكرة لنسخة الموقع العادية (localStorage)
     if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
@@ -710,6 +714,7 @@
       }
     }
 
+    alert('🔍 تشخيص: isTokenValid() = ' + isTokenValid());
     if (isTokenValid()) {
       const token = getToken();
       let payload = null;
