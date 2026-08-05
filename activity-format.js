@@ -9,15 +9,18 @@ const ACTIVITY_LABELS = {
   transfer_student: { text: 'نقل طالب لمجموعة تانية', badge: 'badge-warning' },
   delete_student: { text: 'حذف طالب', badge: 'badge-danger' },
   add_grade: { text: 'رصد درجة', badge: 'badge-primary' },
+  bulk_add_grade: { text: 'رصد درجة لعدة طلاب', badge: 'badge-primary' },
   edit_grade: { text: 'عدّل درجة', badge: 'badge-warning' },
   delete_grade: { text: 'حذف درجة', badge: 'badge-danger' },
   add_payment: { text: 'سجّل دفعة', badge: 'badge-success' },
+  bulk_add_payment: { text: 'سجّل دفعة لعدة طلاب', badge: 'badge-success' },
   edit_payment: { text: 'عدّل دفعة', badge: 'badge-warning' },
   delete_payment: { text: 'حذف دفعة', badge: 'badge-danger' },
   add_book: { text: 'أضاف مذكرة', badge: 'badge-primary' },
   edit_book: { text: 'عدّل مذكرة', badge: 'badge-warning' },
   delete_book: { text: 'حذف مذكرة', badge: 'badge-danger' },
   pay_book: { text: 'سجّل سداد مذكرة', badge: 'badge-success' },
+  bulk_pay_book: { text: 'سجّل سداد مذكرة لعدة طلاب', badge: 'badge-success' },
   update_book_payment: { text: 'عدّل سداد مذكرة', badge: 'badge-warning' },
   delete_book_payment: { text: 'حذف سداد مذكرة', badge: 'badge-danger' },
   record_attendance: { text: 'سجّل حضور', badge: 'badge-info' },
@@ -167,6 +170,16 @@ function formatActivity(log) {
         parts.push(`الدرجة: ${det.score}/${det.max_score}`);
       }
       break;
+    case 'bulk_add_grade': {
+      if (det.exam_name) parts.push(`الامتحان: ${det.exam_name}`);
+      if (det.score !== undefined && det.max_score !== undefined) parts.push(`الدرجة: ${det.score}/${det.max_score}`);
+      if (det.count) parts.push(`عدد الطلاب: ${det.count}`);
+      if (Array.isArray(det.students)) {
+        const names = det.students.map((s) => escapeHtml(s.name)).join('، ');
+        parts.push(`الطلاب: ${names}`);
+      }
+      break;
+    }
     case 'add_payment':
     case 'edit_payment':
     case 'delete_payment':
@@ -174,6 +187,16 @@ function formatActivity(log) {
       if (det.title) parts.push(`البند: ${det.title}`);
       if (log.action_type !== 'edit_payment' && det.amount !== undefined) parts.push(`المبلغ: ${det.amount} ج.م`);
       break;
+    case 'bulk_add_payment': {
+      if (det.title) parts.push(`البند: ${det.title}`);
+      if (det.amount !== undefined) parts.push(`المبلغ: ${det.amount} ج.م`);
+      if (det.count) parts.push(`عدد الطلاب: ${det.count}`);
+      if (Array.isArray(det.students)) {
+        const names = det.students.map((s) => escapeHtml(s.name)).join('، ');
+        parts.push(`الطلاب: ${names}`);
+      }
+      break;
+    }
     case 'add_book':
     case 'edit_book':
     case 'delete_book':
@@ -188,6 +211,15 @@ function formatActivity(log) {
       if (det.new_amount !== undefined) parts.push(`المبلغ: ${det.new_amount} ج.م`);
       else if (det.amount_paid_now !== undefined) parts.push(`المبلغ: ${det.amount_paid_now} ج.م`);
       break;
+    case 'bulk_pay_book': {
+      if (det.book_name) parts.push(`المذكرة: ${det.book_name}`);
+      if (det.count) parts.push(`عدد الطلاب: ${det.count}`);
+      if (Array.isArray(det.students)) {
+        const names = det.students.map((s) => `${escapeHtml(s.name)} (${s.amount} ج.م)`).join('، ');
+        parts.push(`الطلاب: ${names}`);
+      }
+      break;
+    }
     case 'record_attendance':
       if (det.student_name) parts.push(`الطالب: ${det.student_name}`);
       if (det.status) parts.push(`الحالة: ${det.status === 'present' ? 'حاضر' : 'غائب'}`);
