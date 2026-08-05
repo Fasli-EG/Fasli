@@ -15,7 +15,7 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 700,
     icon: path.join(__dirname, 'icons', process.platform === 'win32' ? 'icon.ico' : process.platform === 'darwin' ? 'icon.icns' : 'icon-512.png'),
-    autoHideMenuBar: true, // نخفي شريط القوائم العلوي (File, Edit...) عشان يبان زي برنامج حقيقي
+    autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -23,53 +23,20 @@ function createWindow() {
     },
   });
 
-  // ✅ مهم: غيّر الرابط ده لموقعك المنشور فعلياً (لازم HTTPS)
   win.loadURL('https://fasli-eg.github.io/Fasli/login.html');
 
-  // لو عايز تفتح رابط خارجي (زي واتساب) في متصفح النظام بدل نافذة التطبيق
   win.webContents.setWindowOpenHandler(({ url }) => {
     require('electron').shell.openExternal(url);
     return { action: 'deny' };
   });
 }
 
-// ============================================
-// السماح بالاتصال بالبورت التسلسلي (USB Serial) — عشان توصيل بورد قارئ الكروت (ESP32) يشتغل
-// المتصفح العادي بيعرض نافذة اختيار البورت تلقائي، لكن Electron محتاج تفعيل يدوي زي ده
-// ============================================
-session.defaultSession.on('select-serial-port', (event, portList, webContents, callback) => {
-  event.preventDefault();
-  if (portList.length === 0) {
-    callback(''); // مفيش أي بورت متاح خالص
-    return;
-  }
-  // لو فيه بورت واحد بس متصل (الحالة الشائعة)، نختاره تلقائياً من غير ما نزعج المستخدم
-  // لو أكتر من واحد، بناخد الأول (تقدر تعدّلها لاحقاً لعرض قائمة اختيار حقيقية لو احتجت)
-  callback(portList[0].portId);
-});
-
-session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
-  if (permission === 'serial') return true;
-  return false;
-});
-
-session.defaultSession.setDevicePermissionHandler((details) => {
-  if (details.deviceType === 'serial') return true;
-  return false;
-});
-
-// ============================================
-// تخزين دائم حقيقي (زي SharedPreferences بتاعة أندرويد) — بيفضل موجود حتى بعد إغلاق البرنامج بالكامل
-// ============================================
 ipcMain.handle('store:get', (event, key) => store.get(key) ?? null);
 ipcMain.handle('store:set', (event, key, value) => { store.set(key, value); return true; });
 ipcMain.handle('store:remove', (event, key) => { store.delete(key); return true; });
 ipcMain.handle('store:clear', () => { store.clear(); return true; });
 ipcMain.handle('store:keys', () => Object.keys(store.store));
 
-// ============================================
-// إشعارات نظام حقيقية (بتظهر في درج إشعارات ويندوز/ماك زي أي برنامج تاني)
-// ============================================
 ipcMain.handle('notify:isSupported', () => Notification.isSupported());
 ipcMain.handle('notify:show', (event, title, body) => {
   if (!Notification.isSupported()) return false;
@@ -80,6 +47,25 @@ ipcMain.handle('notify:show', (event, title, body) => {
 });
 
 app.whenReady().then(() => {
+  session.defaultSession.on('select-serial-port', (event, portList, webContents, callback) => {
+    event.preventDefault();
+    if (portList.length === 0) {
+      callback('');
+      return;
+    }
+    callback(portList[0].portId);
+  });
+
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    if (permission === 'serial') return true;
+    return false;
+  });
+
+  session.defaultSession.setDevicePermissionHandler((details) => {
+    if (details.deviceType === 'serial') return true;
+    return false;
+  });
+
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
