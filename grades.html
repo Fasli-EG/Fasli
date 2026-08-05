@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -165,6 +165,9 @@
         <div class="search-bar">
           <select id="filterGroup" onchange="loadGrades()">
             <option value="ALL">📚 جميع المجموعات</option>
+          </select>
+          <select id="filterExam" onchange="filterTable()">
+            <option value="">📝 كل الامتحانات</option>
           </select>
           <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو الامتحان...">
         </div>
@@ -651,6 +654,19 @@
           });
         }
         if ([...select.options].some(o => o.value === currentValue)) select.value = currentValue;
+
+        // نعبّي قائمة الفلترة كمان بنفس أسماء الامتحانات
+        const filterSelect = document.getElementById('filterExam');
+        const currentFilterValue = filterSelect.value;
+        filterSelect.innerHTML = '<option value="">📝 كل الامتحانات</option>';
+        if (result.success) {
+          (result.data || []).forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.title; opt.textContent = t.title;
+            filterSelect.appendChild(opt);
+          });
+        }
+        if ([...filterSelect.options].some(o => o.value === currentFilterValue)) filterSelect.value = currentFilterValue;
       } catch (error) {
         console.error('❌ خطأ في تحميل أسماء الامتحانات:', error);
       }
@@ -729,12 +745,15 @@
 
     function filterTable() {
       const q = document.getElementById('searchInput').value.toLowerCase();
+      const selectedExam = document.getElementById('filterExam').value;
       const rows = document.querySelectorAll('#gradesBody tr');
       rows.forEach(row => {
         if (row.cells && row.cells.length > 1) {
           const name = row.cells[0]?.textContent.toLowerCase() || '';
-          const exam = row.cells[1]?.textContent.toLowerCase() || '';
-          row.style.display = (name.includes(q) || exam.includes(q)) ? '' : 'none';
+          const exam = row.cells[1]?.textContent.trim() || '';
+          const matchesSearch = name.includes(q) || exam.toLowerCase().includes(q);
+          const matchesExam = !selectedExam || exam === selectedExam;
+          row.style.display = (matchesSearch && matchesExam) ? '' : 'none';
         }
       });
     }

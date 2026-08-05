@@ -11,8 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=5">
-  <script src="activity-format.js?v=2"></script>
+  <link rel="stylesheet" href="style.css?v=6">
+  <script src="activity-format.js?v=3"></script>
 </head>
 <body>
 
@@ -178,6 +178,34 @@
           <span class="chart-badge" id="studentsChartBadge">اختر مجموعة</span>
         </div>
         <canvas id="studentRankChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Today's Attendance -->
+    <div class="card" id="attendanceCard">
+      <div class="card-header">
+        <h3><i class="fas fa-calendar-check" style="color:var(--success);"></i> سجل الحضور اليوم</h3>
+        <span style="font-size:12px;color:var(--gray-400);"><i class="fas fa-sync"></i> يتم التحديث تلقائياً</span>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>الطالب</th>
+                <th>الوقت</th>
+                <th>الحالة</th>
+                <th>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceBody">
+              <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--gray-400);">
+                <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                جاري تحميل سجلات الحضور...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -517,6 +545,99 @@
     let groupsChart = null;
     let gradeGroupsChartInstance = null;
     let studentRankChartInstance = null;
+
+    async function loadTodayAttendance() {
+      const tbody = document.getElementById('attendanceBody');
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray-400);">
+        <i class="fas fa-spinner fa-spin" style="font-size:20px;display:block;margin-bottom:8px;"></i>
+        جاري التحميل...
+      </td></tr>`;
+
+      try {
+        const token = getToken();
+        if (!token) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-today-attendance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ clientId: teacherClientId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة أو عدم صلاحية');
+          return;
+        }
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const result = await response.json();
+
+        let data = [];
+        if (result.success && result.data) {
+          if (Array.isArray(result.data)) {
+            data = result.data;
+          } else if (typeof result.data === 'object') {
+            if (Array.isArray(result.data.attendance)) {
+              data = result.data.attendance;
+            } else if (Array.isArray(result.data.records)) {
+              data = result.data.records;
+            } else {
+              data = [];
+            }
+          }
+        }
+
+        if (!Array.isArray(data)) data = [];
+
+        const presentCount = data.filter(r => r.status === 'present').length;
+        document.getElementById('statToday').textContent = presentCount;
+
+        if (data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-400);">
+            <i class="fas fa-info-circle" style="font-size:24px;display:block;margin-bottom:8px;opacity:0.5;"></i>
+            لا توجد سجلات حضور اليوم
+          </td></tr>`;
+          return;
+        }
+
+        let html = '';
+        data.forEach(record => {
+          const statusClass = record.status === 'present' ? 'status-present' : 'status-absent';
+          const statusText = record.status === 'present' ? '✅ حاضر' : '❌ غائب';
+
+          let displayTime = '—';
+          if (record.created_at) {
+            const date = new Date(record.created_at);
+            displayTime = date.toLocaleTimeString('ar-EG', {
+              timeZone: 'Africa/Cairo',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          } else if (record.time) {
+            displayTime = record.time;
+          }
+
+          html += `
+            <tr>
+              <td><strong>${escapeHtml(record.student_name || 'غير معروف')}</strong></td>
+              <td>${escapeHtml(displayTime)}</td>
+              <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+              <td>${escapeHtml(record.notes || '—')}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الحضور:', error);
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--danger);">
+          ❌ تعذر تحميل سجلات الحضور: ${escapeHtml(error.message)}
+        </td></tr>`;
+      }
+    }
 
     async function loadDashboard() {
       try {
@@ -1588,9 +1709,11 @@
     // ============================================
     window.onload = function() {
       loadDashboard();
+      loadTodayAttendance();
       loadNotifications();
       registerPushIfNative();
       setInterval(loadDashboard, 30000);
+      setInterval(loadTodayAttendance, 10000);
       setInterval(loadNotifications, 20000);
     };
   </script>

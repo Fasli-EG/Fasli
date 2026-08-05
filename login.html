@@ -204,14 +204,6 @@
     </ul>
   </div>
 
-  <button id="pwaInstallBtn" class="download-card" style="display:none;width:100%;cursor:pointer;font-family:inherit;border:1px solid rgba(255,255,255,0.14);margin-top:22px;" onclick="triggerPwaInstall()">
-    <span class="dc-icon">⬇️</span>
-    <div>
-      <div class="dc-title">تثبيت فَصلي كتطبيق</div>
-      <div class="dc-sub">مباشرة من المتصفح، بدون تحميل ملف</div>
-    </div>
-  </button>
-
   <div class="download-cards" id="downloadCards" style="display:none;">
     <a href="#" id="desktopDownloadCard" class="download-card" style="display:none;" target="_blank" rel="noopener">
       <span class="dc-icon">💻</span>
@@ -348,27 +340,6 @@
   }
   loadContactInfo();
 
-  // ============================================
-  // تثبيت كتطبيق (PWA)
-  // ============================================
-  let deferredInstallPrompt = null;
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    const btn = document.getElementById('pwaInstallBtn');
-    if (btn) btn.style.display = 'flex';
-  });
-  async function triggerPwaInstall() {
-    if (!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    document.getElementById('pwaInstallBtn').style.display = 'none';
-  }
-  window.addEventListener('appinstalled', () => {
-    const btn = document.getElementById('pwaInstallBtn');
-    if (btn) btn.style.display = 'none';
-  });
   const messageDiv = document.getElementById('message');
   const loginBtn = document.getElementById('loginBtn');
   const loginText = document.getElementById('loginText');
