@@ -741,6 +741,8 @@
       const assistantId = sessionStorage.getItem('assistantId');
       const parentPhone = sessionStorage.getItem('parentPhone');
 
+      alert('🔍 تشخيص (صفحة الدخول): role=' + role + ' | assistantId=' + assistantId + ' | clientId=' + clientId);
+
       if (role === 'teacher') {
         if (clientId === 'master_admin') { window.location.href = 'admin-teachers.html'; return; }
         else if (clientId) { window.location.href = 'dashboard.html'; return; }
