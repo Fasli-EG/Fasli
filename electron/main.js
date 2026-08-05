@@ -1,5 +1,5 @@
 // main.js — نافذة سطح المكتب بتاعة فَصلي (Electron)
-const { app, BrowserWindow, ipcMain, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Notification, session } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 
@@ -32,6 +32,31 @@ function createWindow() {
     return { action: 'deny' };
   });
 }
+
+// ============================================
+// السماح بالاتصال بالبورت التسلسلي (USB Serial) — عشان توصيل بورد قارئ الكروت (ESP32) يشتغل
+// المتصفح العادي بيعرض نافذة اختيار البورت تلقائي، لكن Electron محتاج تفعيل يدوي زي ده
+// ============================================
+session.defaultSession.on('select-serial-port', (event, portList, webContents, callback) => {
+  event.preventDefault();
+  if (portList.length === 0) {
+    callback(''); // مفيش أي بورت متاح خالص
+    return;
+  }
+  // لو فيه بورت واحد بس متصل (الحالة الشائعة)، نختاره تلقائياً من غير ما نزعج المستخدم
+  // لو أكتر من واحد، بناخد الأول (تقدر تعدّلها لاحقاً لعرض قائمة اختيار حقيقية لو احتجت)
+  callback(portList[0].portId);
+});
+
+session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+  if (permission === 'serial') return true;
+  return false;
+});
+
+session.defaultSession.setDevicePermissionHandler((details) => {
+  if (details.deviceType === 'serial') return true;
+  return false;
+});
 
 // ============================================
 // تخزين دائم حقيقي (زي SharedPreferences بتاعة أندرويد) — بيفضل موجود حتى بعد إغلاق البرنامج بالكامل
