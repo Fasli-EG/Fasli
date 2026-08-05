@@ -1308,8 +1308,25 @@
     // ============================================
     // LOGOUT
     // ============================================
-    function logout() {
-      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+    async function logout() {
+      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      try {
+        const jwt = sessionStorage.getItem('jwtToken');
+        let pushToken = localStorage.getItem('fasliPushToken');
+        const Preferences = window.Capacitor?.Plugins?.Preferences;
+        if (!pushToken && Preferences) {
+          const stored = await Preferences.get({ key: 'fasliPushToken' }).catch(() => null);
+          pushToken = stored?.value || null;
+        }
+        if (jwt && pushToken) {
+          await fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ token: pushToken })
+          });
+        }
+      } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
+      {
         sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
         window.location.href = LOGIN_URL;
       }
@@ -1343,24 +1360,50 @@
     }
 
     
+    let pendingPushNotifications = null;
+
     async function registerPushIfNative() {
       try {
         const Capacitor = window.Capacitor;
         if (!Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
         const PushNotifications = Capacitor.Plugins?.PushNotifications;
         if (!PushNotifications) return;
+
         const permStatus = await PushNotifications.checkPermissions();
-        let granted = permStatus.receive === 'granted';
-        if (!granted) {
-          const req = await PushNotifications.requestPermissions();
-          granted = req.receive === 'granted';
-        }
-        if (!granted) return;
+        if (permStatus.receive === 'granted') { finishPushRegistration(PushNotifications); return; }
+        if (permStatus.receive === 'denied') return;
+
+        pendingPushNotifications = PushNotifications;
+        document.getElementById('permissionDialog').style.display = 'flex';
+      } catch (e) { /* تجاهل */ }
+    }
+
+    function declinePermissionDialog() {
+      document.getElementById('permissionDialog').style.display = 'none';
+      pendingPushNotifications = null;
+    }
+
+    async function acceptPermissionDialog() {
+      document.getElementById('permissionDialog').style.display = 'none';
+      const PushNotifications = pendingPushNotifications;
+      pendingPushNotifications = null;
+      if (!PushNotifications) return;
+      try {
+        const req = await PushNotifications.requestPermissions();
+        if (req.receive === 'granted') finishPushRegistration(PushNotifications);
+      } catch (e) { /* تجاهل */ }
+    }
+
+    async function finishPushRegistration(PushNotifications) {
+      try {
         await PushNotifications.register();
         PushNotifications.addListener('registration', async (token) => {
           try {
             const jwt = sessionStorage.getItem('jwtToken');
             if (!jwt || !token?.value) return;
+            localStorage.setItem('fasliPushToken', token.value);
+            const Preferences = window.Capacitor?.Plugins?.Preferences;
+            if (Preferences) Preferences.set({ key: 'fasliPushToken', value: token.value }).catch(() => {});
             await fetch(PROJECT_URL + '/functions/v1/register-push-token', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
@@ -1554,5 +1597,19 @@
       });
     }
   </script>
+
+  <div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+      <div style="width:64px;height:64px;background:#E7F8F0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">🔔</div>
+      <h3 style="font-size:17px;font-weight:800;color:#14171F;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
+      <p style="font-size:13.5px;color:#6b7280;line-height:1.7;margin-bottom:22px;">
+        عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
+      </p>
+      <div style="display:flex;gap:10px;">
+        <button onclick="declinePermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #E1E4E9;background:#fff;color:#4A5568;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;">مش دلوقتي</button>
+        <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#0F6B4F;color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

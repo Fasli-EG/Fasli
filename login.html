@@ -493,12 +493,28 @@
         finishPushRegistration(PushNotifications);
         return;
       }
-      if (permStatus.receive === 'denied') return; // المستخدم رفض قبل كده من إعدادات النظام، مش هنزعجه تاني
+      if (permStatus.receive === 'denied') {
+        // ✅ النظام مش هيعرض المربع تاني بنفسه بعد الرفض، فلازم نوجّه المستخدم يدوي بنفسه من إعدادات الموبايل
+        showDeniedPermissionDialog();
+        return;
+      }
 
       // ✅ نعرض الديالوج الاحترافي بتاعنا الأول، وبس لو وافق نطلب إذن النظام الفعلي
       pendingPushNotifications = PushNotifications;
+      document.getElementById('permissionDialogTitle').textContent = 'تفعيل الإشعارات الفورية';
+      document.getElementById('permissionDialogText').textContent = 'عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.';
+      document.getElementById('permissionDialogAccept').textContent = 'فعّل الإشعارات';
+      document.getElementById('permissionDialogAccept').onclick = acceptPermissionDialog;
       document.getElementById('permissionDialog').style.display = 'flex';
     } catch (e) { /* تجاهل - التطبيق ممكن يكون بيشتغل كموقع عادي مش تطبيق */ }
+  }
+
+  function showDeniedPermissionDialog() {
+    document.getElementById('permissionDialogTitle').textContent = 'الإشعارات متوقفة حالياً';
+    document.getElementById('permissionDialogText').textContent = 'يبدو إنك رفضت إذن الإشعارات قبل كده. عشان تفعّلها: روح إعدادات الموبايل ← التطبيقات ← فَصلي ← الإشعارات ← فعّلها من هناك.';
+    document.getElementById('permissionDialogAccept').textContent = 'تمام';
+    document.getElementById('permissionDialogAccept').onclick = declinePermissionDialog;
+    document.getElementById('permissionDialog').style.display = 'flex';
   }
 
   function declinePermissionDialog() {
@@ -541,7 +557,8 @@
   }
 
   function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience) {
-    registerPushIfNative();
+    // ملحوظة: تسجيل جهاز الإشعارات بيحصل في صفحة اللوحة نفسها بعد التنقل (dashboard.html/assistant-dashboard.html/parent-dashboard.html)
+    // مش هنا، لأن الصفحة دي هتتنقل فوراً وأي كود async هنا ممكن ينقطع نص الطريق قبل ما يخلص
     if (forceChange) {
       let redirectUrl = 'change-password.html?';
       if (role === 'teacher') {

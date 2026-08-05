@@ -850,8 +850,25 @@
       }
     }
 
-    function logout() {
-      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+    async function logout() {
+      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      try {
+        const jwt = sessionStorage.getItem('jwtToken');
+        let pushToken = localStorage.getItem('fasliPushToken');
+        const Preferences = window.Capacitor?.Plugins?.Preferences;
+        if (!pushToken && Preferences) {
+          const stored = await Preferences.get({ key: 'fasliPushToken' }).catch(() => null);
+          pushToken = stored?.value || null;
+        }
+        if (jwt && pushToken) {
+          await fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ token: pushToken })
+          });
+        }
+      } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
+      {
         sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
         window.location.href = LOGIN_URL;
       }
