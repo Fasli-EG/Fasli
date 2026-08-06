@@ -1583,72 +1583,86 @@ tr:hover td { background: var(--gray-50); }
 }
 /* ====== معاينة التقارير في الوضع الليلي ====== */
 [data-theme="dark"] .report-preview {
-  background: var(--gray-200);
-  border-color: var(--gray-300);
+  background: #2A2F3A !important;
+  border-color: #3C424F !important;
 }
 
 [data-theme="dark"] .report-preview th {
-  background: var(--gray-300);
-  color: var(--gray-800);
-  border-color: var(--gray-400);
+  background: #3C424F !important;
+  color: #EDEEF2 !important;
+  border-color: #7A8290 !important;
 }
 
 [data-theme="dark"] .report-preview td {
-  border-color: var(--gray-300);
-  color: var(--gray-700);
+  border-color: #3C424F !important;
+  color: #DADDE3 !important;
 }
 
 [data-theme="dark"] .report-preview h1 {
-  color: var(--primary-light);
+  color: #3D9B7D !important;
 }
 
 [data-theme="dark"] .report-preview hr {
-  border-color: var(--gray-300);
+  border-color: #3C424F !important;
 }
 
 [data-theme="dark"] .report-preview .footer {
-  color: var(--gray-500);
+  color: #A5ABB6 !important;
 }
 /* ====== تنسيق معاينة التقرير في الوضع الليلي ====== */
 [data-theme="dark"] .report-preview {
-  background: var(--gray-200) !important;
-  color: var(--gray-800) !important;
+  background: #2A2F3A !important;
+  color: #EDEEF2 !important;
 }
 
 [data-theme="dark"] .report-preview h1 {
-  color: var(--primary-light) !important;
+  color: #3D9B7D !important;
 }
 
 [data-theme="dark"] .report-preview table {
-  border-color: var(--gray-300) !important;
+  border-color: #3C424F !important;
 }
 
 [data-theme="dark"] .report-preview th {
-  background: var(--gray-300) !important;
-  color: var(--gray-800) !important;
-  border-color: var(--gray-400) !important;
+  background: #3C424F !important;
+  color: #EDEEF2 !important;
+  border-color: #7A8290 !important;
 }
 
 [data-theme="dark"] .report-preview td {
-  border-color: var(--gray-300) !important;
-  color: var(--gray-700) !important;
+  border-color: #3C424F !important;
+  color: #DADDE3 !important;
 }
 
 [data-theme="dark"] .report-preview hr {
-  border-color: var(--gray-300) !important;
+  border-color: #3C424F !important;
 }
 
 [data-theme="dark"] .report-preview .footer {
-  color: var(--gray-500) !important;
+  color: #A5ABB6 !important;
 }
 
 [data-theme="dark"] .report-preview p {
-  color: var(--gray-700) !important;
+  color: #DADDE3 !important;
 }
 
 [data-theme="dark"] .report-preview strong {
-  color: var(--gray-800) !important;
+  color: #EDEEF2 !important;
 }
+
+/* ✅ صفوف التنبيه في التقارير (غير مسدد / لم يتقدّم للامتحان) — بتتأقلم مع الوضع الليلي بدل لون ثابت */
+.report-preview .report-row-alert td { background: #fef2f2 !important; }
+[data-theme="dark"] .report-preview .report-row-alert td { background: #3A1F20 !important; }
+
+/* ✅ ألوان الحالة الدلالية في التقارير (أخضر/كهرماني/أحمر) — لازم أخصّية أعلى من قاعدة td العامة عشان تتغلّب عليها في الوضع الليلي */
+.report-preview td.rpt-good { color: #22c55e !important; }
+.report-preview td.rpt-warn { color: #f59e0b !important; }
+.report-preview td.rpt-bad { color: #ef4444 !important; }
+[data-theme="dark"] .report-preview td.rpt-good { color: #6FCF97 !important; }
+[data-theme="dark"] .report-preview td.rpt-warn { color: #E8B860 !important; }
+[data-theme="dark"] .report-preview td.rpt-bad { color: #F29999 !important; }
+.report-preview .rpt-brand { color: #14171F !important; }
+[data-theme="dark"] .report-preview .rpt-brand { color: #F2F3F6 !important; }
 /* زرار تواصل المدرس - يظهر في كارت الطالب بلوحة تحكم ولي الأمر */
 .teacher-contact-row {
   margin-top: 10px;
@@ -1874,3 +1888,10 @@ tr:hover td { background: var(--gray-50); }
 [data-theme="dark"] .permission-badge.full-access { background: #16332A !important; color: #6FCF97 !important; }
 [data-theme="dark"] .status-present { background: #16332A !important; color: #6FCF97 !important; }
 [data-theme="dark"] .status-absent { background: #3A1F20 !important; color: #F29999 !important; }
+
+/* ============================================
+   تنسيق معاينة التقارير (مساحة #reportContent) — بيتحقن عبر innerHTML، فمقدرش أعتمد على
+   <style> جوه محتوى التقرير نفسه لأن المتصفحات بتتجاهلها في الحالة دي، فبنحطها هنا بدل كده
+   بنفرض شكل ثابت وواضح دايماً بغض النظر عن الوضع الليلي، زي أي مستند رسمي للطباعة
+   ============================================ */
+

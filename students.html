@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>إدارة الطلاب - فَصلي</title>
+  <meta name="description" content="إدارة بيانات الطلاب في نظام فَصلي لإدارة الدروس الخصوصية">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#14171F">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -173,6 +174,32 @@
         <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px;" onclick="confirmTransfer()">
           <i class="fas fa-right-left"></i> تأكيد النقل
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="cardLinkModal">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-header">
+        <h3>🪪 ربط كارت RFID</h3>
+        <button class="modal-close" onclick="closeCardLinkModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13.5px;color:var(--gray-600);margin-bottom:14px;">
+          ربط كارت جديد لـ<strong id="cardLinkStudentName"></strong> — بعد الضغط، مرّغي الكارت على البورد بتاعك.
+        </p>
+        <div id="cardLinkIdle">
+          <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="startCardLink()">
+            <i class="fas fa-id-card"></i> بدء ربط الكارت
+          </button>
+        </div>
+        <div id="cardLinkWaiting" style="display:none;text-align:center;padding:10px 0;">
+          <i class="fas fa-spinner fa-spin" style="font-size:22px;color:var(--primary);"></i>
+          <p style="font-size:13px;color:var(--gray-600);margin-top:10px;">في انتظار تمريغ الكارت على البورد...</p>
+          <button class="btn btn-danger btn-sm" onclick="cancelCardLink()">إلغاء</button>
+        </div>
+        <div id="cardLinkResult" style="display:none;text-align:center;padding:10px 0;"></div>
+        <input type="hidden" id="cardLinkStudentUid">
       </div>
     </div>
   </div>
@@ -465,6 +492,7 @@
             let actionsHtml = '';
             if (canEditStudents) actionsHtml += `<button class="btn btn-warning btn-sm" onclick="openEditModal('${s.id}')" title="تعديل"><i class="fas fa-edit"></i></button>`;
             if (canEditStudents) actionsHtml += `<button class="btn btn-info btn-sm" onclick="openTransferModal('${s.uid}', '${escapeHtml(s.name)}', '${escapeHtml(s.group_name)}')" title="نقل لمجموعة تانية"><i class="fas fa-right-left"></i></button>`;
+            if (canEditStudents) actionsHtml += `<button class="btn btn-info btn-sm" onclick="openCardLinkModal('${s.uid}', '${escapeAttr(s.name)}')" title="ربط كارت RFID"><i class="fas fa-id-card"></i></button>`;
             if (canDeleteStudents) actionsHtml += `<button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}', '${escapeAttr(s.name)}')" title="حذف"><i class="fas fa-trash"></i></button>`;
             if (canResetParentPassword) actionsHtml += `<button class="btn btn-info btn-sm" onclick="resetParentPassword('${s.uid}', '${escapeAttr(s.name)}')" title="إعادة تعيين كلمة مرور ولي الأمر"><i class="fas fa-key"></i></button>`;
             if (!canEditStudents && !canDeleteStudents && !canResetParentPassword) actionsHtml = `<span style="color:var(--gray-400);font-size:12px;">🔒 عرض فقط</span>`;
@@ -621,6 +649,82 @@
       document.getElementById('transferModal').classList.remove('open');
     }
 
+    let cardLinkPollTimer = null;
+
+    function openCardLinkModal(studentUid, studentName) {
+      document.getElementById('cardLinkStudentUid').value = studentUid;
+      document.getElementById('cardLinkStudentName').textContent = studentName;
+      document.getElementById('cardLinkIdle').style.display = 'block';
+      document.getElementById('cardLinkWaiting').style.display = 'none';
+      document.getElementById('cardLinkResult').style.display = 'none';
+      document.getElementById('cardLinkModal').classList.add('open');
+    }
+
+    function closeCardLinkModal() {
+      clearInterval(cardLinkPollTimer);
+      document.getElementById('cardLinkModal').classList.remove('open');
+    }
+
+    async function startCardLink() {
+      const studentUid = document.getElementById('cardLinkStudentUid').value;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/teacher-start-card-registration', {
+          method: 'POST', headers, body: JSON.stringify({ studentUid })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('cardLinkIdle').style.display = 'none';
+          document.getElementById('cardLinkWaiting').style.display = 'block';
+          cardLinkPollTimer = setInterval(pollCardLink, 3000);
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل بدء ربط الكارت', 'error');
+      }
+    }
+
+    async function pollCardLink() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/teacher-get-card-registration-status', {
+          method: 'POST', headers, body: '{}'
+        });
+        const result = await response.json();
+        if (result.status === 'done') {
+          clearInterval(cardLinkPollTimer);
+          document.getElementById('cardLinkWaiting').style.display = 'none';
+          const resultBox = document.getElementById('cardLinkResult');
+          resultBox.innerHTML = '<i class="fas fa-check-circle" style="font-size:28px;color:var(--success);"></i><p style="margin-top:8px;font-size:13.5px;">✅ تم ربط الكارت بنجاح</p>';
+          resultBox.style.display = 'block';
+          setTimeout(closeCardLinkModal, 1800);
+        } else if (result.status === 'error') {
+          clearInterval(cardLinkPollTimer);
+          document.getElementById('cardLinkWaiting').style.display = 'none';
+          const resultBox = document.getElementById('cardLinkResult');
+          resultBox.innerHTML = '<i class="fas fa-circle-exclamation" style="font-size:28px;color:var(--danger);"></i><p style="margin-top:8px;font-size:13.5px;">' + escapeHtml(result.message) + '</p>';
+          resultBox.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('❌ خطأ في الاستعلام:', error);
+      }
+    }
+
+    async function cancelCardLink() {
+      clearInterval(cardLinkPollTimer);
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/teacher-cancel-card-registration', { method: 'POST', headers, body: '{}' });
+      } catch (error) { console.error('❌ خطأ:', error); }
+      closeCardLinkModal();
+    }
+
     async function confirmTransfer() {
       const studentUid = document.getElementById('transferStudentUid').value;
       const newGroupName = document.getElementById('transferNewGroup').value;
@@ -761,103 +865,106 @@
       if (e.key === 'Enter') { e.preventDefault(); this.dispatchEvent(new Event('input')); }
     });
 
-    let pollingInterval = null;
+    let newStudentScanPollTimer = null;
     let isReadingActive = false;
-    let lastUID = '';
 
     const toggleBtn = document.getElementById('toggleReadBtn');
     const readHint = document.getElementById('readHint');
     const realtimeDot = document.getElementById('realtimeDot');
     const realtimeLabel = document.getElementById('realtimeLabel');
 
-    function updateReaderStatus(status) {
+    function updateReaderStatus(status, text) {
       if (status === 'active') {
         realtimeDot.className = 'dot online';
         realtimeLabel.textContent = '🟢 جاهز للقراءة';
-        readHint.textContent = '⏳ امسح الكارت الآن... سيظهر UID تلقائياً';
+        readHint.textContent = '⏳ امسح الكارت الآن على بورد المدرس...';
       } else if (status === 'idle') {
         realtimeDot.className = 'dot idle';
         realtimeLabel.textContent = '⏸ في انتظار التفعيل';
         readHint.textContent = '💡 اضغط زر "تفعيل القراءة" ثم امسح الكارت على القارئ';
-      } else if (status === 'reading') {
-        realtimeDot.className = 'dot connecting';
-        realtimeLabel.textContent = '📡 جاري القراءة...';
-        readHint.textContent = '⏳ جاري قراءة الكارت...';
+      } else if (status === 'error') {
+        realtimeDot.className = 'dot idle';
+        realtimeLabel.textContent = '⚠️ الكارت مرفوض';
+        readHint.textContent = text || '⚠️ الكارت ده مش صالح';
       }
     }
 
-    function toggleReading() {
+    async function toggleReading() {
       if (isReadingActive) {
-        stopPolling();
+        stopNewStudentScan();
         isReadingActive = false;
         toggleBtn.classList.remove('active');
         toggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="readBtnText">تفعيل القراءة</span>';
         updateReaderStatus('idle');
-        showToast('⏸ تم إيقاف قراءة الكارت', 'info');
-      } else {
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/teacher-start-new-student-scan', {
+          method: 'POST', headers, body: '{}'
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (!result.success) { showToast('❌ ' + result.message, 'error'); return; }
+
         isReadingActive = true;
         toggleBtn.classList.add('active');
         toggleBtn.innerHTML = '<i class="fas fa-stop"></i> <span id="readBtnText">إيقاف القراءة</span>';
         updateReaderStatus('active');
-        showToast('✅ تم تفعيل قراءة الكارت، امسح الكارت الآن', 'success');
-        lastUID = '';
-        startPolling();
+        newStudentScanPollTimer = setInterval(pollNewStudentScan, 3000);
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل بدء القراءة', 'error');
       }
     }
 
-    function startPolling() {
-      if (pollingInterval) clearInterval(pollingInterval);
-      fetchLatestUID();
-      pollingInterval = setInterval(() => {
-        if (isReadingActive) fetchLatestUID();
-        else { clearInterval(pollingInterval); pollingInterval = null; }
-      }, 1500);
-    }
-
-    async function fetchLatestUID() {
+    async function pollNewStudentScan() {
       try {
-        const token = getToken();
-        if (!token) return;
-
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-latest-rfid-scan', {
-          headers: { 'Authorization': 'Bearer ' + token }
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/teacher-get-card-registration-status', {
+          method: 'POST', headers, body: '{}'
         });
-
-        if (response.status === 401) {
-          handleUnauthorized('انتهت صلاحية الجلسة');
-          return;
-        }
-
-        const data = await response.json();
-        if (data && data.length > 0 && data[0].uid && data[0].uid !== lastUID) {
-          lastUID = data[0].uid;
-          const uid = lastUID;
-
+        const result = await response.json();
+        if (result.status === 'done' && result.cardUid) {
           const targetField = document.getElementById('addUid');
-          if (targetField) {
-            updateReaderStatus('reading');
-            targetField.value = uid;
-            targetField.style.borderColor = 'var(--success)';
-            targetField.dispatchEvent(new Event('input', { bubbles: true }));
-            showToast(`📇 تم قراءة الكارت: ${uid}`, 'info');
+          targetField.value = result.cardUid;
+          targetField.style.borderColor = 'var(--success)';
+          targetField.dispatchEvent(new Event('input', { bubbles: true }));
 
-            setTimeout(() => {
-              if (isReadingActive) updateReaderStatus('active');
-            }, 500);
-
-            if (isReadingActive) {
-              setTimeout(() => {
-                toggleReading();
-                showToast('⏸ تم إيقاف القراءة تلقائياً بعد قراءة الكارت', 'info');
-              }, 1500);
-            }
-          }
+          // ✅ نوقف القراءة تلقائياً ونعرض حالة النجاح بوضوح (مش نرجع فوراً لحالة "idle" العادية)
+          stopNewStudentScan();
+          isReadingActive = false;
+          toggleBtn.classList.remove('active');
+          toggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="readBtnText">تفعيل القراءة</span>';
+          realtimeDot.className = 'dot online';
+          realtimeLabel.textContent = '✅ تم قراءة الكارت';
+          readHint.textContent = `📇 رقم الكارت: ${result.cardUid}`;
+          showToast(`📇 تم قراءة الكارت: ${result.cardUid}`, 'success');
+        } else if (result.status === 'error') {
+          stopNewStudentScan();
+          isReadingActive = false;
+          toggleBtn.classList.remove('active');
+          toggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="readBtnText">تفعيل القراءة</span>';
+          updateReaderStatus('error', result.message);
+          showToast('❌ ' + result.message, 'error');
         }
       } catch (error) { /* تجاهل */ }
     }
 
+    async function stopNewStudentScan() {
+      if (newStudentScanPollTimer) { clearInterval(newStudentScanPollTimer); newStudentScanPollTimer = null; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/teacher-cancel-card-registration', { method: 'POST', headers, body: '{}' });
+      } catch (error) { /* تجاهل */ }
+    }
+
     function stopPolling() {
-      if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+      stopNewStudentScan();
     }
 
     function getThemeKey() {

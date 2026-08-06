@@ -7,6 +7,7 @@ const ACTIVITY_LABELS = {
   add_student: { text: 'أضاف طالب', badge: 'badge-success' },
   edit_student: { text: 'عدّل بيانات طالب', badge: 'badge-warning' },
   transfer_student: { text: 'نقل طالب لمجموعة تانية', badge: 'badge-warning' },
+  link_rfid_card: { text: 'ربط كارت RFID بطالب', badge: 'badge-primary' },
   delete_student: { text: 'حذف طالب', badge: 'badge-danger' },
   add_grade: { text: 'رصد درجة', badge: 'badge-primary' },
   bulk_add_grade: { text: 'رصد درجة لعدة طلاب', badge: 'badge-primary' },
@@ -160,6 +161,10 @@ function formatActivity(log) {
     case 'transfer_student':
       if (det.student_name) parts.push(`الطالب: ${det.student_name}`);
       if (det.old_group && det.new_group) parts.push(`من "${det.old_group}" إلى "${det.new_group}"`);
+      break;
+    case 'link_rfid_card':
+      if (det.student_name) parts.push(`الطالب: ${det.student_name}`);
+      if (det.new_uid) parts.push(`الكارت الجديد: ${det.new_uid}`);
       break;
     case 'add_grade':
     case 'edit_grade':

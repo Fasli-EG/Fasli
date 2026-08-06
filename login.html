@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>تسجيل الدخول - فَصلي</title>
+  <meta name="description" content="تسجيل الدخول إلى نظام فَصلي لإدارة الدروس الخصوصية">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#14171F">
@@ -161,6 +162,7 @@
     .brand-copy{ display:none; }
     .lockup{ order:1; margin-bottom:14px; }
     .download-cards{ order:2; max-width:none; }
+    .login-ads{ order:3; }
     .form-panel{ flex:none; padding:36px 20px 60px; }
   }
   @media (max-width:520px){ .download-cards{ flex-direction:column; } }
@@ -169,10 +171,31 @@
 
   .download-cards{ display:flex; gap:12px; margin-top:22px; }
   .lockup{ order:1; }
-  .tagline{ order:2; }
-  .brand-copy{ order:3; position:relative; z-index:1; max-width:380px; }
-  .download-cards{ order:5; position:relative; z-index:2; display:flex; gap:12px; margin-top:22px; max-width:380px; }
-  #pwaInstallBtn{ order:4; position:relative; z-index:2; max-width:380px; }
+  .download-cards{ order:2; position:relative; z-index:2; display:flex; gap:12px; margin-top:18px; max-width:380px; }
+  .tagline{ order:3; }
+  .brand-copy{ order:4; position:relative; z-index:1; max-width:380px; }
+  .login-ads{ order:5; position:relative; z-index:2; width:100%; max-width:none; margin-top:auto; padding-top:24px; display:none; }
+  .login-ads-viewport{ position:relative; }
+  .login-ads-track{
+    display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
+    scroll-behavior:smooth; padding-bottom:4px;
+    -ms-overflow-style:none; scrollbar-width:none;
+  }
+  .login-ads-track::-webkit-scrollbar{ display:none; }
+  .login-ad-slide{
+    flex:0 0 auto; width:min(260px, 70%); aspect-ratio:16/9; scroll-snap-align:start;
+    border-radius:14px; overflow:hidden; background:rgba(255,255,255,0.04); display:block;
+  }
+  .login-ad-slide img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .login-ads-arrow{
+    position:absolute; top:50%; transform:translateY(-50%); z-index:3;
+    width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.25);
+    background:rgba(15,17,23,0.65); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:20px; line-height:1; transition:background .2s; padding:0; padding-bottom:3px;
+  }
+  .login-ads-arrow:hover{ background:rgba(15,17,23,0.9); }
+  .login-ads-arrow.prev{ right:-6px; }
+  .login-ads-arrow.next{ left:-6px; }
   .download-card{
     flex:1; min-width:0; display:flex; align-items:center; gap:10px;
     background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14);
@@ -202,6 +225,14 @@
       <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> درجات وتقارير تتحسب أوتوماتيك</li>
       <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> أولياء الأمور يتابعوا أولادهم لحظياً</li>
     </ul>
+  </div>
+
+  <div class="login-ads" id="loginAds">
+    <div class="login-ads-viewport">
+      <button class="login-ads-arrow prev" id="loginAdsPrev" aria-label="السابق" onclick="scrollLoginAds(1)">›</button>
+      <div class="login-ads-track" id="loginAdsTrack"></div>
+      <button class="login-ads-arrow next" id="loginAdsNext" aria-label="التالي" onclick="scrollLoginAds(-1)">‹</button>
+    </div>
   </div>
 
   <div class="download-cards" id="downloadCards" style="display:none;">
@@ -339,6 +370,69 @@
     } catch (e) { /* تجاهل - العناصر مش أساسية لتسجيل الدخول */ }
   }
   loadContactInfo();
+
+  // ============================================
+  // الصور الإعلانية في صفحة تسجيل الدخول
+  // ============================================
+  async function loadLoginAds() {
+    try {
+      const res = await fetch(PROJECT_URL + '/functions/v1/get-login-ads');
+      const result = await res.json();
+      const ads = result.data || [];
+      if (!ads.length) return; // نسيب المساحة مخفية زي ما هي (display:none افتراضياً)
+
+      const track = document.getElementById('loginAdsTrack');
+
+      ads.forEach((ad) => {
+        const slide = document.createElement(ad.link_url ? 'a' : 'div');
+        slide.className = 'login-ad-slide';
+        if (ad.link_url) { slide.href = ad.link_url; slide.target = '_blank'; slide.rel = 'noopener'; }
+
+        const img = document.createElement('img');
+        img.src = ad.image_url;
+        img.alt = 'إعلان';
+        slide.appendChild(img);
+        track.appendChild(slide);
+      });
+
+      // الأسهم مالهاش لزمة لو الصور قليلة ومش هتحتاج تمرير خالص
+      if (ads.length <= 1) {
+        document.getElementById('loginAdsPrev').style.display = 'none';
+        document.getElementById('loginAdsNext').style.display = 'none';
+      }
+
+      loginAdsCount = ads.length;
+      document.getElementById('loginAds').style.display = 'block';
+      startLoginAdsAutoplay();
+    } catch (e) { /* تجاهل - المساحة مش أساسية لتسجيل الدخول */ }
+  }
+  loadLoginAds();
+
+  let loginAdsIndex = 0;
+  let loginAdsCount = 0;
+
+  function goToLoginAd(index) {
+    const track = document.getElementById('loginAdsTrack');
+    const slides = track.querySelectorAll('.login-ad-slide');
+    if (!slides.length) return;
+    loginAdsIndex = ((index % slides.length) + slides.length) % slides.length; // نضمن الرقم دايماً موجب وداخل النطاق (تأثير الحلقة)
+    const targetSlide = slides[loginAdsIndex];
+    // ✅ بنحسب المسافة بالنسبة لموقع العناصر الحالي على الشاشة (مش scrollLeft المباشر، عشان نتجنب فرق سلوك RTL بين المتصفحات)
+    // وده بيضمن كمان إن التمرير بيأثر على شريط الصور نفسه بس، من غير ما يحرك الصفحة كلها
+    const trackRect = track.getBoundingClientRect();
+    const slideRect = targetSlide.getBoundingClientRect();
+    const delta = slideRect.left - trackRect.left;
+    track.scrollBy({ left: delta, behavior: 'smooth' });
+  }
+
+  function scrollLoginAds(direction) {
+    goToLoginAd(loginAdsIndex + direction);
+  }
+
+  function startLoginAdsAutoplay() {
+    if (loginAdsCount <= 1) return;
+    setInterval(() => { goToLoginAd(loginAdsIndex + 1); }, 4000);
+  }
 
   const messageDiv = document.getElementById('message');
   const loginBtn = document.getElementById('loginBtn');

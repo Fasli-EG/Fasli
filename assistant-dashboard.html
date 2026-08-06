@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>لوحة تحكم المساعد - فَصلي</title>
+  <meta name="description" content="لوحة تحكم المساعد في نظام فَصلي لإدارة الدروس الخصوصية">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#14171F">
@@ -11,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=6">
-  <script src="activity-format.js?v=3"></script>
+  <link rel="stylesheet" href="style.css?v=10">
+  <script src="activity-format.js?v=4"></script>
 </head>
 <body>
 
@@ -181,16 +182,6 @@
       </div>
     </div>
 
-    <div class="activities-box">
-      <h4>🔄 آخر النشاطات (آخر ساعة)</h4>
-      <div id="activitiesContainer">
-        <div class="empty-state">
-          <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
-          <h4>جاري التحميل...</h4>
-        </div>
-      </div>
-    </div>
-
     <!-- Today's Attendance -->
     <div class="card" id="attendanceCard">
       <div class="card-header">
@@ -215,6 +206,16 @@
               </td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="activities-box">
+      <h4>🔄 آخر النشاطات (آخر ساعة)</h4>
+      <div id="activitiesContainer">
+        <div class="empty-state">
+          <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
+          <h4>جاري التحميل...</h4>
         </div>
       </div>
     </div>
@@ -1126,70 +1127,73 @@
 
     function toggleModalReading() {
       if (modalIsReadingActive) {
-        if (modalPollingInterval) { clearInterval(modalPollingInterval); modalPollingInterval = null; }
+        stopModalCardScan();
         modalIsReadingActive = false;
         modalToggleBtn.classList.remove('active');
         modalToggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="modalReadBtnText">تفعيل القراءة</span>';
         updateModalStatus('idle', '⏸ في انتظار التفعيل');
-        showModalToast('⏸ تم إيقاف قراءة الكارت', 'info');
-      } else {
-        modalIsReadingActive = true;
-        modalToggleBtn.classList.add('active');
-        modalToggleBtn.innerHTML = '<i class="fas fa-stop"></i> <span id="modalReadBtnText">إيقاف القراءة</span>';
-        updateModalStatus('online', '🟢 جاهز للقراءة');
-        showModalToast('✅ تم تفعيل قراءة الكارت', 'success');
-        modalLastUID = '';
-        startModalPolling();
+        return;
       }
-    }
 
-    function startModalPolling() {
-      if (modalPollingInterval) clearInterval(modalPollingInterval);
-      fetchModalLatestUID();
-      modalPollingInterval = setInterval(() => {
-        if (modalIsReadingActive) fetchModalLatestUID();
-        else { clearInterval(modalPollingInterval); modalPollingInterval = null; }
-      }, 1500);
-    }
+      (async () => {
+        try {
+          const headers = getAuthHeaders();
+          if (!headers) return;
+          const response = await fetch(PROJECT_URL + '/functions/v1/teacher-start-new-student-scan', {
+            method: 'POST', headers, body: '{}'
+          });
+          if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+          const result = await response.json();
+          if (!result.success) { showModalToast('❌ ' + result.message, 'error'); return; }
 
-    async function fetchModalLatestUID() {
-      try {
-        const token = getToken();
-        if (!token) return;
-
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-latest-rfid-scan', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-
-        if (response.status === 401) {
-          handleUnauthorized('انتهت صلاحية الجلسة');
-          return;
+          modalIsReadingActive = true;
+          modalToggleBtn.classList.add('active');
+          modalToggleBtn.innerHTML = '<i class="fas fa-stop"></i> <span id="modalReadBtnText">إيقاف القراءة</span>';
+          updateModalStatus('online', '🟢 جاهز للقراءة');
+          modalPollingInterval = setInterval(pollModalCardScan, 3000);
+        } catch (error) {
+          console.error('❌ خطأ:', error);
+          showModalToast('❌ فشل بدء القراءة', 'error');
         }
+      })();
+    }
 
-        const data = await response.json();
-        if (data && data.length > 0 && data[0].uid && data[0].uid !== modalLastUID) {
-          modalLastUID = data[0].uid;
-          const uid = modalLastUID;
-
-          updateModalStatus('reading', '📡 جاري القراءة...');
-          modalUidField.value = uid;
+    async function pollModalCardScan() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/teacher-get-card-registration-status', {
+          method: 'POST', headers, body: '{}'
+        });
+        const result = await response.json();
+        if (result.status === 'done' && result.cardUid) {
+          modalUidField.value = result.cardUid;
           modalUidField.style.borderColor = 'var(--success)';
           modalUidField.dispatchEvent(new Event('input', { bubbles: true }));
-          showModalToast(`📇 تم قراءة الكارت: ${uid}`, 'read');
 
-          checkModalUID(uid);
-
-          setTimeout(() => {
-            if (modalIsReadingActive) updateModalStatus('online', '🟢 جاهز للقراءة');
-          }, 500);
-
-          if (modalIsReadingActive) {
-            setTimeout(() => {
-              toggleModalReading();
-              showModalToast('⏸ تم إيقاف القراءة تلقائياً', 'info');
-            }, 1500);
-          }
+          stopModalCardScan();
+          modalIsReadingActive = false;
+          modalToggleBtn.classList.remove('active');
+          modalToggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="modalReadBtnText">تفعيل القراءة</span>';
+          updateModalStatus('online', '✅ تم قراءة الكارت');
+          showModalToast(`📇 تم قراءة الكارت: ${result.cardUid}`, 'success');
+        } else if (result.status === 'error') {
+          stopModalCardScan();
+          modalIsReadingActive = false;
+          modalToggleBtn.classList.remove('active');
+          modalToggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="modalReadBtnText">تفعيل القراءة</span>';
+          updateModalStatus('idle', '⚠️ الكارت مرفوض');
+          showModalToast('❌ ' + result.message, 'error');
         }
+      } catch (error) { /* تجاهل */ }
+    }
+
+    async function stopModalCardScan() {
+      if (modalPollingInterval) { clearInterval(modalPollingInterval); modalPollingInterval = null; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/teacher-cancel-card-registration', { method: 'POST', headers, body: '{}' });
       } catch (error) { /* تجاهل */ }
     }
 

@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>إدارة المساعدين - فَصلي</title>
+  <meta name="description" content="إدارة حسابات وصلاحيات المساعدين في نظام فَصلي">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#14171F">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -100,8 +101,8 @@
             <label>🔑 الصلاحيات</label>
             <div class="permissions-grid">
               <label><input type="checkbox" id="permViewStudents" checked> 👁️ عرض الطلاب</label>
-              <label><input type="checkbox" id="permAddStudents"> ➕ إضافة طلاب</label>
-              <label><input type="checkbox" id="permEditStudents"> ✏️ تعديل طلاب</label>
+              <label><input type="checkbox" id="permAddStudents"> ➕ إضافة طلاب <span style="color:var(--gray-400);font-size:11px;">(وربط كارت RFID عند الإضافة)</span></label>
+              <label><input type="checkbox" id="permEditStudents"> ✏️ تعديل طلاب <span style="color:var(--gray-400);font-size:11px;">(وربط/تغيير كارت RFID)</span></label>
               <label><input type="checkbox" id="permDeleteStudents"> 🗑️ حذف طلاب</label>
               <label><input type="checkbox" id="permRecordGrades"> 📝 رصد الدرجات</label>
               <label><input type="checkbox" id="permRecordPayments"> 💰 تسجيل المدفوعات</label>
@@ -186,8 +187,8 @@
           <label>🔑 الصلاحيات</label>
           <div class="permissions-grid">
             <label><input type="checkbox" id="editPermViewStudents"> 👁️ عرض الطلاب</label>
-            <label><input type="checkbox" id="editPermAddStudents"> ➕ إضافة طلاب</label>
-            <label><input type="checkbox" id="editPermEditStudents"> ✏️ تعديل طلاب</label>
+            <label><input type="checkbox" id="editPermAddStudents"> ➕ إضافة طلاب <span style="color:var(--gray-400);font-size:11px;">(وربط كارت RFID عند الإضافة)</span></label>
+            <label><input type="checkbox" id="editPermEditStudents"> ✏️ تعديل طلاب <span style="color:var(--gray-400);font-size:11px;">(وربط/تغيير كارت RFID)</span></label>
             <label><input type="checkbox" id="editPermDeleteStudents"> 🗑️ حذف طلاب</label>
             <label><input type="checkbox" id="editPermRecordGrades"> 📝 رصد الدرجات</label>
             <label><input type="checkbox" id="editPermRecordPayments"> 💰 تسجيل المدفوعات</label>

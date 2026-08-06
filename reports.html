@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>التقارير - فَصلي</title>
+  <meta name="description" content="توليد تقارير الحضور والدرجات والمدفوعات في نظام فَصلي">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#14171F">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -460,8 +461,8 @@
           if (result.success && result.data) {
             result.data.forEach(function(e) {
               const opt = document.createElement('option');
-              opt.value = e.exam_name;
-              opt.textContent = e.exam_name;
+              opt.value = e.title;
+              opt.textContent = e.title;
               select.appendChild(opt);
             });
           }
@@ -618,7 +619,35 @@
           lastReportUrl = result.downloadUrl || null;
 
           document.getElementById('previewCard').style.display = 'block';
-          document.getElementById('reportContent').innerHTML = result.data || 'لا توجد بيانات لعرضها';
+          const contentEl = document.getElementById('reportContent');
+          contentEl.innerHTML = result.data || 'لا توجد بيانات لعرضها';
+          // ✅ نفرض مظهر ثابت وواضح دايماً بالجافاسكريبت مباشرة على الحاوية نفسها (مش عن طريق ملف تنسيق خارجي)،
+          // عشان نضمن وضوح الأسماء والأرقام في التقرير 100% بغض النظر عن أي تعارض توقيت تحميل لملفات الـCSS
+          contentEl.style.setProperty('background', '#ffffff', 'important');
+          contentEl.style.setProperty('color', '#1f2937', 'important');
+          contentEl.style.borderRadius = '8px';
+          contentEl.style.padding = '10px';
+
+          // ✅ نلوّن كل نص جوه التقرير غامق (خلفية بيضا)، إلا الصفوف المميّزة (خلفيتها غامقة فمحتاجة نص فاتح)
+          // وإلا العناصر اللي ليها لون دلالي خاص بيها (حالة السداد/الامتحان، أو شعار فَصلي)
+          contentEl.querySelectorAll('.report-row-alert').forEach(function(row) {
+            row.style.setProperty('background', '#3A1F20', 'important');
+          });
+          contentEl.querySelectorAll('td, th, strong, p, h1, span, div, li').forEach(function(el) {
+            if (el.classList.contains('rpt-good') || el.classList.contains('rpt-warn') || el.classList.contains('rpt-bad')) return;
+            if (el.classList.contains('rpt-brand')) {
+              el.style.setProperty('color', '#14171F', 'important');
+              return;
+            }
+            const isInAlertRow = el.closest('.report-row-alert') !== null;
+            el.style.setProperty('color', isInAlertRow ? '#F2E4E4' : '#1f2937', 'important');
+          });
+          contentEl.querySelectorAll('th').forEach(function(el) {
+            el.style.setProperty('background', '#f3f4f6', 'important');
+          });
+          contentEl.querySelectorAll('hr').forEach(function(el) {
+            el.style.setProperty('border-color', '#e2e8f0', 'important');
+          });
 
           statusDiv.innerHTML = '✅ تم إنشاء التقرير بنجاح';
           statusDiv.style.color = 'var(--success)';
@@ -662,11 +691,18 @@
         if (printWindow) {
           var htmlContent = '<html dir="rtl">';
           htmlContent += '<head><title>تقرير فَصلي</title>';
+          htmlContent += '<meta name="color-scheme" content="light">';
           htmlContent += '<style>';
-          htmlContent += 'body{font-family:"IBM Plex Sans Arabic",sans-serif;padding:30px;direction:rtl;}';
-          htmlContent += 'table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0;}';
-          htmlContent += 'th{background:#f8fafc;border:1px solid #e2e8f0;padding:10px;text-align:right;font-weight:600;}';
-          htmlContent += 'td{border:1px solid #e2e8f0;padding:8px;}';
+          htmlContent += 'html{color-scheme:light;}';
+          htmlContent += 'body{font-family:"IBM Plex Sans Arabic",sans-serif;padding:30px;direction:rtl;background:#ffffff;color:#1f2937;}';
+          htmlContent += 'table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0;background:#ffffff;}';
+          htmlContent += 'th{background:#f8fafc;border:1px solid #e2e8f0;padding:10px;text-align:right;font-weight:600;color:#1f2937;}';
+          htmlContent += 'td{border:1px solid #e2e8f0;padding:8px;color:#1f2937;}';
+          htmlContent += '.report-row-alert td{background:#fef2f2;}';
+          htmlContent += '.rpt-good{color:#22c55e;}';
+          htmlContent += '.rpt-warn{color:#f59e0b;}';
+          htmlContent += '.rpt-bad{color:#ef4444;}';
+          htmlContent += '.rpt-brand{color:#14171F;}';
           htmlContent += 'h1{text-align:center;color:#4f46e5;}';
           htmlContent += 'hr{border:1px solid #e2e8f0;margin:16px 0;}';
           htmlContent += '.footer{text-align:center;font-size:12px;color:#94a3b8;margin-top:20px;}';

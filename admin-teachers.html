@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>إدارة النظام - فَصلي</title>
+  <meta name="description" content="لوحة إدارة النظام العامة (الماستر) في فَصلي - إدارة المدرسين والكروت والإعدادات">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#14171F">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -128,6 +130,51 @@
       border-radius: 8px;
       padding: 12px;
     }
+    .perm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+    }
+    .perm-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #fff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .perm-card:hover { border-color: #cbd5e0; }
+    .perm-card:has(input:checked) { border-color: #0F6B4F; background: #EEF7F3; }
+    .perm-card input[type="checkbox"] {
+      margin-top: 3px;
+      width: 16px;
+      height: 16px;
+      accent-color: #0F6B4F;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .perm-card-body { min-width: 0; }
+    .perm-card-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 13.5px;
+      color: #14171F;
+    }
+    .perm-card-desc {
+      font-size: 11.5px;
+      color: #718096;
+      margin-top: 3px;
+      line-height: 1.55;
+    }
+    body.dark-mode .perm-card { background: #1C2029; border-color: #333B47; }
+    body.dark-mode .perm-card:has(input:checked) { border-color: #3D9B7D; background: #16261F; }
+    body.dark-mode .perm-card-title { color: #EDEEF2; }
+    body.dark-mode .perm-card-desc { color: #A5ABB6; }
     .perm-check {
       display: flex;
       align-items: center;
@@ -387,6 +434,7 @@
       </div>
       <nav class="sidebar-nav">
         <button class="sidebar-item active" id="tabBtnTeachers" onclick="switchAdminTab('teachers')"><i class="fas fa-chalkboard-user"></i> إدارة المدرسين</button>
+        <button class="sidebar-item" id="tabBtnCards" onclick="switchAdminTab('cards')"><i class="fas fa-id-card"></i> كروت المنظومة</button>
         <button class="sidebar-item" id="tabBtnSettings" onclick="switchAdminTab('settings')"><i class="fas fa-gear"></i> إعدادات النظام</button>
         <button class="sidebar-item" id="tabBtnProfile" onclick="switchAdminTab('profile')"><i class="fas fa-user-shield"></i> الملف الشخصي</button>
       </nav>
@@ -444,19 +492,7 @@
       </div>
       <div class="field">
         <label>صلاحيات الحساب (مميزات الباقة)</label>
-        <div class="perm-grid" id="newPermGrid">
-          <label class="perm-check"><input type="checkbox" value="can_manage_students" checked> إدارة الطلاب (إضافة/تعديل/حذف/حضور)</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_groups" checked> إدارة المجموعات</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_grades" checked> إدارة الدرجات (تسجيل/تعديل/حذف)</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_payments" checked> إدارة المدفوعات (تسجيل/تعديل/حذف)</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_books" checked> إدارة المذكرات (إضافة/تعديل/حذف)</label>
-          <label class="perm-check"><input type="checkbox" value="can_send_messages" checked> الرسائل الجماعية</label>
-          <label class="perm-check"><input type="checkbox" value="can_view_reports" checked> التقارير</label>
-          <label class="perm-check"><input type="checkbox" value="can_view_financial" checked> الدخل الشهري</label>
-          <label class="perm-check"><input type="checkbox" value="can_use_backup" checked> النسخ الاحتياطي</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_assistants" checked> إدارة المساعدين</label>
-          <label class="perm-check"><input type="checkbox" value="can_use_rfid" checked> قارئ الكروت (RFID)</label>
-        </div>
+        <div class="perm-grid" id="newPermGrid"></div>
       </div>
       <button class="btn btn-primary" onclick="addTeacher()">➕ إضافة مدرس</button>
     </div>
@@ -484,8 +520,110 @@
     </div>
   </div>
 
+  <div id="panelCards" class="container" style="display:none;">
+    <div id="cardsMessage" class="message"></div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <h2 style="margin:0;">🪪 كل الكروت في النظام</h2>
+        <span style="background:var(--primary,#0F6B4F);color:#fff;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;" id="totalCardsBadge">0 كارت</span>
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>بحث برقم الكارت (UID) بالظبط</label>
+        <input type="text" id="cardSearchInput" placeholder="اكتبي رقم الكارت كامل..." dir="ltr" oninput="searchCardByUid()">
+      </div>
+      <div id="cardSearchResult" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>📶 إعداد واي فاي بورد الماستر</h2>
+      <p style="color:#718096;font-size:13px;margin-bottom:16px;">
+        وصّل بورد الماستر بالكمبيوتر عبر USB، ودوس "توصيل بالبورد"، وبعدين اكتب بيانات الشبكة واحفظها.
+      </p>
+      <button class="btn btn-primary" id="masterWifiConnectBtn" onclick="connectMasterSerial()">🔌 توصيل بالبورد</button>
+      <div id="masterWifiForm" style="display:none;margin-top:16px;">
+        <div class="field-row">
+          <div class="field">
+            <label>اسم الشبكة (SSID)</label>
+            <input type="text" id="masterWifiSsid" placeholder="اسم شبكة الواي فاي">
+          </div>
+          <div class="field">
+            <label>كلمة مرور الشبكة</label>
+            <input type="text" id="masterWifiPassword" placeholder="كلمة المرور">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveMasterWifiConfig()">💾 حفظ إعدادات الشبكة على البورد</button>
+      </div>
+      <div id="masterWifiLog" style="margin-top:12px;font-size:12.5px;color:#64748b;font-family:monospace;max-height:120px;overflow-y:auto;"></div>
+    </div>
+
+    <div class="card">
+      <h2>📥 استقبال كروت المخزون</h2>
+      <p style="color:#718096;font-size:13px;margin-bottom:16px;">
+        دوس "بدء الاستقبال"، وبعدين مرّغ الكروت واحد ورا التاني على بورد الماستر المخصص. كل كارت هيتسجّل في المخزون لوحده.
+      </p>
+      <button class="btn btn-primary" id="scanModeBtn" onclick="toggleMasterScanMode()">▶️ بدء الاستقبال</button>
+      <button class="btn btn-secondary" onclick="showMasterDeviceSecret()">🔑 عرض مفتاح جهاز الماستر</button>
+      <div id="masterSecretBox" style="display:none;margin-top:12px;padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="font-size:12.5px;color:#64748b;margin-bottom:4px;">DEVICE_SECRET (الصقيه في كود بورد الماستر):</div>
+        <div style="font-family:monospace;font-size:13px;direction:ltr;text-align:left;word-break:break-all;" id="masterSecretText">—</div>
+      </div>
+      <div id="scanModeStatus" style="display:none;margin-top:16px;padding:14px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;">
+        <div style="font-size:13.5px;color:#1e40af;">🟢 وضع الاستقبال شغّال — آخر كارت اتمرّغ: <strong id="lastScannedUidText">—</strong></div>
+        <div style="font-size:12.5px;color:#64748b;margin-top:6px;">عدد الكروت في المخزون دلوقتي: <strong id="inStockCountText">0</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📦 تخصيص كروت المخزون لمدرس</h2>
+      <div class="field">
+        <label>المدرس</label>
+        <select id="assignTeacherSelect">
+          <option value="">-- اختر المدرس --</option>
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="inStockSelectAll" onchange="toggleSelectAllInStock()"> تحديد الكل
+      </label>
+      <div id="inStockCardsList" style="margin:4px 0 12px;max-height:260px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;padding:8px;">
+        <p style="color:#a0aec0;font-size:13px;">اختر مدرس عشان تشوف كروت المخزون المتاحة.</p>
+      </div>
+      <button class="btn btn-primary" onclick="assignSelectedCards()">📦 تخصيص الكروت المختارة</button>
+      <button class="btn btn-danger" onclick="deleteSelectedStockCards()">🗑️ حذف الكروت المختارة</button>
+    </div>
+
+    <div class="card">
+      <h2>🪪 كروت مدرس معيّن (تفعيل/تعطيل)</h2>
+      <div class="field">
+        <label>فلترة بالمدرس</label>
+        <select id="filterTeacherSelect" onchange="loadTeacherCards()">
+          <option value="">-- اختر المدرس --</option>
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="teacherCardsSelectAll" onchange="toggleSelectAllTeacherCards()"> تحديد الكل
+      </label>
+      <div id="teacherCardsList" style="margin:4px 0 12px;">
+        <p style="color:#a0aec0;font-size:13px;">اختر مدرس عشان تشوف كروته.</p>
+      </div>
+      <button class="btn btn-secondary" onclick="returnSelectedCardsToStock()">↩️ إرجاع المحدد للمخزون</button>
+      <button class="btn btn-danger" onclick="deleteSelectedTeacherCards()">🗑️ حذف المحدد نهائياً</button>
+      <button class="btn btn-primary" onclick="bulkToggleTeacherCards(true)">✅ تفعيل المحدد</button>
+      <button class="btn btn-secondary" onclick="bulkToggleTeacherCards(false)">⛔ تعطيل المحدد</button>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ إعداد التحقق الإجباري</h2>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;">
+        <input type="checkbox" id="requireCardsToggle" onchange="toggleRequireCards()" style="width:18px;height:18px;">
+        رفض أي كارت مش مسجّل رسمياً ومفعّل (تفعيل ده هيمنع أي كارت غير مصرّح له من تسجيل حضور)
+      </label>
+    </div>
+  </div>
+
   <div id="panelSettings" class="container" style="display:none;">
     <div id="settingsMessage" class="message"></div>
+
     <div class="card">
       <h2>⚙️ بيانات التواصل الظاهرة للمستخدمين</h2>
       <p style="color:#718096;font-size:13px;margin-bottom:16px;">
@@ -526,6 +664,26 @@
         </div>
       </div>
       <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
+    </div>
+
+    <div class="card">
+      <h2>🖼️ الصور الإعلانية في صفحة تسجيل الدخول</h2>
+      <p style="color:#718096;font-size:13px;margin-bottom:16px;">
+        تظهر الصور دي في مساحة إعلانية بصفحة تسجيل الدخول (خطط اشتراكات، إعلانات، إلخ). عدد الصور مش محدود، والمساحة بتختفي تلقائياً لو مفيش أي صورة مضافة.
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>رابط الصورة</label>
+          <input type="text" id="newAdImageUrl" placeholder="https://..." dir="ltr">
+        </div>
+        <div class="field">
+          <label>رابط عند الضغط على الصورة (اختياري)</label>
+          <input type="text" id="newAdLinkUrl" placeholder="https://..." dir="ltr">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addLoginAd()">➕ إضافة صورة</button>
+
+      <div id="loginAdsList" style="margin-top:20px;display:flex;flex-direction:column;gap:10px;"></div>
     </div>
   </div>
 
@@ -599,19 +757,7 @@
 
       <div class="field">
         <label>صلاحيات الحساب (مميزات الباقة)</label>
-        <div class="perm-grid" id="editPermGrid">
-          <label class="perm-check"><input type="checkbox" value="can_manage_students"> إدارة الطلاب (إضافة/تعديل/حذف/حضور)</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_groups"> إدارة المجموعات</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_grades"> إدارة الدرجات (تسجيل/تعديل/حذف)</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_payments"> إدارة المدفوعات (تسجيل/تعديل/حذف)</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_books"> إدارة المذكرات (إضافة/تعديل/حذف)</label>
-          <label class="perm-check"><input type="checkbox" value="can_send_messages"> الرسائل الجماعية</label>
-          <label class="perm-check"><input type="checkbox" value="can_view_reports"> التقارير</label>
-          <label class="perm-check"><input type="checkbox" value="can_view_financial"> الدخل الشهري</label>
-          <label class="perm-check"><input type="checkbox" value="can_use_backup"> النسخ الاحتياطي</label>
-          <label class="perm-check"><input type="checkbox" value="can_manage_assistants"> إدارة المساعدين</label>
-          <label class="perm-check"><input type="checkbox" value="can_use_rfid"> قارئ الكروت (RFID)</label>
-        </div>
+        <div class="perm-grid" id="editPermGrid"></div>
       </div>
 
       <div class="field" style="border-top:1px solid #e2e8f0;padding-top:14px;margin-top:6px;">
@@ -631,6 +777,16 @@
   </div>
 
   <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // ============================================
     // CONFIG
     // ============================================
@@ -832,6 +988,36 @@
     // ============================================
     // ADD TEACHER
     // ============================================
+    // ============================================
+    // بطاقات الصلاحيات (وصف مختصر لكل صلاحية)
+    // ============================================
+    const PERMISSIONS_META = [
+      { value: 'can_manage_students', icon: '👨‍🎓', title: 'إدارة الطلاب', desc: 'إضافة وتعديل وحذف ونقل الطلاب بين المجموعات (بما فيها ربط كارت RFID)' },
+      { value: 'can_manage_groups', icon: '📚', title: 'إدارة المجموعات', desc: 'إنشاء وتعديل وحذف مجموعات الدروس' },
+      { value: 'can_manage_grades', icon: '📝', title: 'إدارة الدرجات', desc: 'تسجيل وتعديل وحذف درجات الطلاب في الامتحانات' },
+      { value: 'can_manage_payments', icon: '💰', title: 'إدارة المدفوعات', desc: 'تسجيل وتعديل وحذف اشتراكات وسداد الطلاب' },
+      { value: 'can_manage_books', icon: '📖', title: 'إدارة المذكرات', desc: 'إضافة مذكرات وتسجيل سدادها' },
+      { value: 'can_send_messages', icon: '📨', title: 'الرسائل الجماعية', desc: 'إرسال رسائل جماعية لأولياء الأمور والمساعدين' },
+      { value: 'can_view_reports', icon: '📊', title: 'التقارير', desc: 'توليد تقارير الحضور والدرجات والمدفوعات والمذكرات' },
+      { value: 'can_view_financial', icon: '📈', title: 'الدخل الشهري', desc: 'الاطلاع على الملخص المالي الكامل للحساب' },
+      { value: 'can_use_backup', icon: '💾', title: 'النسخ الاحتياطي', desc: 'تصدير واستيراد نسخة احتياطية من بيانات الحساب' },
+      { value: 'can_manage_assistants', icon: '🧑‍🤝‍🧑', title: 'إدارة المساعدين', desc: 'إضافة وتعديل وحذف مساعدين وتحديد صلاحياتهم' },
+      { value: 'can_use_rfid', icon: '🪪', title: 'قارئ الكروت (RFID)', desc: 'ربط كارت بطالب وتسجيل حضوره تلقائياً بالكارت' },
+    ];
+
+    function renderPermCards(gridId, defaultChecked) {
+      const grid = document.getElementById(gridId);
+      grid.innerHTML = PERMISSIONS_META.map(p => `
+        <label class="perm-card">
+          <input type="checkbox" value="${p.value}" ${defaultChecked ? 'checked' : ''}>
+          <div class="perm-card-body">
+            <div class="perm-card-title"><span>${p.icon}</span> ${p.title}</div>
+            <div class="perm-card-desc">${p.desc}</div>
+          </div>
+        </label>
+      `).join('');
+    }
+
     function collectPermGrid(gridId) {
       const perms = {};
       document.querySelectorAll(`#${gridId} input[type="checkbox"]`).forEach(cb => {
@@ -1111,6 +1297,8 @@
     window.onload = function() {
       loadTeachers();
       loadAdminProfile();
+      renderPermCards('newPermGrid', true);
+      renderPermCards('editPermGrid', false);
       setInterval(loadTeachers, 30000);
     };
 
@@ -1130,13 +1318,16 @@
 
     function switchAdminTab(tab) {
       document.getElementById('panelTeachers').style.display = tab === 'teachers' ? '' : 'none';
+      document.getElementById('panelCards').style.display = tab === 'cards' ? '' : 'none';
       document.getElementById('panelSettings').style.display = tab === 'settings' ? '' : 'none';
       document.getElementById('panelProfile').style.display = tab === 'profile' ? '' : 'none';
       document.getElementById('tabBtnTeachers').classList.toggle('active', tab === 'teachers');
+      document.getElementById('tabBtnCards').classList.toggle('active', tab === 'cards');
       document.getElementById('tabBtnSettings').classList.toggle('active', tab === 'settings');
       document.getElementById('tabBtnProfile').classList.toggle('active', tab === 'profile');
       if (tab === 'settings') loadSystemSettings();
       if (tab === 'profile') loadAdminProfile();
+      if (tab === 'cards') initCardsTab();
     }
 
     function showProfileMessage(text, type) {
@@ -1144,6 +1335,493 @@
       el.textContent = text;
       el.className = 'message ' + type;
       el.style.display = 'block';
+    }
+
+    // ============================================
+    // تاب كروت المنظومة (v2: مخزون → تخصيص → تفعيل → ربط من عند المدرس)
+    // ============================================
+    let scanStatusPollTimer = null;
+    let masterScanIsActive = false;
+
+    async function initCardsTab() {
+      await loadTeacherListsForCards();
+      await loadRequireCardsToggle();
+      await refreshScanStatus();
+      await loadTotalCardsCount();
+    }
+
+    async function loadTotalCardsCount() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/list-system-cards', { method: 'POST', headers, body: '{}' });
+        const result = await response.json();
+        const total = (result.data || []).length;
+        document.getElementById('totalCardsBadge').textContent = total + (total === 1 ? ' كارت' : ' كارت');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل عدد الكروت:', error);
+      }
+    }
+
+    let cardSearchDebounce = null;
+    function searchCardByUid() {
+      const query = document.getElementById('cardSearchInput').value.trim();
+      const resultBox = document.getElementById('cardSearchResult');
+      if (cardSearchDebounce) clearTimeout(cardSearchDebounce);
+      if (!query) { resultBox.innerHTML = ''; return; }
+
+      cardSearchDebounce = setTimeout(async () => {
+        resultBox.innerHTML = '<p style="color:#a0aec0;font-size:13px;">جاري البحث...</p>';
+        try {
+          const headers = getAuthHeaders();
+          if (!headers) return;
+          const response = await fetch(PROJECT_URL + '/functions/v1/list-system-cards', {
+            method: 'POST', headers, body: JSON.stringify({ cardUid: query })
+          });
+          const result = await response.json();
+          const cards = result.data || [];
+          if (cards.length === 0) {
+            resultBox.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش أي كارت بالرقم ده.</p>';
+            return;
+          }
+          resultBox.innerHTML = cards.map(c => `
+            <div style="padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;">
+              <div dir="ltr" style="font-family:monospace;font-weight:600;">${escapeHtml(c.cardUid)}</div>
+              <div style="margin-top:6px;color:#64748b;">
+                الحالة: ${c.status === 'in_stock' ? 'في المخزون' : 'متخصص'}
+                ${c.teacherName ? ' — المدرس: ' + escapeHtml(c.teacherName) : ''}
+                ${c.studentName ? ' — الطالب: ' + escapeHtml(c.studentName) : ''}
+                ${c.status === 'assigned' ? (c.isActive ? ' — <span style="color:#22c55e;">مفعّل</span>' : ' — <span style="color:#ef4444;">معطّل</span>') : ''}
+              </div>
+            </div>
+          `).join('');
+        } catch (error) {
+          console.error('❌ خطأ في البحث:', error);
+          resultBox.innerHTML = '<p style="color:#e53e3e;font-size:13px;">تعذر البحث.</p>';
+        }
+      }, 400);
+    }
+
+    async function loadTeacherListsForCards() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teachers', {
+          method: 'POST', headers, body: JSON.stringify({ adminId: clientId })
+        });
+        const result = await response.json();
+        const teachers = result.data || [];
+        [document.getElementById('assignTeacherSelect'), document.getElementById('filterTeacherSelect')].forEach(select => {
+          select.innerHTML = '<option value="">-- اختر المدرس --</option>';
+          teachers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.client_id;
+            opt.textContent = t.name + ' (' + t.client_id + ')';
+            select.appendChild(opt);
+          });
+        });
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المدرسين:', error);
+      }
+    }
+
+    // ---------- إعداد واي فاي بورد الماستر (عبر USB Serial) ----------
+    let masterSerialPort = null;
+    let masterSerialReader = null;
+    let masterSerialConnected = false;
+
+    function logMasterWifi(text) {
+      const box = document.getElementById('masterWifiLog');
+      box.innerHTML += '<div>' + escapeHtml(text) + '</div>';
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function connectMasterSerial() {
+      if (!('serial' in navigator)) {
+        showCardsMessage('⚠️ متصفحك لا يدعم Web Serial API. استخدمي Chrome أو Edge (أو تطبيق سطح المكتب).', 'error');
+        return;
+      }
+      try {
+        masterSerialPort = await navigator.serial.requestPort();
+        await masterSerialPort.open({ baudRate: 115200 });
+        masterSerialConnected = true;
+        document.getElementById('masterWifiForm').style.display = 'block';
+        document.getElementById('masterWifiConnectBtn').textContent = '✅ متصل';
+        logMasterWifi('✅ تم الاتصال بالبورد');
+
+        const textDecoder = new TextDecoderStream();
+        masterSerialPort.readable.pipeTo(textDecoder.writable);
+        masterSerialReader = textDecoder.readable.getReader();
+        masterSerialReadLoop();
+      } catch (error) {
+        console.error('❌ خطأ في الاتصال:', error);
+        showCardsMessage('❌ فشل الاتصال: ' + error.message, 'error');
+      }
+    }
+
+    async function masterSerialReadLoop() {
+      let buffer = '';
+      try {
+        while (true) {
+          const { value, done } = await masterSerialReader.read();
+          if (done) break;
+          if (value) {
+            buffer += value;
+            let lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            lines.forEach(line => { if (line.trim()) logMasterWifi(line.trim()); });
+          }
+        }
+      } catch (error) {
+        masterSerialConnected = false;
+        logMasterWifi('⚠️ تم قطع الاتصال بالبورد');
+      }
+    }
+
+    async function sendMasterSerialCommand(command) {
+      if (!masterSerialConnected || !masterSerialPort) {
+        showCardsMessage('⚠️ وصّل البورد الأول', 'error');
+        return;
+      }
+      const writer = masterSerialPort.writable.getWriter();
+      const encoder = new TextEncoder();
+      await writer.write(encoder.encode(command + '\n'));
+      writer.releaseLock();
+    }
+
+    async function saveMasterWifiConfig() {
+      const ssid = document.getElementById('masterWifiSsid').value.trim();
+      const password = document.getElementById('masterWifiPassword').value.trim();
+      if (!ssid) { showCardsMessage('⚠️ أدخل اسم الشبكة', 'error'); return; }
+      await sendMasterSerialCommand('SET_CONFIG:' + ssid + '|' + password);
+      showCardsMessage('✅ تم إرسال إعدادات الشبكة للبورد', 'success');
+    }
+
+    async function showMasterDeviceSecret() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-master-device-secret', {
+          method: 'POST', headers, body: '{}'
+        });
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('masterSecretText').textContent = result.data.deviceSecret;
+          document.getElementById('masterSecretBox').style.display = 'block';
+        } else {
+          showCardsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل جلب المفتاح', 'error');
+      }
+    }
+
+    // ---------- استقبال المخزون ----------
+    async function toggleMasterScanMode() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const endpoint = masterScanIsActive ? 'stop-master-scan-mode' : 'start-master-scan-mode';
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/' + endpoint, { method: 'POST', headers, body: '{}' });
+        const result = await response.json();
+        if (result.success) {
+          masterScanIsActive = !masterScanIsActive;
+          updateScanModeUI();
+          if (masterScanIsActive) {
+            scanStatusPollTimer = setInterval(refreshScanStatus, 2500);
+          } else {
+            clearInterval(scanStatusPollTimer);
+          }
+        } else {
+          showCardsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+      }
+    }
+
+    function updateScanModeUI() {
+      const btn = document.getElementById('scanModeBtn');
+      const statusBox = document.getElementById('scanModeStatus');
+      if (masterScanIsActive) {
+        btn.textContent = '⏹️ إيقاف الاستقبال';
+        btn.classList.replace('btn-primary', 'btn-danger');
+        statusBox.style.display = 'block';
+      } else {
+        btn.textContent = '▶️ بدء الاستقبال';
+        btn.classList.replace('btn-danger', 'btn-primary');
+        statusBox.style.display = 'none';
+      }
+    }
+
+    async function refreshScanStatus() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-master-scan-status', { method: 'POST', headers, body: '{}' });
+        const result = await response.json();
+        if (!result.success) return;
+        masterScanIsActive = result.isActive;
+        updateScanModeUI();
+        document.getElementById('lastScannedUidText').textContent = result.lastScannedUid || '—';
+        document.getElementById('inStockCountText').textContent = result.inStockCount;
+      } catch (error) {
+        console.error('❌ خطأ في استعلام حالة الاستقبال:', error);
+      }
+    }
+
+    // ---------- تخصيص كروت المخزون لمدرس ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      const assignSelect = document.getElementById('assignTeacherSelect');
+      if (assignSelect) assignSelect.addEventListener('change', loadInStockCards);
+    });
+
+    async function loadInStockCards() {
+      const container = document.getElementById('inStockCardsList');
+      const teacherId = document.getElementById('assignTeacherSelect').value;
+      if (!teacherId) {
+        container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">اختر مدرس عشان تشوف كروت المخزون المتاحة.</p>';
+        return;
+      }
+      container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">جاري التحميل...</p>';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/list-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ statusFilter: 'in_stock' })
+        });
+        const result = await response.json();
+        const cards = result.data || [];
+        if (cards.length === 0) {
+          container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش أي كروت في المخزون حالياً.</p>';
+          return;
+        }
+        container.innerHTML = cards.map(c => `
+          <label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #f1f5f9;font-size:13px;cursor:pointer;">
+            <input type="checkbox" class="instock-card-cb" value="${c.id}">
+            <span dir="ltr">${escapeHtml(c.cardUid)}</span>
+          </label>
+        `).join('');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل كروت المخزون:', error);
+      }
+    }
+
+    function toggleSelectAllInStock() {
+      const checked = document.getElementById('inStockSelectAll').checked;
+      document.querySelectorAll('.instock-card-cb').forEach(cb => { cb.checked = checked; });
+    }
+
+    async function deleteSelectedStockCards() {
+      const selectedIds = [...document.querySelectorAll('.instock-card-cb:checked')].map(cb => Number(cb.value));
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+      if (!confirm(`⚠️ هل أنت متأكد من حذف ${selectedIds.length} كارت نهائياً من المخزون؟`)) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/revoke-system-card', {
+          method: 'POST', headers, body: JSON.stringify({ cardIds: selectedIds })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          document.getElementById('inStockSelectAll').checked = false;
+          loadInStockCards();
+          refreshScanStatus();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل حذف الكروت', 'error');
+      }
+    }
+
+    async function assignSelectedCards() {
+      const teacherId = document.getElementById('assignTeacherSelect').value;
+      const selectedIds = [...document.querySelectorAll('.instock-card-cb:checked')].map(cb => Number(cb.value));
+
+      if (!teacherId) { showCardsMessage('⚠️ اختر المدرس الأول', 'error'); return; }
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/assign-cards-to-teacher', {
+          method: 'POST', headers, body: JSON.stringify({ cardIds: selectedIds, teacherId })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          loadInStockCards();
+          refreshScanStatus();
+          if (document.getElementById('filterTeacherSelect').value === teacherId) loadTeacherCards();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل تخصيص الكروت', 'error');
+      }
+    }
+
+    // ---------- كروت مدرس معيّن (تفعيل/تعطيل) ----------
+    async function loadTeacherCards() {
+      const container = document.getElementById('teacherCardsList');
+      const teacherId = document.getElementById('filterTeacherSelect').value;
+      if (!teacherId) {
+        container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">اختر مدرس عشان تشوف كروته.</p>';
+        return;
+      }
+      container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">جاري التحميل...</p>';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/list-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ teacherId })
+        });
+        const result = await response.json();
+        const cards = result.data || [];
+        if (cards.length === 0) {
+          container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش أي كروت متخصصة للمدرس ده لسه.</p>';
+          return;
+        }
+        container.innerHTML = cards.map(c => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;">
+            <input type="checkbox" class="teacher-card-cb" value="${c.id}">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" ${c.isActive ? 'checked' : ''} onchange="toggleCardActive(${c.id}, this.checked)">
+              <span style="font-size:12px;color:${c.isActive ? '#22c55e' : '#a0aec0'};">${c.isActive ? 'مفعّل' : 'معطّل'}</span>
+            </label>
+            <div style="flex:1;">
+              <div style="font-size:12.5px;" dir="ltr">${escapeHtml(c.cardUid)}</div>
+              <div style="font-size:11px;color:#a0aec0;">${c.studentName ? '👤 ' + escapeHtml(c.studentName) : '— لسه مش مربوط بطالب —'}</div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل كروت المدرس:', error);
+      }
+    }
+
+    function toggleSelectAllTeacherCards() {
+      const checked = document.getElementById('teacherCardsSelectAll').checked;
+      document.querySelectorAll('.teacher-card-cb').forEach(cb => { cb.checked = checked; });
+    }
+
+    async function returnSelectedCardsToStock() {
+      const selectedIds = [...document.querySelectorAll('.teacher-card-cb:checked')].map(cb => Number(cb.value));
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+      if (!confirm(`↩️ هل تؤكدي إرجاع ${selectedIds.length} كارت للمخزون؟ هيتشال ربطه بالمدرس والطالب.`)) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/return-card-to-stock', {
+          method: 'POST', headers, body: JSON.stringify({ cardIds: selectedIds })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          document.getElementById('teacherCardsSelectAll').checked = false;
+          loadTeacherCards();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل إرجاع الكروت للمخزون', 'error');
+      }
+    }
+
+    async function deleteSelectedTeacherCards() {
+      const selectedIds = [...document.querySelectorAll('.teacher-card-cb:checked')].map(cb => Number(cb.value));
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+      if (!confirm(`⚠️ هل أنت متأكد من حذف ${selectedIds.length} كارت نهائياً؟`)) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/revoke-system-card', {
+          method: 'POST', headers, body: JSON.stringify({ cardIds: selectedIds })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          document.getElementById('teacherCardsSelectAll').checked = false;
+          loadTeacherCards();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل حذف الكروت', 'error');
+      }
+    }
+
+    async function bulkToggleTeacherCards(isActive) {
+      const selectedIds = [...document.querySelectorAll('.teacher-card-cb:checked')].map(cb => Number(cb.value));
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/toggle-card-active', {
+          method: 'POST', headers, body: JSON.stringify({ cardIds: selectedIds, isActive })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          document.getElementById('teacherCardsSelectAll').checked = false;
+          loadTeacherCards();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل تحديث الكروت', 'error');
+      }
+    }
+
+    async function toggleCardActive(cardId, isActive) {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/toggle-card-active', {
+          method: 'POST', headers, body: JSON.stringify({ cardId, isActive })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        loadTeacherCards();
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+      }
+    }
+
+    // ---------- إعداد التحقق الإجباري ----------
+    async function loadRequireCardsToggle() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-system-settings', { method: 'POST', headers, body: '{}' });
+        const result = await response.json();
+        document.getElementById('requireCardsToggle').checked = !!(result.data && result.data.require_registered_cards);
+      } catch (error) { console.error('❌ خطأ:', error); }
+    }
+
+    async function toggleRequireCards() {
+      const checked = document.getElementById('requireCardsToggle').checked;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-system-settings', {
+          method: 'POST', headers, body: JSON.stringify({ requireRegisteredCards: checked })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ تم تحديث الإعداد' : '❌ ' + result.message, result.success ? 'success' : 'error');
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+      }
+    }
+
+    function showCardsMessage(text, type) {
+      const el = document.getElementById('cardsMessage');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
     }
 
     async function loadAdminProfile() {
@@ -1256,6 +1934,7 @@
         document.getElementById('settingsFacebook').value = data.facebook_url || '';
         document.getElementById('settingsDesktopUrl').value = data.desktop_download_url || '';
         document.getElementById('settingsMobileUrl').value = data.mobile_app_url || '';
+        loadLoginAds();
       } catch (error) {
         console.error('❌ خطأ في تحميل إعدادات النظام:', error);
         showSettingsMessage('❌ تعذر تحميل الإعدادات الحالية', 'error');
@@ -1293,6 +1972,92 @@
       } catch (error) {
         console.error('❌ خطأ في حفظ الإعدادات:', error);
         showSettingsMessage('❌ فشل حفظ الإعدادات: ' + error.message, 'error');
+      }
+    }
+
+    async function loadLoginAds() {
+      const container = document.getElementById('loginAdsList');
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-login-ads');
+        const result = await response.json();
+        const ads = result.data || [];
+        if (ads.length === 0) {
+          container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش صور مضافة حالياً.</p>';
+          return;
+        }
+        container.innerHTML = ads.map(ad => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #e2e8f0;border-radius:10px;">
+            <img src="${ad.image_url}" style="width:70px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;" onerror="this.style.opacity=0.3">
+            <div style="flex:1;overflow:hidden;">
+              <div style="font-size:12px;color:#4a5568;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">${ad.image_url}</div>
+              ${ad.link_url ? `<div style="font-size:11px;color:#a0aec0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">🔗 ${ad.link_url}</div>` : ''}
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deleteLoginAd(${ad.id})"><i class="fas fa-trash"></i></button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الصور الإعلانية:', error);
+        container.innerHTML = '<p style="color:#e53e3e;font-size:13px;">تعذر تحميل الصور.</p>';
+      }
+    }
+
+    async function addLoginAd() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const imageUrl = document.getElementById('newAdImageUrl').value.trim();
+      const linkUrl = document.getElementById('newAdLinkUrl').value.trim();
+
+      if (!imageUrl) { showSettingsMessage('⚠️ أدخل رابط الصورة', 'error'); return; }
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/add-login-ad', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ imageUrl, linkUrl: linkUrl || undefined })
+        });
+
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+          document.getElementById('newAdImageUrl').value = '';
+          document.getElementById('newAdLinkUrl').value = '';
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إضافة الصورة:', error);
+        showSettingsMessage('❌ فشل إضافة الصورة', 'error');
+      }
+    }
+
+    async function deleteLoginAd(adId) {
+      if (!confirm('⚠️ هل أنت متأكد من حذف الصورة دي؟')) return;
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/delete-login-ad', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ adId })
+        });
+
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حذف الصورة:', error);
+        showSettingsMessage('❌ فشل حذف الصورة', 'error');
       }
     }
 
