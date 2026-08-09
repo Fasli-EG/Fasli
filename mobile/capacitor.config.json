@@ -6,8 +6,8 @@
     "url": "https://fasli-eg.github.io/Fasli/login.html",
     "cleartext": false
   },
-  "backgroundColor": "#14171F",
+  "backgroundColor": "#0B1C33",
   "android": {
-    "backgroundColor": "#14171F"
+    "backgroundColor": "#0B1C33"
   }
 }
