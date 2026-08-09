@@ -65,6 +65,7 @@
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
         <h2>لوحة المتابعة</h2>
+        <button class="sidebar-toggle-btn" onclick="location.reload()" title="تحديث الصفحة" style="margin-left:8px;"><i class="fas fa-arrows-rotate"></i></button>
         <div class="notif-wrap">
           <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
             <i class="fas fa-bell"></i>
@@ -399,6 +400,21 @@
       }
     })();
 
+
+  // ⏱️ حماية زمنية عامة: أي طلب لدوال النظام مفروض ياخد رد خلال 15 ثانية، وإلا يتلغى تلقائياً
+  (function() {
+    if (window.__fetchTimeoutInstalled) return;
+    window.__fetchTimeoutInstalled = true;
+    const _origFetch = window.fetch;
+    window.fetch = function(...args) {
+      const urlStr = String(args[0] || '');
+      if (!urlStr.includes('/functions/v1/')) return _origFetch.apply(this, args);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const opts = args[1] ? { ...args[1], signal: controller.signal } : { signal: controller.signal };
+      return _origFetch(args[0], opts).finally(() => clearTimeout(timeoutId));
+    };
+  })();
 
   // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
   (function() {
