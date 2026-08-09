@@ -531,7 +531,7 @@
       </div>
       <div class="field" style="margin-top:14px;">
         <label>بحث برقم الكارت (UID) بالظبط</label>
-        <input type="text" id="cardSearchInput" placeholder="اكتبي رقم الكارت كامل..." dir="ltr" oninput="searchCardByUid()">
+        <input type="text" id="cardSearchInput" placeholder="اكتب رقم الكارت كامل..." dir="ltr" oninput="searchCardByUid()">
       </div>
       <div id="cardSearchResult" style="margin-top:10px;"></div>
     </div>
@@ -952,7 +952,7 @@
 
             html += `
             <tr>
-              <td><code style="background:#edf2f7;padding:2px 8px;border-radius:4px;font-size:12px;">${t.client_id}</code></td>
+              <td><code style="background:#edf2f7;color:#1a202c;padding:2px 8px;border-radius:4px;font-size:12px;">${t.client_id}</code></td>
               <td>${t.name}</td>
               <td><span class="status-badge ${statusClass}">${status}</span></td>
               <td>${t.expiry_date || 'غير محدود'}</td>
@@ -1434,7 +1434,7 @@
 
     async function connectMasterSerial() {
       if (!('serial' in navigator)) {
-        showCardsMessage('⚠️ متصفحك لا يدعم Web Serial API. استخدمي Chrome أو Edge (أو تطبيق سطح المكتب).', 'error');
+        showCardsMessage('⚠️ متصفحك لا يدعم Web Serial API. استخدم Chrome أو Edge (أو تطبيق سطح المكتب).', 'error');
         return;
       }
       try {
@@ -1706,7 +1706,7 @@
     async function returnSelectedCardsToStock() {
       const selectedIds = [...document.querySelectorAll('.teacher-card-cb:checked')].map(cb => Number(cb.value));
       if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
-      if (!confirm(`↩️ هل تؤكدي إرجاع ${selectedIds.length} كارت للمخزون؟ هيتشال ربطه بالمدرس والطالب.`)) return;
+      if (!confirm(`↩️ هل تؤكد إرجاع ${selectedIds.length} كارت للمخزون؟ هيتشال ربطه بالمدرس والطالب.`)) return;
 
       try {
         const headers = getAuthHeaders();

@@ -225,7 +225,7 @@
       </div>
       <div class="modal-body">
         <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
-          حددي إيه اللي هيحصل لما أي طالب يمرّغ كارته على البورد. الوضع بيرجع تلقائياً لـ"حضور" لو عدّت 5 دقايق من غير أي كارت.
+          حدد إيه اللي هيحصل لما أي طالب يمرّغ كارته على البورد. الوضع بيرجع تلقائياً لـ"حضور" لو عدّت 5 دقايق من غير أي كارت.
         </p>
         <div class="field">
           <label>الوضع</label>
@@ -240,7 +240,7 @@
           <select id="cardModePaymentTitle" onchange="fillCardModePaymentAmount()">
             <option value="">-- اختر البند --</option>
           </select>
-          <label style="margin-top:8px;">المبلغ اللي هيتسجّل مدفوع دلوقتي (سعر البند الكامل ثابت زي ما هو، ولو حطيتي أقل هيتسجّل دفعة جزئية)</label>
+          <label style="margin-top:8px;">المبلغ اللي هيتسجّل مدفوع دلوقتي (سعر البند الكامل ثابت زي ما هو، ولو حطيت أقل هيتسجّل دفعة جزئية)</label>
           <input type="number" id="cardModePaymentAmount" placeholder="المبلغ">
         </div>
         <div class="field" id="cardModeBookField" style="display:none;">
@@ -248,7 +248,7 @@
           <select id="cardModeBookSelect" onchange="fillCardModeBookAmount()">
             <option value="">-- اختر المذكرة --</option>
           </select>
-          <label style="margin-top:8px;">المبلغ اللي هيتسجّل مدفوع دلوقتي (سعر المذكرة الأصلي ثابت زي ما هو، ولو حطيتي أقل هيتسجّل دفعة جزئية)</label>
+          <label style="margin-top:8px;">المبلغ اللي هيتسجّل مدفوع دلوقتي (سعر المذكرة الأصلي ثابت زي ما هو، ولو حطيت أقل هيتسجّل دفعة جزئية)</label>
           <input type="number" id="cardModeBookAmount" placeholder="المبلغ">
         </div>
         <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px;" onclick="saveCardMode()">حفظ الوضع</button>

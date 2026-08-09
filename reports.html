@@ -712,7 +712,7 @@
         htmlContent += '<\/body><\/html>';
 
         // ✅ في تطبيق الموبايل، الطباعة المباشرة (window.print) مش مدعومة جوه الـWebView أصلاً،
-        // فبدل الطباعة بنحفظ التقرير كملف ونفتح قائمة المشاركة الأصلية للموبايل (تقدري تطبعي أو تبعتي الملف منها)
+        // فبدل الطباعة بنحفظ التقرير كملف ونفتح قائمة المشاركة الأصلية للموبايل (تقدر تطبع أو تبعت الملف منها)
         const CapShare = window.Capacitor?.Plugins?.Share;
         const CapFilesystem = window.Capacitor?.Plugins?.Filesystem;
         if (window.Capacitor?.isNativePlatform?.() && CapShare && CapFilesystem) {
@@ -729,7 +729,7 @@
               dialogTitle: 'مشاركة أو طباعة التقرير',
             });
           }).then(function() {
-            showToast('✅ افتحي التقرير من قائمة المشاركة للطباعة أو الحفظ', 'success');
+            showToast('✅ افتح التقرير من قائمة المشاركة للطباعة أو الحفظ', 'success');
           }).catch(function(e) {
             console.error('❌ خطأ في مشاركة التقرير:', e);
             showToast('❌ تعذرت مشاركة التقرير', 'error');
