@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=15">
   <script src="activity-format.js?v=4"></script>
 </head>
 <body>
@@ -552,10 +552,16 @@
     let studentRankChartInstance = null;
 
     function updateAttendanceChart(data) {
-      const ctx = document.getElementById('attendanceChart').getContext('2d');
-      if (attendanceChart) attendanceChart.destroy();
       const labels = data.map(d => new Date(d.date).toLocaleDateString('ar-EG', { weekday: 'short' }));
       const values = data.map(d => d.count);
+      if (attendanceChart) {
+        // ✅ نحدّث بيانات الرسم الموجود بدل ما نهدمه ونبنيه من الصفر — أخف وأسرع بكتير
+        attendanceChart.data.labels = labels;
+        attendanceChart.data.datasets[0].data = values;
+        attendanceChart.update();
+        return;
+      }
+      const ctx = document.getElementById('attendanceChart').getContext('2d');
       attendanceChart = new Chart(ctx, {
         type: 'bar',
         data: { labels, datasets: [{ label: 'عدد الحضور', data: values, backgroundColor: '#4f46e5', borderRadius: 6, borderSkipped: false }] },
@@ -564,14 +570,22 @@
     }
 
     function updateGroupsChart(labels, data) {
-      const ctx = document.getElementById('groupsChart').getContext('2d');
-      if (groupsChart) groupsChart.destroy();
+      const finalLabels = labels.length ? labels : ['لا توجد مجموعات'];
+      const finalData = data.length ? data : [1];
       const colors = ['#4f46e5', '#22c55e', '#f59e0b', '#ef4444', '#9f7aea', '#ec4899'];
+      if (groupsChart) {
+        groupsChart.data.labels = finalLabels;
+        groupsChart.data.datasets[0].data = finalData;
+        groupsChart.data.datasets[0].backgroundColor = colors.slice(0, finalData.length || 1);
+        groupsChart.update();
+        return;
+      }
+      const ctx = document.getElementById('groupsChart').getContext('2d');
       groupsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: labels.length ? labels : ['لا توجد مجموعات'],
-          datasets: [{ data: data.length ? data : [1], backgroundColor: colors.slice(0, data.length || 1), borderWidth: 0 }]
+          labels: finalLabels,
+          datasets: [{ data: finalData, backgroundColor: colors.slice(0, finalData.length || 1), borderWidth: 0 }]
         },
         options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } } }, cutout: '60%' }
       });
@@ -1103,11 +1117,12 @@
           pushToken = stored?.value || null;
         }
         if (jwt && pushToken) {
-          await fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+          // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
+          fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
             body: JSON.stringify({ token: pushToken })
-          });
+          }).catch(() => {});
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
       {
@@ -2045,8 +2060,8 @@ async function confirmReset() {
       registerPushIfNative();
       refreshCardModeStatus();
       setInterval(loadDashboard, 30000);
-      setInterval(loadTodayAttendance, 10000);
-      setInterval(refreshCardModeStatus, 20000);
+      setInterval(loadTodayAttendance, 11000);
+      setInterval(refreshCardModeStatus, 23000);
     };
   </script>
   <script>
