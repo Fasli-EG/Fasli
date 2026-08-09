@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>إدارة المساعدين - فَصلي</title>
   <meta name="description" content="إدارة حسابات وصلاحيات المساعدين في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#14171F">
+  <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <div class="logo-icon"><svg viewBox="0 0 120 120" fill="none"><path d="M35 62 L52 79 L86 41" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
         <h1>فَصلي</h1>
       </div>
 
@@ -108,6 +108,7 @@
               <label><input type="checkbox" id="permRecordPayments"> 💰 تسجيل المدفوعات</label>
               <label><input type="checkbox" id="permViewReports"> 📊 عرض التقارير</label>
               <label><input type="checkbox" id="permManageAttendance"> ✅ إدارة الحضور</label>
+              <label><input type="checkbox" id="permManageCardMode"> 🪪 التحكم في وضع الكارت (دفع اشتراك/مذكرة بالكارت)</label>
               <label><input type="checkbox" id="permManageGroups"> 📚 إدارة المجموعات</label>
               <label><input type="checkbox" id="permResetParentPassword"> 🔑 إعادة تعيين كلمة مرور ولي الأمر</label>
               <label><input type="checkbox" id="permManageBooks"> 📖 إدارة المذكرات</label>
@@ -194,6 +195,7 @@
             <label><input type="checkbox" id="editPermRecordPayments"> 💰 تسجيل المدفوعات</label>
             <label><input type="checkbox" id="editPermViewReports"> 📊 عرض التقارير</label>
             <label><input type="checkbox" id="editPermManageAttendance"> ✅ إدارة الحضور</label>
+            <label><input type="checkbox" id="editPermManageCardMode"> 🪪 التحكم في وضع الكارت (دفع اشتراك/مذكرة بالكارت)</label>
             <label><input type="checkbox" id="editPermManageGroups"> 📚 إدارة المجموعات</label>
             <label><input type="checkbox" id="editPermResetParentPassword"> 🔑 إعادة تعيين كلمة مرور ولي الأمر</label>
             <label><input type="checkbox" id="editPermManageBooks"> 📖 إدارة المذكرات</label>
@@ -458,6 +460,7 @@
       document.getElementById('permRecordPayments').checked = false;
       document.getElementById('permViewReports').checked = false;
       document.getElementById('permManageAttendance').checked = false;
+      document.getElementById('permManageCardMode').checked = false;
       document.getElementById('permManageGroups').checked = false;
     }
 
@@ -561,6 +564,7 @@
         record_payments: document.getElementById('permRecordPayments').checked,
         view_reports: document.getElementById('permViewReports').checked,
         manage_attendance: document.getElementById('permManageAttendance').checked,
+        manage_card_mode: document.getElementById('permManageCardMode').checked,
         manage_groups: document.getElementById('permManageGroups').checked,
         reset_parent_password: document.getElementById('permResetParentPassword').checked,
         manage_books: document.getElementById('permManageBooks').checked,
@@ -619,6 +623,7 @@
       document.getElementById('editPermRecordPayments').checked = perms.record_payments || false;
       document.getElementById('editPermViewReports').checked = perms.view_reports || false;
       document.getElementById('editPermManageAttendance').checked = perms.manage_attendance || false;
+      document.getElementById('editPermManageCardMode').checked = perms.manage_card_mode || false;
       document.getElementById('editPermManageGroups').checked = perms.manage_groups || false;
       document.getElementById('editPermResetParentPassword').checked = perms.reset_parent_password || false;
       document.getElementById('editPermManageBooks').checked = perms.manage_books || false;
@@ -648,6 +653,7 @@
         record_payments: document.getElementById('editPermRecordPayments').checked,
         view_reports: document.getElementById('editPermViewReports').checked,
         manage_attendance: document.getElementById('editPermManageAttendance').checked,
+        manage_card_mode: document.getElementById('editPermManageCardMode').checked,
         manage_groups: document.getElementById('editPermManageGroups').checked,
         reset_parent_password: document.getElementById('editPermResetParentPassword').checked,
         manage_books: document.getElementById('editPermManageBooks').checked,

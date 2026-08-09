@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>رسائل جماعية - فَصلي</title>
   <meta name="description" content="إرسال رسائل جماعية لأولياء الأمور والمساعدين في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#14171F">
+  <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=13">
   <style>
     .target-options{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:20px; }
     .target-card{
@@ -42,7 +42,7 @@
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <div class="logo-icon"><svg viewBox="0 0 120 120" fill="none"><path d="M35 62 L52 79 L86 41" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
         <h1>فَصلي</h1>
       </div>
 
@@ -199,6 +199,9 @@
             </select>
           </div>
 
+          <div class="field" id="studentsSearchField" style="display:none;margin-bottom:8px;">
+            <input type="text" id="studentsSearchInput" placeholder="🔍 دوّري باسم الطالب..." oninput="renderStudentsPicker()">
+          </div>
           <div class="students-picker" id="studentsPicker"></div>
         </div>
 
@@ -269,6 +272,26 @@
       }
     })();
 
+  // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
+  (function() {
+    if (window.__licenseInterceptorInstalled) return;
+    window.__licenseInterceptorInstalled = true;
+    const _origFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const res = await _origFetch.apply(this, args);
+      try {
+        const urlStr = String(args[0]);
+        if (res.status === 402 && urlStr.includes('/functions/v1/')) {
+          const clone = res.clone();
+          const data = await clone.json();
+          if (data && data.code === 'LICENSE_EXPIRED') {
+            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+          }
+        }
+      } catch (e) { /* تجاهل */ }
+      return res;
+    };
+  })();
     const TOKEN_KEY = 'jwtToken';
     const LOGIN_URL = 'login.html';
 
@@ -385,9 +408,8 @@
     // DARK MODE
     // ============================================
     function getThemeKey() {
-      const assistantId = sessionStorage.getItem('assistantId');
-      const id = assistantId || clientId || 'guest';
-      return 'theme_' + id;
+      const id = isAssistant ? sessionStorage.getItem('assistantId') : clientId;
+      return 'theme_' + (id || 'guest');
     }
     (function() {
       const savedTheme = localStorage.getItem(getThemeKey());
@@ -801,6 +823,9 @@ async function markAllRead() {
     async function onGroupChange() {
       const group = document.getElementById('groupSelect').value;
       currentGroupStudents = [];
+      selectedStudentUids.clear();
+      const searchInput = document.getElementById('studentsSearchInput');
+      if (searchInput) searchInput.value = '';
       if (!group) { updateRecipientsNote(); return; }
       try {
         const headers = getAuthHeaders();
@@ -824,6 +849,7 @@ async function markAllRead() {
       selectedTarget = target;
       document.querySelectorAll('.target-card').forEach(c => c.classList.toggle('active', c.dataset.target === target));
       document.getElementById('studentsPicker').classList.toggle('open', target === 'students');
+      document.getElementById('studentsSearchField').style.display = (target === 'students') ? 'block' : 'none';
       document.getElementById('unpaidPaymentField').style.display = (target === 'unpaid_payment') ? 'block' : 'none';
       document.getElementById('unpaidBookField').style.display = (target === 'unpaid_book') ? 'block' : 'none';
       if (target === 'students') renderStudentsPicker();
@@ -843,8 +869,9 @@ async function markAllRead() {
         const select = document.getElementById('unpaidPaymentTitleSelect');
         if (result.success) {
           (result.data || []).forEach(t => {
+            const titleText = (typeof t === 'object' && t !== null) ? t.title : t;
             const opt = document.createElement('option');
-            opt.value = t; opt.textContent = t;
+            opt.value = titleText; opt.textContent = titleText;
             select.appendChild(opt);
           });
         }
@@ -874,6 +901,8 @@ async function markAllRead() {
       }
     }
 
+    let selectedStudentUids = new Set();
+
     function renderStudentsPicker() {
       const picker = document.getElementById('studentsPicker');
       if (selectedTarget !== 'students') return;
@@ -881,9 +910,25 @@ async function markAllRead() {
         picker.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:8px;">اختر مجموعة الأول</div>';
         return;
       }
-      picker.innerHTML = currentGroupStudents.map(s => `
+      // ✅ نحفظ اختيار الطالب حتى لو اتفلتر واختفى مؤقتاً من نتيجة البحث
+      document.querySelectorAll('.student-checkbox').forEach(cb => {
+        if (cb.checked) selectedStudentUids.add(cb.value); else selectedStudentUids.delete(cb.value);
+      });
+
+      const searchInput = document.getElementById('studentsSearchInput');
+      const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+      const filtered = query
+        ? currentGroupStudents.filter(s => s.name.toLowerCase().includes(query))
+        : currentGroupStudents;
+
+      if (filtered.length === 0) {
+        picker.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:8px;">مفيش طلاب بالاسم ده</div>';
+        return;
+      }
+
+      picker.innerHTML = filtered.map(s => `
         <label class="student-check">
-          <input type="checkbox" class="student-checkbox" value="${s.uid}" onchange="updateRecipientsNote()">
+          <input type="checkbox" class="student-checkbox" value="${s.uid}" ${selectedStudentUids.has(s.uid) ? 'checked' : ''} onchange="updateRecipientsNote()">
           ${escapeHtml(s.name)}${s.parent_phone ? '' : ' <span style="color:var(--danger);font-size:11px;">(بدون رقم ولي أمر)</span>'}
         </label>
       `).join('');
@@ -911,7 +956,12 @@ async function markAllRead() {
         note.textContent = 'هيتحدد عدد المستلمين الفعلي وقت الإرسال (حسب اللي لسه مدفعوش بالكامل)';
         return;
       } else if (selectedTarget === 'students') {
-        count = document.querySelectorAll('.student-checkbox:checked').length;
+        // ✅ نحسب من القايمة المحفوظة مش بس الـcheckboxes الظاهرة دلوقتي، عشان لو طالب متحدد
+        // واختفى مؤقتاً بسبب البحث يفضل متحسّب في العدد
+        document.querySelectorAll('.student-checkbox').forEach(cb => {
+          if (cb.checked) selectedStudentUids.add(cb.value); else selectedStudentUids.delete(cb.value);
+        });
+        count = selectedStudentUids.size;
       }
       note.textContent = `هيوصل الرسالة لـ ${count} ولي أمر تقريباً`;
     }
@@ -944,7 +994,12 @@ async function markAllRead() {
           let studentUids = [];
           let paymentTitle, bookId;
           if (selectedTarget === 'students') {
-            studentUids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(el => el.value);
+            // ✅ نتأكد الاختيارات الظاهرة دلوقتي متسجّلة في القايمة المحفوظة قبل ما نجمع الإرسال،
+            // عشان طالب متحدد ومختفي بسبب البحث ميضيعش من الإرسال
+            document.querySelectorAll('.student-checkbox').forEach(cb => {
+              if (cb.checked) selectedStudentUids.add(cb.value); else selectedStudentUids.delete(cb.value);
+            });
+            studentUids = Array.from(selectedStudentUids);
             if (studentUids.length === 0) { showToast('⚠️ اختر طالب واحد على الأقل', 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الرسالة'; return; }
           } else if (selectedTarget === 'unpaid_payment') {
             paymentTitle = document.getElementById('unpaidPaymentTitleSelect').value;

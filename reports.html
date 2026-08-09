@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>التقارير - فَصلي</title>
   <meta name="description" content="توليد تقارير الحضور والدرجات والمدفوعات في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#14171F">
+  <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <div class="logo-icon"><svg viewBox="0 0 120 120" fill="none"><path d="M35 62 L52 79 L86 41" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
         <h1>فَصلي</h1>
       </div>
 
@@ -636,7 +636,7 @@
           contentEl.querySelectorAll('td, th, strong, p, h1, span, div, li').forEach(function(el) {
             if (el.classList.contains('rpt-good') || el.classList.contains('rpt-warn') || el.classList.contains('rpt-bad')) return;
             if (el.classList.contains('rpt-brand')) {
-              el.style.setProperty('color', '#14171F', 'important');
+              el.style.setProperty('color', '#0B1C33', 'important');
               return;
             }
             const isInAlertRow = el.closest('.report-row-alert') !== null;
@@ -687,38 +687,58 @@
       }
 
       try {
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        if (printWindow) {
-          var htmlContent = '<html dir="rtl">';
-          htmlContent += '<head><title>تقرير فَصلي</title>';
-          htmlContent += '<meta name="color-scheme" content="light">';
-          htmlContent += '<style>';
-          htmlContent += 'html{color-scheme:light;}';
-          htmlContent += 'body{font-family:"IBM Plex Sans Arabic",sans-serif;padding:30px;direction:rtl;background:#ffffff;color:#1f2937;}';
-          htmlContent += 'table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0;background:#ffffff;}';
-          htmlContent += 'th{background:#f8fafc;border:1px solid #e2e8f0;padding:10px;text-align:right;font-weight:600;color:#1f2937;}';
-          htmlContent += 'td{border:1px solid #e2e8f0;padding:8px;color:#1f2937;}';
-          htmlContent += '.report-row-alert td{background:#fef2f2;}';
-          htmlContent += '.rpt-good{color:#22c55e;}';
-          htmlContent += '.rpt-warn{color:#f59e0b;}';
-          htmlContent += '.rpt-bad{color:#ef4444;}';
-          htmlContent += '.rpt-brand{color:#14171F;}';
-          htmlContent += 'h1{text-align:center;color:#4f46e5;}';
-          htmlContent += 'hr{border:1px solid #e2e8f0;margin:16px 0;}';
-          htmlContent += '.footer{text-align:center;font-size:12px;color:#94a3b8;margin-top:20px;}';
-          htmlContent += '</style></head>';
-          htmlContent += '<body>';
-          htmlContent += lastReportData;
-          htmlContent += '<div class="footer">تم إنشاء هذا التقرير بواسطة فَصلي - ' + new Date().toLocaleDateString('ar-EG') + '</div>';
-          htmlContent += '<script>window.onload=function(){window.print();};<\/script>';
-          htmlContent += '<\/body><\/html>';
+        var htmlContent = '<html dir="rtl">';
+        htmlContent += '<head><title>تقرير فَصلي</title>';
+        htmlContent += '<meta name="color-scheme" content="light">';
+        htmlContent += '<style>';
+        htmlContent += '@page { margin: 0.5cm; }';
+        htmlContent += 'html{color-scheme:light;}';
+        htmlContent += 'body{font-family:"IBM Plex Sans Arabic",sans-serif;padding:30px;direction:rtl;background:#ffffff;color:#1f2937;}';
+        htmlContent += 'table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0;background:#ffffff;}';
+        htmlContent += 'th{background:#f8fafc;border:1px solid #e2e8f0;padding:10px;text-align:right;font-weight:600;color:#1f2937;}';
+        htmlContent += 'td{border:1px solid #e2e8f0;padding:8px;color:#1f2937;}';
+        htmlContent += '.report-row-alert td{background:#fef2f2;}';
+        htmlContent += '.rpt-good{color:#22c55e;}';
+        htmlContent += '.rpt-warn{color:#f59e0b;}';
+        htmlContent += '.rpt-bad{color:#ef4444;}';
+        htmlContent += '.rpt-brand{color:#0B1C33;}';
+        htmlContent += 'h1{text-align:center;color:#4f46e5;}';
+        htmlContent += 'hr{border:1px solid #e2e8f0;margin:16px 0;}';
+        htmlContent += '.footer{text-align:center;font-size:12px;color:#94a3b8;margin-top:20px;}';
+        htmlContent += '<\/style><\/head>';
+        htmlContent += '<body>';
+        // ✅ منضيفش تذييل تاني هنا — lastReportData أصلاً فيه تذييل "تم إنشاء هذا التقرير..." من وقت التوليد
+        htmlContent += lastReportData;
+        htmlContent += '<\/body><\/html>';
 
-          printWindow.document.write(htmlContent);
-          printWindow.document.close();
-          showToast('✅ تم فتح التقرير للطباعة', 'success');
-        } else {
-          showToast('⚠️ تم حظر النافذة المنبثقة، يرجى السماح بها', 'warning');
-        }
+        // ✅ بدل ما نفتح نافذة جديدة تماماً (اللي مش شغّالة كويس جوه تطبيقات الموبايل وسطح المكتب)،
+        // بنستخدم إطار مخفي (iframe) جوه نفس الصفحة ونطبع منه مباشرة — بتشتغل في كل مكان: متصفح، موبايل، سطح مكتب
+        const oldFrame = document.getElementById('printFrame');
+        if (oldFrame) oldFrame.remove();
+
+        const printFrame = document.createElement('iframe');
+        printFrame.id = 'printFrame';
+        printFrame.style.cssText = 'position:fixed;left:-9999px;top:0;width:0;height:0;border:0;';
+        document.body.appendChild(printFrame);
+
+        const frameDoc = printFrame.contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(htmlContent);
+        frameDoc.close();
+
+        printFrame.onload = function() {
+          setTimeout(function() {
+            try {
+              printFrame.contentWindow.focus();
+              printFrame.contentWindow.print();
+            } catch (e) {
+              console.error('❌ خطأ في الطباعة:', e);
+              showToast('❌ حدث خطأ في الطباعة', 'error');
+            }
+          }, 200);
+        };
+
+        showToast('✅ جاري فتح نافذة الطباعة', 'success');
       } catch (error) {
         console.error('❌ خطأ في الطباعة:', error);
         showToast('❌ حدث خطأ في فتح التقرير', 'error');

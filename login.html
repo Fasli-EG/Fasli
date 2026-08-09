@@ -5,27 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>تسجيل الدخول - فَصلي</title>
   <meta name="description" content="تسجيل الدخول إلى نظام فَصلي لإدارة الدروس الخصوصية">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#14171F">
+  <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --indigo:#14171F;
+    --indigo:#0B1C33;
     --indigo-deep:#0A0C10;
     --indigo-soft:#E3F1EC;
-    --coral:#0F6B4F;
-    --coral-deep:#0B4E3A;
-    --ink:#14171F;
+    --coral:#F2B705;
+    --coral-deep:#B8890A;
+    --ink:#0B1C33;
     --muted:#6B7280;
     --surface:#FFFFFF;
     --surface-soft:#F7F8FA;
     --line:#E1E4E9;
     --danger:#E5484D;
     --danger-soft:#FDEEEE;
-    --success:#0F6B4F;
+    --success:#1FAA6D;
     --success-soft:#E3F1EC;
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
@@ -64,8 +64,8 @@
     bottom:-80px; right:-60px;
   }
   .lockup{ display:flex; align-items:center; gap:12px; position:relative; z-index:1; }
-  .mark{ width:clamp(56px, 8vw, 84px); height:clamp(56px, 8vw, 84px); border-radius:16px; background:var(--indigo); border:2px solid rgba(255,255,255,0.35); box-shadow:0 4px 14px rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
-  .mark svg{ width:56%; height:56%; }
+  .mark{ width:clamp(56px, 8vw, 84px); height:clamp(56px, 8vw, 84px); border-radius:16px; border:2px solid rgba(255,255,255,0.35); box-shadow:0 4px 14px rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+  .mark img{ width:82%; height:82%; object-fit:contain; }
   .wordmark{ font-family:'IBM Plex Sans Arabic', sans-serif; font-weight:800; font-size:clamp(34px, 6.5vw, 64px); line-height:1; direction:rtl; color:#fff; }
   .wordmark span{ color:#5FBF9A; }
   .tagline{
@@ -124,7 +124,7 @@
   .hint strong{ color:var(--indigo); }
 
   .submit{
-    margin-top:6px; background:var(--coral); color:#fff; border:none; border-radius:10px;
+    margin-top:6px; background:var(--coral); color:#0B1C33; border:none; border-radius:10px;
     padding:13px; font-family:'IBM Plex Sans Arabic',sans-serif; font-weight:700; font-size:15px;
     cursor:pointer; transition:background .15s ease, transform .1s ease;
     box-shadow:0 10px 20px -8px rgba(255,107,74,0.5);
@@ -212,7 +212,7 @@
 
 <div class="brand-panel">
   <div class="lockup">
-    <div class="mark"><svg viewBox="0 0 120 120"><path d="M25,98 L44,70 L76,70 L95,98 Z" fill="#0F6B4F"/><rect x="44" y="18" width="32" height="52" rx="5" fill="#fff"/></svg></div>
+    <div class="mark"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
     <div class="wordmark">فَصلي</div>
   </div>
   <div class="tagline">إدارة دقيقة لفصلك، بلا فوضى</div>
@@ -298,13 +298,13 @@
 <div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.3);">
     <div style="width:64px;height:64px;background:#E7F8F0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">🔔</div>
-    <h3 style="font-size:17px;font-weight:800;color:#14171F;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
+    <h3 style="font-size:17px;font-weight:800;color:#0B1C33;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
     <p style="font-size:13.5px;color:#6b7280;line-height:1.7;margin-bottom:22px;">
       عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
     </p>
     <div style="display:flex;gap:10px;">
       <button onclick="declinePermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #E1E4E9;background:#fff;color:#4A5568;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;">مش دلوقتي</button>
-      <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#0F6B4F;color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
+      <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#F2B705;color:#0B1C33;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
     </div>
   </div>
 </div>

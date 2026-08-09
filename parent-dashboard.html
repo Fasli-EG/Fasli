@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>لوحة تحكم ولي الأمر - فَصلي</title>
   <meta name="description" content="لوحة تحكم ولي الأمر لمتابعة أبنائه في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#14171F">
+  <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=13">
   <style>
     .student-card .student-name { font-size: 18px; font-weight: 700; color: var(--gray-900); }
     .student-card .student-name .uid { font-size: 12px; font-weight: 400; color: var(--gray-400); font-family: monospace; margin-right: 6px; }
@@ -53,7 +53,7 @@
 
   <header class="header">
     <div class="brand">
-      <div class="logo-icon"><svg viewBox="0 0 120 120" fill="none"><path d="M35 62 L52 79 L86 41" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
       <h1>فَصلي</h1>
     </div>
     <div class="user-info">
@@ -665,13 +665,13 @@
   <div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
     <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.3);">
       <div style="width:64px;height:64px;background:#E7F8F0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">🔔</div>
-      <h3 style="font-size:17px;font-weight:800;color:#14171F;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
+      <h3 style="font-size:17px;font-weight:800;color:#0B1C33;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
       <p style="font-size:13.5px;color:#6b7280;line-height:1.7;margin-bottom:22px;">
         عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
       </p>
       <div style="display:flex;gap:10px;">
         <button onclick="declinePermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #E1E4E9;background:#fff;color:#4A5568;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;">مش دلوقتي</button>
-        <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#0F6B4F;color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
+        <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#F2B705;color:#0B1C33;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
       </div>
     </div>
   </div>

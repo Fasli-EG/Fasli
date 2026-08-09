@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>لوحة تحكم المساعد - فَصلي</title>
   <meta name="description" content="لوحة تحكم المساعد في نظام فَصلي لإدارة الدروس الخصوصية">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%2314171F'/%3E%3Cpath d='M25,98 L44,70 L76,70 L95,98 Z' fill='%230F6B4F'/%3E%3Crect x='44' y='18' width='32' height='52' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#14171F">
+  <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=13">
   <script src="activity-format.js?v=4"></script>
 </head>
 <body>
@@ -21,7 +21,7 @@
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <div class="logo-icon"><svg viewBox="0 0 120 120" fill="none"><path d="M35 62 L52 79 L86 41" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
         <h1>فَصلي</h1>
       </div>
 
@@ -134,6 +134,11 @@
         <div class="card-title">✅ حضور يدوي</div>
         <div class="card-desc">تسجيل حضور لطالب نسي الكارت</div>
       </div>
+      <div class="quick-card" onclick="openCardModeModal()" id="cardModeCard">
+        <div class="card-icon" style="background:#FDF1CC;color:#8A6300;"><i class="fas fa-id-card"></i></div>
+        <div class="card-title">🪪 وضع الكارت</div>
+        <div class="card-desc" id="cardModeDesc">حضور (الوضع الحالي)</div>
+      </div>
     </div>
 
     <div class="charts-row">
@@ -220,6 +225,45 @@
       </div>
     </div>
 
+  </div>
+
+  <div class="modal-overlay" id="cardModeModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🪪 وضع الكارت</h3>
+        <button class="modal-close" onclick="closeCardModeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
+          حددي إيه اللي هيحصل لما أي طالب يمرّغ كارته على البورد. الوضع بيرجع تلقائياً لـ"حضور" لو عدّت 5 دقايق من غير أي كارت.
+        </p>
+        <div class="field">
+          <label>الوضع</label>
+          <select id="cardModeSelect" onchange="onCardModeTypeChange()">
+            <option value="attendance">حضور (الوضع العادي)</option>
+            <option value="payment">دفع اشتراك</option>
+            <option value="book_payment">سداد مذكرة</option>
+          </select>
+        </div>
+        <div class="field" id="cardModePaymentField" style="display:none;">
+          <label>بند السداد</label>
+          <select id="cardModePaymentTitle" onchange="fillCardModePaymentAmount()">
+            <option value="">-- اختر البند --</option>
+          </select>
+          <label style="margin-top:8px;">المبلغ اللي هيتسجّل مدفوع دلوقتي (سعر البند الكامل ثابت زي ما هو، ولو حطيتي أقل هيتسجّل دفعة جزئية)</label>
+          <input type="number" id="cardModePaymentAmount" placeholder="المبلغ">
+        </div>
+        <div class="field" id="cardModeBookField" style="display:none;">
+          <label>المذكرة</label>
+          <select id="cardModeBookSelect" onchange="fillCardModeBookAmount()">
+            <option value="">-- اختر المذكرة --</option>
+          </select>
+          <label style="margin-top:8px;">المبلغ اللي هيتسجّل مدفوع دلوقتي (سعر المذكرة الأصلي ثابت زي ما هو، ولو حطيتي أقل هيتسجّل دفعة جزئية)</label>
+          <input type="number" id="cardModeBookAmount" placeholder="المبلغ">
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px;" onclick="saveCardMode()">حفظ الوضع</button>
+      </div>
+    </div>
   </div>
 
   <div class="modal-overlay" id="addStudentModal">
@@ -492,6 +536,7 @@
     const canRecordGrades = permissions.record_grades === true;
     const canRecordPayments = permissions.record_payments === true;
     const canManageAttendance = permissions.manage_attendance === true;
+    const canManageCardMode = permissions.manage_card_mode === true;
     const canViewReports = permissions.view_reports === true;
     const canManageGroups = permissions.manage_groups === true;
 
@@ -500,10 +545,11 @@
     document.getElementById('navGrades').style.display = canRecordGrades ? 'flex' : 'none';
     document.getElementById('navPayments').style.display = canRecordPayments ? 'flex' : 'none';
     document.getElementById('cardAttendance').style.display = canManageAttendance ? '' : 'none';
+    document.getElementById('cardModeCard').style.display = canManageCardMode ? '' : 'none';
     document.getElementById('navReports').style.display = canViewReports ? 'flex' : 'none';
     document.getElementById('navGroups').style.display = canManageGroups ? 'flex' : 'none';
 
-    const hasAnyPermission = canAddStudents || canRecordGrades || canRecordPayments || canManageAttendance || canManageGroups;
+    const hasAnyPermission = canAddStudents || canRecordGrades || canRecordPayments || canManageAttendance || canManageCardMode || canManageGroups;
     if (hasAnyPermission) {
       const badge = document.getElementById('permissionBadge');
       badge.style.display = 'inline-block';
@@ -1284,7 +1330,135 @@
     // ============================================
     let allStudents = [];
 
-    function openAttendanceModal() {
+    // ============================================
+// وضع الكارت
+// ============================================
+function openCardModeModal() {
+  document.getElementById('cardModeModal').classList.add('open');
+  loadPaymentTitlesForCardMode();
+  loadBooksForCardMode();
+  refreshCardModeStatus();
+}
+function closeCardModeModal() {
+  document.getElementById('cardModeModal').classList.remove('open');
+}
+function onCardModeTypeChange() {
+  const type = document.getElementById('cardModeSelect').value;
+  document.getElementById('cardModePaymentField').style.display = (type === 'payment') ? 'block' : 'none';
+  document.getElementById('cardModeBookField').style.display = (type === 'book_payment') ? 'block' : 'none';
+}
+
+async function loadPaymentTitlesForCardMode() {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-payment-titles', {
+      method: 'POST', headers, body: JSON.stringify({ clientId })
+    });
+    const result = await response.json();
+    const select = document.getElementById('cardModePaymentTitle');
+    select.innerHTML = '<option value="">-- اختر البند --</option>';
+    if (result.success) {
+      (result.data || []).forEach(t => {
+        const title = (typeof t === 'object' && t !== null) ? t.title : t;
+        const defaultAmount = (typeof t === 'object' && t !== null) ? t.defaultAmount : null;
+        const opt = document.createElement('option');
+        opt.value = title; opt.textContent = title;
+        if (defaultAmount) opt.dataset.amount = defaultAmount;
+        select.appendChild(opt);
+      });
+    }
+  } catch (error) { console.error('❌ خطأ:', error); }
+}
+
+async function loadBooksForCardMode() {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-books', {
+      method: 'POST', headers, body: JSON.stringify({ teacherId: clientId })
+    });
+    const result = await response.json();
+    const select = document.getElementById('cardModeBookSelect');
+    select.innerHTML = '<option value="">-- اختر المذكرة --</option>';
+    if (result.success) {
+      (result.data || []).forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id; opt.textContent = b.name;
+        opt.dataset.amount = b.price;
+        select.appendChild(opt);
+      });
+    }
+  } catch (error) { console.error('❌ خطأ:', error); }
+}
+
+function fillCardModePaymentAmount() {
+  const select = document.getElementById('cardModePaymentTitle');
+  const opt = select.options[select.selectedIndex];
+  if (opt && opt.dataset.amount) document.getElementById('cardModePaymentAmount').value = opt.dataset.amount;
+}
+function fillCardModeBookAmount() {
+  const select = document.getElementById('cardModeBookSelect');
+  const opt = select.options[select.selectedIndex];
+  if (opt && opt.dataset.amount) document.getElementById('cardModeBookAmount').value = opt.dataset.amount;
+}
+
+async function saveCardMode() {
+  const actionType = document.getElementById('cardModeSelect').value;
+  const body = { actionType };
+  if (actionType === 'payment') {
+    body.paymentTitle = document.getElementById('cardModePaymentTitle').value;
+    body.paymentAmount = document.getElementById('cardModePaymentAmount').value;
+    if (!body.paymentTitle || !body.paymentAmount) { showToast('⚠️ اختر البند والمبلغ', 'error'); return; }
+  } else if (actionType === 'book_payment') {
+    body.bookId = document.getElementById('cardModeBookSelect').value;
+    body.bookAmount = document.getElementById('cardModeBookAmount').value;
+    if (!body.bookId || !body.bookAmount) { showToast('⚠️ اختر المذكرة والمبلغ', 'error'); return; }
+  }
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/set-card-action-mode', {
+      method: 'POST', headers, body: JSON.stringify(body)
+    });
+    const result = await response.json();
+    showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+    if (result.success) {
+      closeCardModeModal();
+      refreshCardModeStatus();
+    }
+  } catch (error) {
+    console.error('❌ خطأ:', error);
+    showToast('❌ فشل حفظ الوضع', 'error');
+  }
+}
+
+async function refreshCardModeStatus() {
+  const cardEl = document.getElementById('cardModeCard');
+  if (cardEl && cardEl.style.display === 'none') return;
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-card-action-mode', {
+      method: 'POST', headers, body: '{}'
+    });
+    const result = await response.json();
+    const descEl = document.getElementById('cardModeDesc');
+    if (!result.success || !descEl) return;
+    if (result.actionType === 'attendance') {
+      descEl.textContent = 'حضور (الوضع الحالي)';
+      descEl.style.color = '';
+    } else if (result.actionType === 'payment') {
+      descEl.textContent = `دفع "${result.paymentTitle}" (شغّال)`;
+      descEl.style.color = 'var(--warning)';
+    } else if (result.actionType === 'book_payment') {
+      descEl.textContent = 'سداد مذكرة (شغّال)';
+      descEl.style.color = 'var(--warning)';
+    }
+  } catch (error) { /* تجاهل */ }
+}
+
+function openAttendanceModal() {
       if (!canManageAttendance) {
         showToast('⛔ ليس لديك صلاحية لتسجيل الحضور', 'warning');
         return;
@@ -1716,9 +1890,11 @@
       loadTodayAttendance();
       loadNotifications();
       registerPushIfNative();
+      refreshCardModeStatus();
       setInterval(loadDashboard, 30000);
       setInterval(loadTodayAttendance, 10000);
       setInterval(loadNotifications, 20000);
+      setInterval(refreshCardModeStatus, 20000);
     };
   </script>
   <script>
@@ -1732,13 +1908,13 @@
   <div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
     <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.3);">
       <div style="width:64px;height:64px;background:#E7F8F0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">🔔</div>
-      <h3 style="font-size:17px;font-weight:800;color:#14171F;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
+      <h3 style="font-size:17px;font-weight:800;color:#0B1C33;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
       <p style="font-size:13.5px;color:#6b7280;line-height:1.7;margin-bottom:22px;">
         عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
       </p>
       <div style="display:flex;gap:10px;">
         <button onclick="declinePermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #E1E4E9;background:#fff;color:#4A5568;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;">مش دلوقتي</button>
-        <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#0F6B4F;color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
+        <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#F2B705;color:#0B1C33;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
       </div>
     </div>
   </div>

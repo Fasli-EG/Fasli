@@ -23,6 +23,7 @@ const ACTIVITY_LABELS = {
   pay_book: { text: 'سجّل سداد مذكرة', badge: 'badge-success' },
   bulk_pay_book: { text: 'سجّل سداد مذكرة لعدة طلاب', badge: 'badge-success' },
   update_book_payment: { text: 'عدّل سداد مذكرة', badge: 'badge-warning' },
+  edit_book_payment: { text: 'عدّل سداد مذكرة', badge: 'badge-warning' },
   delete_book_payment: { text: 'حذف سداد مذكرة', badge: 'badge-danger' },
   record_attendance: { text: 'سجّل حضور', badge: 'badge-info' },
   create_group: { text: 'أنشأ مجموعة', badge: 'badge-success' },
@@ -210,6 +211,7 @@ function formatActivity(log) {
       break;
     case 'pay_book':
     case 'update_book_payment':
+    case 'edit_book_payment':
     case 'delete_book_payment':
       if (det.student_name) parts.push(`الطالب: ${det.student_name}`);
       if (det.book_name) parts.push(`المذكرة: ${det.book_name}`);
