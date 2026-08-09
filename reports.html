@@ -711,7 +711,33 @@
         htmlContent += lastReportData;
         htmlContent += '<\/body><\/html>';
 
-        // ✅ بدل ما نفتح نافذة جديدة تماماً (اللي مش شغّالة كويس جوه تطبيقات الموبايل وسطح المكتب)،
+        // ✅ في تطبيق الموبايل، الطباعة المباشرة (window.print) مش مدعومة جوه الـWebView أصلاً،
+        // فبدل الطباعة بنحفظ التقرير كملف ونفتح قائمة المشاركة الأصلية للموبايل (تقدري تطبعي أو تبعتي الملف منها)
+        const CapShare = window.Capacitor?.Plugins?.Share;
+        const CapFilesystem = window.Capacitor?.Plugins?.Filesystem;
+        if (window.Capacitor?.isNativePlatform?.() && CapShare && CapFilesystem) {
+          const fileName = 'تقرير-فصلي-' + Date.now() + '.html';
+          CapFilesystem.writeFile({
+            path: fileName,
+            data: htmlContent,
+            directory: 'CACHE',
+            encoding: 'utf8',
+          }).then(function(result) {
+            return CapShare.share({
+              title: 'تقرير فَصلي',
+              url: result.uri,
+              dialogTitle: 'مشاركة أو طباعة التقرير',
+            });
+          }).then(function() {
+            showToast('✅ افتحي التقرير من قائمة المشاركة للطباعة أو الحفظ', 'success');
+          }).catch(function(e) {
+            console.error('❌ خطأ في مشاركة التقرير:', e);
+            showToast('❌ تعذرت مشاركة التقرير', 'error');
+          });
+          return;
+        }
+
+        // ✅ بدل ما نفتح نافذة جديدة تماماً (اللي مش شغّالة كويس جوه تطبيق سطح المكتب)،
         // بنستخدم إطار مخفي (iframe) جوه نفس الصفحة ونطبع منه مباشرة — بتشتغل في كل مكان: متصفح، موبايل، سطح مكتب
         const oldFrame = document.getElementById('printFrame');
         if (oldFrame) oldFrame.remove();
