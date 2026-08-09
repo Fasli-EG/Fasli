@@ -561,7 +561,7 @@
     <div class="card">
       <h2>📥 استقبال كروت المخزون</h2>
       <p style="color:#718096;font-size:13px;margin-bottom:16px;">
-        دوس "بدء الاستقبال"، وبعدين مرر الكروت واحد ورا التاني على بورد الماستر المخصص. كل كارت هيتسجّل في المخزون لوحده.
+        دوس "بدء الاستقبال"، وبعدين مرّغ الكروت واحد ورا التاني على بورد الماستر المخصص. كل كارت هيتسجّل في المخزون لوحده.
       </p>
       <button class="btn btn-primary" id="scanModeBtn" onclick="toggleMasterScanMode()">▶️ بدء الاستقبال</button>
       <button class="btn btn-secondary" onclick="showMasterDeviceSecret()">🔑 عرض مفتاح جهاز الماستر</button>
@@ -570,7 +570,7 @@
         <div style="font-family:monospace;font-size:13px;direction:ltr;text-align:left;word-break:break-all;" id="masterSecretText">—</div>
       </div>
       <div id="scanModeStatus" style="display:none;margin-top:16px;padding:14px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;">
-        <div style="font-size:13.5px;color:#1e40af;">🟢 وضع الاستقبال شغّال — آخر كارت اتمرر: <strong id="lastScannedUidText">—</strong></div>
+        <div style="font-size:13.5px;color:#1e40af;">🟢 وضع الاستقبال شغّال — آخر كارت اتمرّغ: <strong id="lastScannedUidText">—</strong></div>
         <div style="font-size:12.5px;color:#64748b;margin-top:6px;">عدد الكروت في المخزون دلوقتي: <strong id="inStockCountText">0</strong></div>
       </div>
     </div>
@@ -685,6 +685,23 @@
       <button class="btn btn-primary" onclick="addLoginAd()">➕ إضافة صورة</button>
 
       <div id="loginAdsList" style="margin-top:20px;display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>📸 ألبومات الصور (دعاية، بدون تسجيل دخول)</h2>
+      <p style="color:#718096;font-size:13px;margin-bottom:16px;">
+        كل ألبوم بيظهر كصورة مصغّرة في صفحة تسجيل الدخول، وأي حد يقدر يدوس عليه ويشوف كل الصور جواه من غير ما يسجّل دخول — مفيد لعرض صور فعاليات أو أنشطة كنوع من الدعاية.
+      </p>
+
+      <div class="field-row">
+        <div class="field">
+          <label>اسم الألبوم الجديد</label>
+          <input type="text" id="newAlbumTitle" placeholder="مثال: حفل ختام العام الدراسي">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addPhotoAlbum()">➕ إنشاء ألبوم</button>
+
+      <div id="photoAlbumsAdminList" style="margin-top:20px;display:flex;flex-direction:column;gap:16px;"></div>
     </div>
   </div>
 
@@ -1977,6 +1994,7 @@
         const response = await fetch(PROJECT_URL + '/functions/v1/get-login-ads');
         const result = await response.json();
         const ads = result.data || [];
+        renderPhotoAlbumsAdmin(result.albums || []);
         if (ads.length === 0) {
           container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش صور مضافة حالياً.</p>';
           return;
@@ -1994,6 +2012,138 @@
       } catch (error) {
         console.error('❌ خطأ في تحميل الصور الإعلانية:', error);
         container.innerHTML = '<p style="color:#e53e3e;font-size:13px;">تعذر تحميل الصور.</p>';
+      }
+    }
+
+    function renderPhotoAlbumsAdmin(albums) {
+      const container = document.getElementById('photoAlbumsAdminList');
+      if (!albums.length) {
+        container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش ألبومات مضافة حالياً.</p>';
+        return;
+      }
+      container.innerHTML = albums.map(album => `
+        <div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <strong style="font-size:14px;">${escapeAdminHtml(album.title)}</strong>
+            <button class="btn btn-danger btn-sm" onclick="deletePhotoAlbum(${album.id})"><i class="fas fa-trash"></i> حذف الألبوم</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            ${(album.images || []).map(img => `
+              <div style="position:relative;">
+                <img src="${img.image_url}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;" onerror="this.style.opacity=0.3">
+                <button onclick="deleteAlbumImage(${img.id}, ${album.id})" title="حذف الصورة"
+                  style="position:absolute;top:-6px;left:-6px;width:20px;height:20px;border-radius:50%;background:#e53e3e;color:#fff;border:none;font-size:11px;cursor:pointer;">×</button>
+              </div>
+            `).join('') || '<span style="color:#a0aec0;font-size:12px;">مفيش صور في الألبوم ده لسه</span>'}
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="newImgUrl-${album.id}" placeholder="رابط صورة جديدة..." dir="ltr" style="flex:1;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;">
+            <button class="btn btn-primary btn-sm" onclick="addAlbumImage(${album.id})">➕ إضافة</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeAdminHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    async function addPhotoAlbum() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const title = document.getElementById('newAlbumTitle').value.trim();
+      if (!title) { showSettingsMessage('⚠️ أدخل اسم الألبوم', 'error'); return; }
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/add-login-ad', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ type: 'album', title })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+          document.getElementById('newAlbumTitle').value = '';
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إنشاء الألبوم:', error);
+        showSettingsMessage('❌ فشل إنشاء الألبوم', 'error');
+      }
+    }
+
+    async function addAlbumImage(albumId) {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const input = document.getElementById('newImgUrl-' + albumId);
+      const imageUrl = input.value.trim();
+      if (!imageUrl) { showSettingsMessage('⚠️ أدخل رابط الصورة', 'error'); return; }
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/add-login-ad', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ type: 'album_image', albumId, imageUrl })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إضافة الصورة:', error);
+        showSettingsMessage('❌ فشل إضافة الصورة', 'error');
+      }
+    }
+
+    async function deletePhotoAlbum(albumId) {
+      if (!confirm('⚠️ هل أنت متأكد من حذف الألبوم ده وكل صوره؟')) return;
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/delete-login-ad', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ type: 'album', albumId })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حذف الألبوم:', error);
+        showSettingsMessage('❌ فشل حذف الألبوم', 'error');
+      }
+    }
+
+    async function deleteAlbumImage(imageId, albumId) {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/delete-login-ad', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ type: 'album_image', imageId })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حذف الصورة:', error);
       }
     }
 
