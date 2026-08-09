@@ -29,16 +29,24 @@ function createWindow() {
   // ✅ إجراء وقائي: نتأكد إن النافذة بتاخد التركيز فعلياً بعد أي تنقل بين الصفحات
   // (زي تسجيل الخروج)، عشان نتفادى أي حالة "تجمّد" ظاهرية في الحقول لو حصلت
   win.webContents.on('did-finish-load', () => {
-    // ✅ تأخير بسيط قبل أخذ التركيز، عشان نضمن إن نظام التشغيل خلّص يجهّز النافذة قبل ما نجبرها تاخد التركيز
-    setTimeout(() => {
-      win.show();
-      win.focus();
-      win.webContents.focus();
-      // كمان نجبر أول حقل إدخال في الصفحة ياخد التركيز فعلياً على مستوى الـDOM
-      win.webContents.executeJavaScript(
-        `document.getElementById('username')?.focus();`
-      ).catch(() => {});
-    }, 150);
+    // ✅ بدل محاولة واحدة بس، بنحاول كذا مرة على فترات مختلفة، عشان نغطي حالة الإنترنت البطيء
+    // (لو الصفحة لسه بتحمّل خطوط أو أيقونات، محاولة واحدة بدري ممكن متنفعش)
+    const attempts = [150, 500, 1200, 2500];
+    attempts.forEach((delay) => {
+      setTimeout(() => {
+        win.show();
+        win.focus();
+        win.webContents.focus();
+        win.webContents.executeJavaScript(
+          `(function(){
+             var u = document.getElementById('username');
+             if (u) { u.disabled = false; u.readOnly = false; u.focus(); }
+             var p = document.getElementById('password');
+             if (p) { p.disabled = false; p.readOnly = false; }
+           })();`
+        ).catch(() => {});
+      }, delay);
+    });
   });
 
   // ✅ حماية إضافية: لو النافذة رجعت تاخد تركيز (من التاسك بار مثلاً)، نتأكد إن حقول الإدخال شغّالة
