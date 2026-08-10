@@ -645,6 +645,21 @@
           <label>رابط صفحة الفيسبوك</label>
           <input type="text" id="settingsFacebook" placeholder="https://facebook.com/..." dir="ltr">
         </div>
+        <div class="field">
+          <label>رابط قناة اليوتيوب</label>
+          <input type="text" id="settingsYoutube" placeholder="https://youtube.com/@..." dir="ltr">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>اسمك (المشرف الرئيسي)</label>
+          <input type="text" id="settingsAdminName" placeholder="مثال: Sabry Elgammal">
+          <div class="field-hint">💡 بيظهر في تذييل صفحة تسجيل الدخول "تم تصميم هذه المنصة بكل حب من..."</div>
+        </div>
+        <div class="field">
+          <label>رقم واتسابك (المشرف الرئيسي)</label>
+          <input type="text" id="settingsAdminWhatsapp" placeholder="مثال: 201007702434" dir="ltr">
+        </div>
       </div>
       <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
     </div>
@@ -688,20 +703,20 @@
     </div>
 
     <div class="card">
-      <h2>📸 ألبومات الصور (دعاية، بدون تسجيل دخول)</h2>
+      <h2>🖼️ صور خلفية صفحة تسجيل الدخول</h2>
       <p style="color:#718096;font-size:13px;margin-bottom:16px;">
-        كل ألبوم بيظهر كصورة مصغّرة في صفحة تسجيل الدخول، وأي حد يقدر يدوس عليه ويشوف كل الصور جواه من غير ما يسجّل دخول — مفيد لعرض صور فعاليات أو أنشطة كنوع من الدعاية.
+        الصور دي بتظهر كخلفية متحركة في صفحة تسجيل الدخول (لقطات من لوحة التحكم مثلاً). لو مفيش صور مضافة، الخلفية بترجع للتدرّج الغامق العادي تلقائياً.
       </p>
 
       <div class="field-row">
         <div class="field">
-          <label>اسم الألبوم الجديد</label>
-          <input type="text" id="newAlbumTitle" placeholder="مثال: حفل ختام العام الدراسي">
+          <label>رابط صورة جديدة</label>
+          <input type="text" id="newBgImageUrl" placeholder="https://..." dir="ltr">
         </div>
       </div>
-      <button class="btn btn-primary" onclick="addPhotoAlbum()">➕ إنشاء ألبوم</button>
+      <button class="btn btn-primary" onclick="addBgImage()">➕ إضافة الصورة</button>
 
-      <div id="photoAlbumsAdminList" style="margin-top:20px;display:flex;flex-direction:column;gap:16px;"></div>
+      <div id="bgImagesList" style="margin-top:20px;display:flex;flex-wrap:wrap;gap:10px;"></div>
     </div>
   </div>
 
@@ -1945,6 +1960,9 @@
         document.getElementById('settingsWhatsapp').value = data.whatsapp_number || '';
         document.getElementById('settingsPhone').value = data.phone_number || '';
         document.getElementById('settingsFacebook').value = data.facebook_url || '';
+        document.getElementById('settingsYoutube').value = data.youtube_url || '';
+        document.getElementById('settingsAdminName').value = data.admin_name || '';
+        document.getElementById('settingsAdminWhatsapp').value = data.admin_whatsapp || '';
         document.getElementById('settingsDesktopUrl').value = data.desktop_download_url || '';
         document.getElementById('settingsMobileUrl').value = data.mobile_app_url || '';
         loadLoginAds();
@@ -1961,6 +1979,9 @@
       const whatsappNumber = document.getElementById('settingsWhatsapp').value.trim();
       const phoneNumber = document.getElementById('settingsPhone').value.trim();
       const facebookUrl = document.getElementById('settingsFacebook').value.trim();
+      const youtubeUrl = document.getElementById('settingsYoutube').value.trim();
+      const adminName = document.getElementById('settingsAdminName').value.trim();
+      const adminWhatsapp = document.getElementById('settingsAdminWhatsapp').value.trim();
       const desktopDownloadUrl = document.getElementById('settingsDesktopUrl').value.trim();
       const mobileAppUrl = document.getElementById('settingsMobileUrl').value.trim();
 
@@ -1968,7 +1989,7 @@
         const response = await fetch(PROJECT_URL + '/functions/v1/update-system-settings', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ whatsappNumber, phoneNumber, facebookUrl, desktopDownloadUrl, mobileAppUrl })
+          body: JSON.stringify({ whatsappNumber, phoneNumber, facebookUrl, youtubeUrl, desktopDownloadUrl, mobileAppUrl, adminName, adminWhatsapp })
         });
 
         if (response.status === 401) {
@@ -1988,13 +2009,19 @@
       }
     }
 
+    // ✅ اسم داخلي ثابت للألبوم المستخدم كخلفية — المستخدم مش شايف مفهوم "الألبوم" خالص، بس حقل صور بسيط
+    const BG_ALBUM_TITLE = '__login_background__';
+    let cachedBgAlbumId = null;
+
     async function loadLoginAds() {
       const container = document.getElementById('loginAdsList');
       try {
         const response = await fetch(PROJECT_URL + '/functions/v1/get-login-ads');
         const result = await response.json();
         const ads = result.data || [];
-        renderPhotoAlbumsAdmin(result.albums || []);
+        const bgAlbum = (result.albums || []).find(a => a.is_background);
+        cachedBgAlbumId = bgAlbum ? bgAlbum.id : null;
+        renderBgImagesAdmin(bgAlbum ? bgAlbum.images : []);
         if (ads.length === 0) {
           container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش صور مضافة حالياً.</p>';
           return;
@@ -2015,118 +2042,61 @@
       }
     }
 
-    function renderPhotoAlbumsAdmin(albums) {
-      const container = document.getElementById('photoAlbumsAdminList');
-      if (!albums.length) {
-        container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش ألبومات مضافة حالياً.</p>';
+    function renderBgImagesAdmin(images) {
+      const container = document.getElementById('bgImagesList');
+      if (!images || !images.length) {
+        container.innerHTML = '<p style="color:#a0aec0;font-size:13px;">مفيش صور خلفية مضافة لسه — الخلفية هتفضل التدرّج الغامق العادي.</p>';
         return;
       }
-      container.innerHTML = albums.map(album => `
-        <div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <strong style="font-size:14px;">${escapeAdminHtml(album.title)}</strong>
-            <button class="btn btn-danger btn-sm" onclick="deletePhotoAlbum(${album.id})"><i class="fas fa-trash"></i> حذف الألبوم</button>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-            ${(album.images || []).map(img => `
-              <div style="position:relative;">
-                <img src="${img.image_url}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;" onerror="this.style.opacity=0.3">
-                <button onclick="deleteAlbumImage(${img.id}, ${album.id})" title="حذف الصورة"
-                  style="position:absolute;top:-6px;left:-6px;width:20px;height:20px;border-radius:50%;background:#e53e3e;color:#fff;border:none;font-size:11px;cursor:pointer;">×</button>
-              </div>
-            `).join('') || '<span style="color:#a0aec0;font-size:12px;">مفيش صور في الألبوم ده لسه</span>'}
-          </div>
-          <div style="display:flex;gap:8px;">
-            <input type="text" id="newImgUrl-${album.id}" placeholder="رابط صورة جديدة..." dir="ltr" style="flex:1;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;">
-            <button class="btn btn-primary btn-sm" onclick="addAlbumImage(${album.id})">➕ إضافة</button>
-          </div>
+      container.innerHTML = images.map(img => `
+        <div style="position:relative;">
+          <img src="${img.image_url}" style="width:84px;height:84px;object-fit:cover;border-radius:10px;" onerror="this.style.opacity=0.3">
+          <button onclick="deleteBgImage(${img.id})" title="حذف الصورة"
+            style="position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:#e53e3e;color:#fff;border:none;font-size:12px;cursor:pointer;">×</button>
         </div>
       `).join('');
     }
 
-    function escapeAdminHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
-    }
-
-    async function addPhotoAlbum() {
+    async function addBgImage() {
       const headers = getAuthHeaders();
       if (!headers) return;
-      const title = document.getElementById('newAlbumTitle').value.trim();
-      if (!title) { showSettingsMessage('⚠️ أدخل اسم الألبوم', 'error'); return; }
-
-      try {
-        const response = await fetch(PROJECT_URL + '/functions/v1/add-login-ad', {
-          method: 'POST', headers: headers,
-          body: JSON.stringify({ type: 'album', title })
-        });
-        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
-        const result = await response.json();
-        if (result.success) {
-          showSettingsMessage('✅ ' + result.message, 'success');
-          document.getElementById('newAlbumTitle').value = '';
-          loadLoginAds();
-        } else {
-          showSettingsMessage('❌ ' + result.message, 'error');
-        }
-      } catch (error) {
-        console.error('❌ خطأ في إنشاء الألبوم:', error);
-        showSettingsMessage('❌ فشل إنشاء الألبوم', 'error');
-      }
-    }
-
-    async function addAlbumImage(albumId) {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-      const input = document.getElementById('newImgUrl-' + albumId);
+      const input = document.getElementById('newBgImageUrl');
       const imageUrl = input.value.trim();
       if (!imageUrl) { showSettingsMessage('⚠️ أدخل رابط الصورة', 'error'); return; }
 
       try {
+        // ✅ لو لسه مفيش ألبوم خلفية اتعمل، نعمله بصمت الأول (المستخدم مش شايف الخطوة دي خالص)
+        if (!cachedBgAlbumId) {
+          const createRes = await fetch(PROJECT_URL + '/functions/v1/add-login-ad', {
+            method: 'POST', headers: headers,
+            body: JSON.stringify({ type: 'album', title: BG_ALBUM_TITLE, isBackground: true })
+          });
+          if (createRes.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+          const createResult = await createRes.json();
+          if (!createResult.success) { showSettingsMessage('❌ ' + createResult.message, 'error'); return; }
+          cachedBgAlbumId = createResult.data.id;
+        }
+
         const response = await fetch(PROJECT_URL + '/functions/v1/add-login-ad', {
           method: 'POST', headers: headers,
-          body: JSON.stringify({ type: 'album_image', albumId, imageUrl })
+          body: JSON.stringify({ type: 'album_image', albumId: cachedBgAlbumId, imageUrl })
         });
         if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
         const result = await response.json();
         if (result.success) {
-          showSettingsMessage('✅ ' + result.message, 'success');
+          showSettingsMessage('✅ تم إضافة صورة الخلفية', 'success');
+          input.value = '';
           loadLoginAds();
         } else {
           showSettingsMessage('❌ ' + result.message, 'error');
         }
       } catch (error) {
-        console.error('❌ خطأ في إضافة الصورة:', error);
+        console.error('❌ خطأ في إضافة صورة الخلفية:', error);
         showSettingsMessage('❌ فشل إضافة الصورة', 'error');
       }
     }
 
-    async function deletePhotoAlbum(albumId) {
-      if (!confirm('⚠️ هل أنت متأكد من حذف الألبوم ده وكل صوره؟')) return;
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      try {
-        const response = await fetch(PROJECT_URL + '/functions/v1/delete-login-ad', {
-          method: 'POST', headers: headers,
-          body: JSON.stringify({ type: 'album', albumId })
-        });
-        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
-        const result = await response.json();
-        if (result.success) {
-          showSettingsMessage('✅ ' + result.message, 'success');
-          loadLoginAds();
-        } else {
-          showSettingsMessage('❌ ' + result.message, 'error');
-        }
-      } catch (error) {
-        console.error('❌ خطأ في حذف الألبوم:', error);
-        showSettingsMessage('❌ فشل حذف الألبوم', 'error');
-      }
-    }
-
-    async function deleteAlbumImage(imageId, albumId) {
+    async function deleteBgImage(imageId) {
       const headers = getAuthHeaders();
       if (!headers) return;
 
