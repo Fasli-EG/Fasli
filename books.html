@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -487,13 +487,17 @@
     }
 
     async function editBookName(bookId, oldName, oldPrice) {
-      const newName = prompt('✏️ تعديل اسم المذكرة\n\nالاسم الحالي: ' + oldName + '\n\nأدخل الاسم الجديد:', oldName);
+      const newName = await customPrompt('تعديل اسم المذكرة — الاسم الحالي: ' + oldName + ' — أدخل الاسم الجديد:', oldName);
       if (newName === null || newName.trim() === '') return;
-      if (newName.trim() === oldName) { showToast('ℹ️ الاسم لم يتغير', 'info'); return; }
 
-      const newPrice = prompt('💰 تعديل السعر\n\nالسعر الحالي: ' + oldPrice + ' ج.م\n\nأدخل السعر الجديد:', oldPrice);
+      const newPrice = await customPrompt('تعديل السعر — السعر الحالي: ' + oldPrice + ' ج.م — أدخل السعر الجديد:', oldPrice);
       if (newPrice === null) return;
       if (isNaN(newPrice) || Number(newPrice) <= 0) { showToast('⚠️ أدخل سعراً صحيحاً', 'warning'); return; }
+
+      if (newName.trim() === oldName && Number(newPrice) === Number(oldPrice)) {
+        showToast('ℹ️ مفيش أي تغيير', 'info');
+        return;
+      }
 
       try {
         const headers = getAuthHeaders();
@@ -531,7 +535,7 @@
     }
 
     async function deleteBook(bookId, bookName) {
-      if (!confirm('⚠️ هل أنت متأكد من حذف المذكرة "' + bookName + '"؟\n\nسيتم حذف جميع سجلات سدادها.')) return;
+      if (!(await customConfirm('⚠️ هل أنت متأكد من حذف المذكرة "' + bookName + '"؟ سيتم حذف جميع سجلات سدادها.'))) return;
 
       try {
         const headers = getAuthHeaders();
@@ -802,7 +806,7 @@
     }
 
     async function deleteBookPayment(paymentId, studentName, bookName) {
-      if (!confirm(`⚠️ هل أنت متأكد من حذف سداد "${bookName}" للطالب "${studentName}"؟`)) return;
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف سداد "${bookName}" للطالب "${studentName}"؟`))) return;
 
       try {
         const headers = getAuthHeaders();
@@ -952,8 +956,8 @@
     }
 
     async function editBookPayment(paymentId, studentName, bookName, currentAmount, price) {
-      const newAmount = prompt(
-        `✏️ تعديل سداد المذكرة\n\nالطالب: ${studentName}\nالمذكرة: ${bookName}\nالمبلغ الحالي: ${currentAmount} ج.م\nالسعر الكامل: ${price} ج.م\n\nأدخل المبلغ الجديد (إجمالي المدفوع):`,
+      const newAmount = await customPrompt(
+        `تعديل سداد المذكرة — الطالب: ${studentName} — المذكرة: ${bookName} — المبلغ الحالي: ${currentAmount} ج.م من ${price} ج.م — أدخل المبلغ الجديد:`,
         currentAmount
       );
       if (newAmount === null) return;
@@ -999,7 +1003,7 @@
     }
 
     async function logout() {
-      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
       try {
         const jwt = sessionStorage.getItem('jwtToken');
         let pushToken = localStorage.getItem('fasliPushToken');
@@ -1395,5 +1399,6 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

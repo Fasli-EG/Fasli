@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=15">
-  <script src="activity-format.js?v=4"></script>
+  <link rel="stylesheet" href="style.css?v=20">
+  <script src="activity-format.js?v=6"></script>
 </head>
 <body>
 
@@ -65,8 +65,7 @@
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
         <h2>لوحة المتابعة</h2>
-        <button class="sidebar-toggle-btn" onclick="location.reload()" title="تحديث الصفحة" style="margin-left:8px;"><i class="fas fa-arrows-rotate"></i></button>
-        <div class="notif-wrap">
+        <div class="notif-wrap" id="notifWrap">
           <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
             <i class="fas fa-bell"></i>
             <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
@@ -236,7 +235,7 @@
       </div>
       <div class="modal-body">
         <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
-          حدد إيه اللي هيحصل لما أي طالب يمرر كارته على البورد. الوضع بيرجع تلقائياً لـ"حضور" لو عدّت 5 دقايق من غير أي كارت.
+          حدد إيه اللي هيحصل لما أي طالب يمرّغ كارته على البورد. الوضع بيرجع تلقائياً لـ"حضور" لو عدّت 5 دقايق من غير أي كارت.
         </p>
         <div class="field">
           <label>الوضع</label>
@@ -1637,7 +1636,7 @@ function openAttendanceModal() {
     // LOGOUT
     // ============================================
     async function logout() {
-      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
       try {
         const jwt = sessionStorage.getItem('jwtToken');
         let pushToken = localStorage.getItem('fasliPushToken');
@@ -1948,5 +1947,6 @@ function openAttendanceModal() {
       </div>
     </div>
   </div>
+<script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

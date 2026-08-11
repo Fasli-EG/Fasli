@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=20">
   <style>
     .student-card .student-name { font-size: 18px; font-weight: 700; color: var(--gray-900); }
     .student-card .student-name .uid { font-size: 12px; font-weight: 400; color: var(--gray-400); font-family: monospace; margin-right: 6px; }
@@ -28,7 +28,14 @@
     .student-card .student-stats .stat-item .num.blue { color: var(--primary); }
     .student-card .student-stats .stat-item .num.orange { color: var(--warning); }
     .student-card .student-stats .stat-item .label { font-size: 11px; color: var(--gray-400); }
-    [data-theme="dark"] .student-card { background: var(--gray-100); border-color: var(--gray-200); }
+    .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 28px; }
+    .student-card {
+      background: #fff; border: 2px solid var(--gray-200);
+      border-radius: 16px; padding: 18px 20px; cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease; box-shadow: var(--shadow);
+    }
+    .student-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    [data-theme="dark"] .student-card { background: var(--gray-100); }
     [data-theme="dark"] .student-card .student-name { color: var(--gray-800); }
     [data-theme="dark"] .student-card .student-name .uid { color: var(--gray-500); }
     [data-theme="dark"] .student-card .student-details .detail { color: var(--gray-600); }
@@ -308,18 +315,24 @@
           }
 
           let html = '<div class="students-grid">';
-          children.forEach(student => {
+          const cardAccents = ['#F2B705', '#5FBF9A', '#7FA8E8', '#E88AC4', '#E89B5F'];
+          children.forEach((student, idx) => {
             const isPresent = student.today_attendance === 'present';
             const avg = student.avg_grade !== undefined && student.avg_grade !== null ? Math.round(student.avg_grade) : '—';
             const avgClass = avg !== '—' && avg >= 70 ? 'green' : (avg !== '—' && avg >= 50 ? 'orange' : 'orange');
+            const accent = cardAccents[idx % cardAccents.length];
 
             html += `
-              <div class="student-card" onclick="window.location.href='parent-student-details.html?uid=${encodeURIComponent(student.uid)}'">
+              <div class="student-card" style="border-color:${accent};" onclick="window.location.href='parent-student-details.html?uid=${encodeURIComponent(student.uid)}'">
                 <div class="student-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                  <div class="student-name">
-                    ${escapeHtml(student.name)}
-                    <span class="uid">${escapeHtml(student.uid)}</span>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:38px;height:38px;border-radius:10px;background:${accent}22;color:${accent};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;">${escapeHtml(student.name).trim().charAt(0)}</div>
+                    <div class="student-name">
+                      ${escapeHtml(student.name)}
+                      <span class="uid">${escapeHtml(student.uid)}</span>
+                    </div>
                   </div>
+
                   <span class="student-status ${isPresent ? 'present' : 'absent'}">
                     ${isPresent ? '✅ حاضر اليوم' : '❌ غائب اليوم'}
                   </span>
@@ -353,8 +366,8 @@
                     <div class="label">المتوسط</div>
                   </div>
                 </div>
-                <div class="view-link">
-                  <i class="fas fa-chevron-left"></i> عرض التفاصيل
+                <div class="view-link" style="text-align:left;margin-top:8px;color:var(--primary);opacity:0.6;">
+                  <i class="fas fa-chevron-left"></i>
                 </div>
               </div>
             `;
@@ -390,7 +403,7 @@
     }
 
     async function logout() {
-      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
       try {
         const jwt = sessionStorage.getItem('jwtToken');
         let pushToken = localStorage.getItem('fasliPushToken');
@@ -676,5 +689,6 @@
       </div>
     </div>
   </div>
+<script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

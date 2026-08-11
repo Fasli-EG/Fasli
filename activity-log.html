@@ -11,8 +11,8 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=15">
-  <script src="activity-format.js?v=4"></script>
+  <link rel="stylesheet" href="style.css?v=20">
+  <script src="activity-format.js?v=6"></script>
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -374,7 +374,7 @@
     var currentFilters = { action: '', dateFrom: '', dateTo: '' };
 
     async function deleteActivityLog(logId) {
-      if (!confirm('هل أنت متأكد من حذف هذا النشاط من السجل؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+      if (!(await customConfirm('هل أنت متأكد من حذف هذا النشاط من السجل؟ لا يمكن التراجع عن هذا الإجراء.'))) return;
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
@@ -491,7 +491,7 @@
     // LOGOUT
     // ============================================
     async function logout() {
-      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
       try {
         const jwt = sessionStorage.getItem('jwtToken');
         let pushToken = localStorage.getItem('fasliPushToken');
@@ -892,5 +892,6 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

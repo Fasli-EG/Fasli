@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -186,7 +186,7 @@
       </div>
       <div class="modal-body">
         <p style="font-size:13.5px;color:var(--gray-600);margin-bottom:14px;">
-          ربط كارت جديد لـ<strong id="cardLinkStudentName"></strong> — بعد الضغط، مرر الكارت على البورد بتاعك.
+          ربط كارت جديد لـ<strong id="cardLinkStudentName"></strong> — بعد الضغط، مرّغ الكارت على البورد بتاعك.
         </p>
         <div id="cardLinkIdle">
           <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="startCardLink()">
@@ -459,6 +459,28 @@
       } catch (error) { console.error('❌ خطأ في تحميل المجموعات:', error); }
     }
 
+    // ✅ عدد الطلاب اللي حضروا فعلياً النهاردة (كانت "0" ثابتة قبل كده لأن مفيش كود بيحدّثها)
+    async function loadTodayAttendanceCount(filterGroup) {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-today-attendance', {
+          method: 'POST', headers: headers, body: JSON.stringify({ clientId })
+        });
+        if (response.status === 401) return;
+        const result = await response.json();
+        if (result.success) {
+          const records = result.data || [];
+          const filtered = (filterGroup && filterGroup !== 'ALL')
+            ? records.filter(r => r.group_name === filterGroup)
+            : records;
+          document.getElementById('statToday').textContent = filtered.length;
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل حضور اليوم:', error);
+      }
+    }
+
     async function loadStudents() {
       const filterGroup = document.getElementById('filterGroup').value;
       const tbody = document.getElementById('studentsBody');
@@ -483,6 +505,7 @@
           const students = result.data || [];
           document.getElementById('statTotal').textContent = students.length;
           document.getElementById('statGroups').textContent = [...new Set(students.map(s => s.group_name))].length;
+          loadTodayAttendanceCount(filterGroup);
           if (students.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);"><i class="fas fa-user-slash" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا يوجد طلاب</td></tr>`;
             return;
@@ -755,7 +778,7 @@
 
     async function resetParentPassword(studentUid, studentName) {
       if (!canResetParentPassword) { showToast('⛔ ليس لديك صلاحية لإعادة تعيين كلمة مرور ولي الأمر', 'error'); return; }
-      if (!confirm(`هل تريد إعادة تعيين كلمة مرور ولي أمر "${studentName}"؟ هيتم تحديدها برقم هاتف ولي الأمر، وهيحتاج يغيّرها بعد أول تسجيل دخول.`)) return;
+      if (!(await customConfirm(`هل تريد إعادة تعيين كلمة مرور ولي أمر "${studentName}"؟ هيتم تحديدها برقم هاتف ولي الأمر، وهيحتاج يغيّرها بعد أول تسجيل دخول.`, {danger:false}))) return;
 
       try {
         const headers = getAuthHeaders();
@@ -780,7 +803,7 @@
 
     async function deleteStudent(studentId, studentName) {
       if (!canDeleteStudents) { showToast('⛔ ليس لديك صلاحية لحذف الطلاب', 'error'); return; }
-      if (!confirm(`⚠️ هل أنت متأكد من حذف الطالب "${studentName}"؟\n\nهذا الإجراء لا يمكن التراجع عنه!`)) return;
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف الطالب "${studentName}"؟ هذا الإجراء لا يمكن التراجع عنه!`))) return;
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
@@ -803,7 +826,7 @@
     }
 
     async function logout() {
-      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
       try {
         const jwt = sessionStorage.getItem('jwtToken');
         let pushToken = localStorage.getItem('fasliPushToken');
@@ -1343,5 +1366,6 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -169,10 +169,10 @@
       <div class="card-header">
         <h3><i class="fas fa-list" style="color:var(--primary);"></i> المدفوعات المسجلة</h3>
         <div class="search-bar">
-          <select id="filterGroup" onchange="loadPayments()">
+          <select id="filterGroup" onchange="localStorage.setItem('paymentsFilterGroup_' + clientId, this.value); loadPayments();">
             <option value="ALL">📚 جميع المجموعات</option>
           </select>
-          <select id="filterTitle" onchange="filterTable()">
+          <select id="filterTitle" onchange="localStorage.setItem('paymentsFilterTitle_' + clientId, this.value); filterTable();">
             <option value="">💰 كل البنود</option>
           </select>
           <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو البند...">
@@ -485,6 +485,12 @@
             opt2.textContent = g;
             filterSelect.appendChild(opt2);
           });
+
+          // ✅ نرجّع فلتر المجموعة المحفوظ (لو موجود) بعد ما الخيارات اتعبّت
+          const savedGroup = localStorage.getItem('paymentsFilterGroup_' + clientId);
+          if (savedGroup && [...filterSelect.options].some(o => o.value === savedGroup)) {
+            filterSelect.value = savedGroup;
+          }
         }
       } catch (error) {
         console.error('❌ خطأ في تحميل المجموعات:', error);
@@ -607,8 +613,9 @@
         if (result.success) {
           showToast('✅ ' + result.message, 'success');
           resetForm();
-          loadPayments();
-          loadPaymentTitles();
+          await loadPayments();
+          await loadPaymentTitles();
+          filterTable();
         } else { showToast('❌ ' + result.message, 'error'); }
       } catch (error) {
         console.error('❌ خطأ:', error);
@@ -666,6 +673,12 @@
           });
         }
         if ([...filterSelect.options].some(o => o.value === currentFilterValue)) filterSelect.value = currentFilterValue;
+
+        // ✅ نرجّع فلتر البند المحفوظ (لو موجود ولسه معندناش قيمة محفوظة من الجلسة الحالية)
+        const savedTitle = localStorage.getItem('paymentsFilterTitle_' + clientId);
+        if (!currentFilterValue && savedTitle && [...filterSelect.options].some(o => o.value === savedTitle)) {
+          filterSelect.value = savedTitle;
+        }
       } catch (error) {
         console.error('❌ خطأ في تحميل بنود السداد:', error);
       }
@@ -864,7 +877,8 @@
         if (result.success) {
           showToast('✅ ' + result.message, 'success');
           closeEditModal();
-          loadPayments();
+          await loadPayments();
+          filterTable();
         } else { showToast('❌ ' + result.message, 'error'); }
       } catch (error) {
         console.error('❌ خطأ:', error);
@@ -878,7 +892,7 @@
         return;
       }
 
-      if (!confirm('⚠️ هل أنت متأكد من حذف هذه الدفعة؟')) return;
+      if (!(await customConfirm('⚠️ هل أنت متأكد من حذف هذه الدفعة؟'))) return;
 
       try {
         const headers = getAuthHeaders();
@@ -903,7 +917,8 @@
 
         if (result.success) {
           showToast('✅ ' + result.message, 'success');
-          loadPayments();
+          await loadPayments();
+          filterTable();
         } else {
           showToast('❌ ' + result.message, 'error');
         }
@@ -914,7 +929,7 @@
     }
 
     async function logout() {
-      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
       try {
         const jwt = sessionStorage.getItem('jwtToken');
         let pushToken = localStorage.getItem('fasliPushToken');
@@ -1299,11 +1314,12 @@ async function markAllRead() {
       }
     }
 
-    window.onload = function() {
+    window.onload = async function() {
       applyPermissions();
-      loadGroups();
-      loadPayments();
-      loadPaymentTitles();
+      await loadGroups();
+      await loadPaymentTitles();
+      await loadPayments();
+      filterTable();
     };
   </script>
   <script>
@@ -1313,5 +1329,6 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

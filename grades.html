@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -164,10 +164,10 @@
       <div class="card-header">
         <h3><i class="fas fa-list" style="color:var(--primary);"></i> الدرجات المسجلة</h3>
         <div class="search-bar">
-          <select id="filterGroup" onchange="loadGrades()">
+          <select id="filterGroup" onchange="localStorage.setItem('gradesFilterGroup_' + clientId, this.value); loadGrades();">
             <option value="ALL">📚 جميع المجموعات</option>
           </select>
-          <select id="filterExam" onchange="filterTable()">
+          <select id="filterExam" onchange="localStorage.setItem('gradesFilterExam_' + clientId, this.value); filterTable();">
             <option value="">📝 كل الامتحانات</option>
           </select>
           <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو الامتحان...">
@@ -475,6 +475,12 @@
             opt2.textContent = g;
             filterSelect.appendChild(opt2);
           });
+
+          // ✅ نرجّع فلتر المجموعة المحفوظ (لو موجود) بعد ما الخيارات اتعبّت
+          const savedGroup = localStorage.getItem('gradesFilterGroup_' + clientId);
+          if (savedGroup && [...filterSelect.options].some(o => o.value === savedGroup)) {
+            filterSelect.value = savedGroup;
+          }
         }
       } catch (error) {
         console.error('❌ خطأ في تحميل المجموعات:', error);
@@ -598,8 +604,9 @@
         if (result.success) {
           showToast('✅ ' + result.message, 'success');
           resetGradeForm();
-          loadGrades();
-          loadExamNames();
+          await loadGrades();
+          await loadExamNames();
+          filterTable();
         } else { showToast('❌ ' + result.message, 'error'); }
       } catch (error) {
         console.error('❌ خطأ:', error);
@@ -668,6 +675,12 @@
           });
         }
         if ([...filterSelect.options].some(o => o.value === currentFilterValue)) filterSelect.value = currentFilterValue;
+
+        // ✅ نرجّع فلتر الامتحان المحفوظ (لو موجود ولسه معندناش قيمة محفوظة من الجلسة الحالية)
+        const savedExam = localStorage.getItem('gradesFilterExam_' + clientId);
+        if (!currentFilterValue && savedExam && [...filterSelect.options].some(o => o.value === savedExam)) {
+          filterSelect.value = savedExam;
+        }
       } catch (error) {
         console.error('❌ خطأ في تحميل أسماء الامتحانات:', error);
       }
@@ -846,7 +859,8 @@
         if (result.success) {
           showToast('✅ ' + result.message, 'success');
           closeEditModal();
-          loadGrades();
+          await loadGrades();
+          filterTable();
         } else {
           showToast('❌ ' + result.message, 'error');
         }
@@ -862,7 +876,7 @@
         return;
       }
 
-      if (!confirm('⚠️ هل أنت متأكد من حذف هذه الدرجة؟')) return;
+      if (!(await customConfirm('⚠️ هل أنت متأكد من حذف هذه الدرجة؟'))) return;
 
       try {
         const headers = getAuthHeaders();
@@ -887,7 +901,8 @@
 
         if (result.success) {
           showToast('✅ ' + result.message, 'success');
-          loadGrades();
+          await loadGrades();
+          filterTable();
         } else {
           showToast('❌ ' + result.message, 'error');
         }
@@ -898,7 +913,7 @@
     }
 
     async function logout() {
-      if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
       try {
         const jwt = sessionStorage.getItem('jwtToken');
         let pushToken = localStorage.getItem('fasliPushToken');
@@ -1283,11 +1298,12 @@ async function markAllRead() {
       }
     }
 
-    window.onload = function() {
+    window.onload = async function() {
       applyPermissions();
-      loadGroups();
-      loadGrades();
-      loadExamNames();
+      await loadGroups();
+      await loadExamNames();
+      await loadGrades();
+      filterTable();
     };
   </script>
   <script>
@@ -1297,5 +1313,6 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

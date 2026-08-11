@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <style>
   [data-theme="dark"] .student-card { background: var(--gray-100); border-color: var(--gray-200); }
@@ -781,8 +781,8 @@
     // ============================================
     // LOGOUT
     // ============================================
-    function logout() {
-      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+    async function logout() {
+      if (await customConfirm('هل أنت متأكد من تسجيل الخروج؟')) {
         sessionStorage.clear();
         window.location.href = 'login.html';
       }
@@ -848,5 +848,6 @@
       });
     }
   </script>
+<script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>
