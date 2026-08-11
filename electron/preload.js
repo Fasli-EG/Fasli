@@ -15,3 +15,9 @@ contextBridge.exposeInMainWorld('electronNotify', {
   isSupported: () => ipcRenderer.invoke('notify:isSupported'),
   show: (title, body) => ipcRenderer.invoke('notify:show', title, body),
 });
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  // ✅ بيجبر النافذة تاخد التركيز (focus) تاني على مستوى نظام التشغيل نفسه، مش بس مستوى الصفحة
+  // مفيد بعد قفل أي نافذة منبثقة مخصصة، عشان نضمن إن لوحة المفاتيح والماوس يفضلوا شغّالين صح
+  refocusWindow: () => ipcRenderer.invoke('window:refocus'),
+});

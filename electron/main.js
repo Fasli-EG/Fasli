@@ -82,6 +82,17 @@ ipcMain.handle('notify:show', (event, title, body) => {
   return true;
 });
 
+// ✅ بيجبر النافذة تاخد التركيز تاني على مستوى نظام التشغيل، بعد قفل أي نافذة منبثقة مخصصة في الصفحة
+// (بيحل مشكلة "التجمد الوهمي" اللي بتحصل أحياناً في Electron بعد modal بيتقفل، حيث مؤشر الكتابة مابيظهرش
+// والأزرار مابتستجيبش لغاية ما المستخدم يدوس بالماوس يدوي)
+ipcMain.handle('window:refocus', () => {
+  const targetWin = BrowserWindow.getAllWindows()[0];
+  if (!targetWin) return false;
+  targetWin.focus();
+  targetWin.webContents.focus();
+  return true;
+});
+
 app.whenReady().then(() => {
   // ============================================
   // السماح بالاتصال بالبورت التسلسلي (USB Serial) — عشان توصيل بورد قارئ الكروت (ESP32) يشتغل
