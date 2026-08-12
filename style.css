@@ -1637,6 +1637,17 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
   .btn-reset-password .btn-label { display: none; }
   .btn-reset-password { padding: 6px 10px; }
   .btn-reset-password i { font-size: 14px; }
+
+  /* ✅ في الموبايل، قائمة الإشعارات بتتموضع بالنسبة للشاشة نفسها (مش بالنسبة لزرار الجرس)،
+     عشان نضمن إنها تفضل جوه حدود الشاشة تماماً مهما كان مكان الزرار، من غير أي إزاحة أو سكرول أفقي */
+  .notif-panel {
+    position: fixed !important;
+    top: 64px !important;
+    right: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
 }
 
 @media (max-width: 480px) {
