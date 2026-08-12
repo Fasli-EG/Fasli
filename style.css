@@ -1384,7 +1384,7 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
 
 /* ---------- التقارير ---------- */
 .report-preview {
-  background: var(--gray-50);
+  background: #ffffff !important;
   border-radius: var(--radius);
   padding: 16px;
   min-height: 100px;
@@ -1392,9 +1392,26 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
   line-height: 1.8;
   max-height: 500px;
   overflow-y: auto;
-  border: 1px solid var(--gray-200);
+  border: 1px solid #e2e8f0 !important;
   direction: rtl;
+  color-scheme: light;
 }
+/* ✅ أقوى من القاعدة العامة [data-theme="dark"] td اللي بتفرض لون فاتح مصمم لخلفية غامقة —
+   محتوى التقرير عنده خلفية بيضا ثابتة دايماً، فمحتاج نص غامق ثابت بغض النظر عن وضع الصفحة */
+html body .report-preview td, html body .report-preview th, html body .report-preview p,
+html body .report-preview strong, html body .report-preview span, html body .report-preview div {
+  color: #1f2937 !important;
+  border-color: #e2e8f0 !important;
+}
+html body .report-preview th {
+  background: #f3f4f6 !important;
+}
+html body .report-preview .rpt-good { color: #15803d !important; }
+html body .report-preview .rpt-warn { color: #b45309 !important; }
+html body .report-preview .rpt-bad { color: #b91c1c !important; }
+html body .report-preview .report-row-alert td { background: #fef2f2 !important; color: #1f2937 !important; }
+.report-preview tr:hover td { background: inherit !important; }
+.report-preview table tbody tr:nth-child(even) { background: transparent !important; }
 .report-preview table {
   width: 100%;
   border-collapse: collapse;
@@ -1636,88 +1653,6 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
   background: #FCF1E1;
   color: #92400e;
 }
-/* ====== معاينة التقارير في الوضع الليلي ====== */
-[data-theme="dark"] .report-preview {
-  background: #2A2F3A !important;
-  border-color: #3C424F !important;
-}
-
-[data-theme="dark"] .report-preview th {
-  background: #3C424F !important;
-  color: #EDEEF2 !important;
-  border-color: #7A8290 !important;
-}
-
-[data-theme="dark"] .report-preview td {
-  border-color: #3C424F !important;
-  color: #DADDE3 !important;
-}
-
-[data-theme="dark"] .report-preview h1 {
-  color: #F5C842 !important;
-}
-
-[data-theme="dark"] .report-preview hr {
-  border-color: #3C424F !important;
-}
-
-[data-theme="dark"] .report-preview .footer {
-  color: #A5ABB6 !important;
-}
-/* ====== تنسيق معاينة التقرير في الوضع الليلي ====== */
-[data-theme="dark"] .report-preview {
-  background: #2A2F3A !important;
-  color: #EDEEF2 !important;
-}
-
-[data-theme="dark"] .report-preview h1 {
-  color: #F5C842 !important;
-}
-
-[data-theme="dark"] .report-preview table {
-  border-color: #3C424F !important;
-}
-
-[data-theme="dark"] .report-preview th {
-  background: #3C424F !important;
-  color: #EDEEF2 !important;
-  border-color: #7A8290 !important;
-}
-
-[data-theme="dark"] .report-preview td {
-  border-color: #3C424F !important;
-  color: #DADDE3 !important;
-}
-
-[data-theme="dark"] .report-preview hr {
-  border-color: #3C424F !important;
-}
-
-[data-theme="dark"] .report-preview .footer {
-  color: #A5ABB6 !important;
-}
-
-[data-theme="dark"] .report-preview p {
-  color: #DADDE3 !important;
-}
-
-[data-theme="dark"] .report-preview strong {
-  color: #EDEEF2 !important;
-}
-
-/* ✅ صفوف التنبيه في التقارير (غير مسدد / لم يتقدّم للامتحان) — بتتأقلم مع الوضع الليلي بدل لون ثابت */
-.report-preview .report-row-alert td { background: #fef2f2 !important; }
-[data-theme="dark"] .report-preview .report-row-alert td { background: #3A1F20 !important; }
-
-/* ✅ ألوان الحالة الدلالية في التقارير (أخضر/كهرماني/أحمر) — لازم أخصّية أعلى من قاعدة td العامة عشان تتغلّب عليها في الوضع الليلي */
-.report-preview td.rpt-good { color: #22c55e !important; }
-.report-preview td.rpt-warn { color: #f59e0b !important; }
-.report-preview td.rpt-bad { color: #ef4444 !important; }
-[data-theme="dark"] .report-preview td.rpt-good { color: #6FCF97 !important; }
-[data-theme="dark"] .report-preview td.rpt-warn { color: #E8B860 !important; }
-[data-theme="dark"] .report-preview td.rpt-bad { color: #F29999 !important; }
-.report-preview .rpt-brand { color: #0B1C33 !important; }
-[data-theme="dark"] .report-preview .rpt-brand { color: #F2F3F6 !important; }
 /* زرار تواصل المدرس - يظهر في كارت الطالب بلوحة تحكم ولي الأمر */
 .teacher-contact-row {
   margin-top: 10px;
@@ -1758,7 +1693,7 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
 }
 .notif-panel {
   display: none;
-  position: absolute; top: calc(100% + 10px); left: 0;
+  position: absolute; top: calc(100% + 10px); right: 0; left: auto;
   width: 340px; max-width: 90vw;
   background: var(--gray-50); border: 1px solid var(--gray-200);
   border-radius: 14px; box-shadow: var(--shadow-xl);

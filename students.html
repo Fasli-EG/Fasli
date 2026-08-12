@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=32">
+  <link rel="stylesheet" href="style.css?v=41">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -145,6 +145,7 @@
           <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو UID...">
         </div>
       </div>
+      <div id="groupFilterSummary" style="padding:0 20px 12px;font-size:12.5px;color:var(--gray-500);"></div>
       <div class="card-body" style="padding:0;">
         <div class="table-wrapper">
           <table>
@@ -475,6 +476,14 @@
             ? records.filter(r => r.group_name === filterGroup)
             : records;
           document.getElementById('statToday').textContent = filtered.length;
+
+          const summaryEl = document.getElementById('groupFilterSummary');
+          if (summaryEl) {
+            const attendanceLabel = filterGroup === 'ALL'
+              ? `— ✅ حاضر اليوم من كل المجموعات: ${filtered.length}`
+              : `— ✅ حاضر اليوم من "${filterGroup}": ${filtered.length}`;
+            summaryEl.textContent = summaryEl.textContent + ' ' + attendanceLabel;
+          }
         }
       } catch (error) {
         console.error('❌ خطأ في تحميل حضور اليوم:', error);
@@ -506,6 +515,14 @@
           document.getElementById('statTotal').textContent = students.length;
           document.getElementById('statGroups').textContent = [...new Set(students.map(s => s.group_name))].length;
           loadTodayAttendanceCount(filterGroup);
+
+          const summaryEl = document.getElementById('groupFilterSummary');
+          if (summaryEl) {
+            summaryEl.textContent = filterGroup === 'ALL'
+              ? `👥 إجمالي الطلاب: ${students.length} طالب`
+              : `👥 عدد طلاب "${filterGroup}": ${students.length} طالب`;
+          }
+
           if (students.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);"><i class="fas fa-user-slash" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا يوجد طلاب</td></tr>`;
             return;

@@ -658,6 +658,12 @@
           <input type="text" id="settingsYoutube" placeholder="https://youtube.com/@..." dir="ltr">
         </div>
       </div>
+      <div class="field-row">
+        <div class="field">
+          <label>رابط تيك توك</label>
+          <input type="text" id="settingsTiktok" placeholder="https://tiktok.com/@..." dir="ltr">
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
     </div>
 
@@ -1956,6 +1962,7 @@
         document.getElementById('settingsPhone').value = data.phone_number || '';
         document.getElementById('settingsFacebook').value = data.facebook_url || '';
         document.getElementById('settingsYoutube').value = data.youtube_url || '';
+        document.getElementById('settingsTiktok').value = data.tiktok_url || '';
         document.getElementById('settingsAdminName').value = data.admin_name || '';
         document.getElementById('settingsAdminWhatsapp').value = data.admin_whatsapp || '';
         document.getElementById('settingsDesktopUrl').value = data.desktop_download_url || '';
@@ -1975,6 +1982,7 @@
       const phoneNumber = document.getElementById('settingsPhone').value.trim();
       const facebookUrl = document.getElementById('settingsFacebook').value.trim();
       const youtubeUrl = document.getElementById('settingsYoutube').value.trim();
+      const tiktokUrl = document.getElementById('settingsTiktok').value.trim();
       const adminName = document.getElementById('settingsAdminName').value.trim();
       const adminWhatsapp = document.getElementById('settingsAdminWhatsapp').value.trim();
       const desktopDownloadUrl = document.getElementById('settingsDesktopUrl').value.trim();
@@ -1984,7 +1992,7 @@
         const response = await fetch(PROJECT_URL + '/functions/v1/update-system-settings', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ whatsappNumber, phoneNumber, facebookUrl, youtubeUrl, desktopDownloadUrl, mobileAppUrl, adminName, adminWhatsapp })
+          body: JSON.stringify({ whatsappNumber, phoneNumber, facebookUrl, youtubeUrl, tiktokUrl, desktopDownloadUrl, mobileAppUrl, adminName, adminWhatsapp })
         });
 
         if (response.status === 401) {
