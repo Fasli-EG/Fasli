@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=31">
+  <link rel="stylesheet" href="style.css?v=32">
   <style>
     .wifi-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
     .wifi-card { background: white; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); padding: 24px; margin-bottom: 24px; transition: var(--transition); }
@@ -91,7 +91,7 @@
         <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
         <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
         <a href="assistants-management.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
-        <a href="wifi-config.html" class="sidebar-item active" id="navSettings" style="display:none;"><i class="fas fa-gear"></i> الإعدادات</a>
+        <a href="wifi-config.html" class="sidebar-item active" id="navSettings" style="display:none;"><i class="fas fa-headset"></i> التواصل والنُسخ</a>
       </nav>
 
       <div class="sidebar-footer">
@@ -116,70 +116,31 @@
     <div class="main-area">
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-        <h2>الإعدادات</h2>
+        <h2>التواصل والنُسخ</h2>
         <div style="width:24px;"></div>
       </div>
   <div class="container wifi-container">
     <div class="breadcrumb">
       <a href="#" onclick="goBackToDashboard(); return false;">الرئيسية</a>
       <span class="separator">›</span>
-      <span>الإعدادات</span>
+      <span>التواصل والنُسخ</span>
     </div>
 
     <div class="page-header">
       <div>
-        <h2>📶 إعدادات <span style="color:var(--primary);">Wi-Fi</span></h2>
-        <span class="sub">تغيير شبكة الواي فاي الخاصة بجهاز الحضور</span>
+        <h2>📇 بيانات حسابك</h2>
+        <span class="sub">كود المدرس (Client ID) بتاعك — هتحتاجه لما تعملي إعداد جهاز الحضور</span>
       </div>
       <span id="roleIndicator" style="font-size:13px;color:var(--gray-500);"><i class="fas fa-user-tag"></i> دور: <strong id="userRoleDisplay">مدرس</strong></span>
     </div>
 
     <div class="wifi-card">
-      <div class="connection-status">
-        <span class="dot disconnected" id="statusDot"></span>
-        <span class="status-text" id="statusText">⚠️ غير متصل</span>
-      </div>
-
-      <div class="config-display" id="configDisplay">
-        <div class="row">
-          <span class="label">📡 الشبكة (SSID)</span>
-          <span class="value empty" id="currentSSID">غير محدد</span>
-        </div>
-        <div class="row">
-          <span class="label">🔑 كلمة المرور</span>
-          <span class="value empty" id="currentPassword">غير محددة</span>
-        </div>
-        <div class="row">
-          <span class="label">🌐 الحالة</span>
-          <span class="value" id="wifiStatus">⏳ غير متصل</span>
-        </div>
-      </div>
-
       <div class="wifi-form">
         <div class="field">
-          <label>📡 اسم الشبكة (SSID) <span class="required">*</span></label>
-          <input type="text" id="ssidInput" placeholder="أدخل اسم شبكة الواي فاي" dir="ltr" disabled>
+          <label>🆔 كود المدرس (Client ID) — هو نفسه اسم المستخدم بتاعك</label>
+          <input type="text" id="clientIdDisplay" dir="ltr" readonly style="background:var(--gray-100);cursor:default;">
         </div>
-        <div class="field">
-          <label>🔑 كلمة المرور <span class="required">*</span></label>
-          <input type="password" id="passwordInput" placeholder="أدخل كلمة مرور الشبكة" dir="ltr" disabled>
-        </div>
-
-        <div class="btn-group">
-          <button class="btn btn-primary" id="connectBtn" onclick="connectSerial()">
-            <i class="fas fa-plug"></i> توصيل
-          </button>
-          <button class="btn btn-success" id="saveBtn" onclick="saveConfig()" disabled>
-            <i class="fas fa-save"></i> حفظ
-          </button>
-        </div>
-
-        <button class="btn btn-outline" style="margin-top:10px;width:100%;justify-content:center;" onclick="refreshConfig()" id="refreshBtn" disabled>
-          <i class="fas fa-sync"></i> تحديث الإعدادات
-        </button>
       </div>
-
-      <div id="message" class="message"></div>
     </div>
 
     <div class="wifi-card" style="margin-top:24px;">
@@ -367,6 +328,8 @@
     }
 
     const clientId = sessionStorage.getItem('clientId') || sessionStorage.getItem('teacherClientId') || 'guest';
+    const clientIdDisplayEl = document.getElementById('clientIdDisplay');
+    if (clientIdDisplayEl) clientIdDisplayEl.value = clientId;
     const userRole = sessionStorage.getItem('userRole') || 'teacher';
     const teacherName = sessionStorage.getItem('teacherName') || 'مدرس';
     const assistantName = sessionStorage.getItem('assistantName') || null;
@@ -657,247 +620,7 @@ async function confirmReset() {
       }
     }
 
-    let serialPort = null;
-    let reader = null;
-    let isConnected = false;
-    let currentConfig = { ssid: '', password: '' };
-
-    const statusDot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
-    const currentSSID = document.getElementById('currentSSID');
-    const currentPassword = document.getElementById('currentPassword');
-    const wifiStatus = document.getElementById('wifiStatus');
-    const ssidInput = document.getElementById('ssidInput');
-    const passwordInput = document.getElementById('passwordInput');
-    const connectBtn = document.getElementById('connectBtn');
-    const saveBtn = document.getElementById('saveBtn');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const messageDiv = document.getElementById('message');
-
-    function showMessage(text, type = 'info') {
-      messageDiv.textContent = text;
-      messageDiv.className = 'message ' + type;
-      setTimeout(() => { messageDiv.className = 'message'; }, 5000);
-    }
-
-    function updateConnectionStatus(status, text) {
-      statusDot.className = 'dot ' + status;
-      statusText.textContent = text;
-      if (status === 'connected') {
-        connectBtn.innerHTML = '<i class="fas fa-plug"></i> متصل';
-        connectBtn.disabled = true;
-        saveBtn.disabled = false;
-        refreshBtn.disabled = false;
-        ssidInput.disabled = false;
-        passwordInput.disabled = false;
-      } else {
-        connectBtn.innerHTML = '<i class="fas fa-plug"></i> توصيل';
-        connectBtn.disabled = false;
-        saveBtn.disabled = true;
-        refreshBtn.disabled = true;
-        ssidInput.disabled = true;
-        passwordInput.disabled = true;
-      }
-    }
-
-    function updateWiFiStatus(statusMessage) {
-      wifiStatus.textContent = statusMessage;
-      if (statusMessage.includes('✅')) {
-        wifiStatus.style.color = 'var(--success)';
-      } else if (statusMessage.includes('❌') || statusMessage.includes('فشل')) {
-        wifiStatus.style.color = 'var(--danger)';
-      } else {
-        wifiStatus.style.color = 'var(--gray-600)';
-      }
-    }
-
-    async function connectSerial() {
-      if (!('serial' in navigator)) {
-        showMessage('⚠️ متصفحك لا يدعم Web Serial API. استخدم Chrome أو Edge.', 'error');
-        return;
-      }
-
-      try {
-        serialPort = await navigator.serial.requestPort();
-        await serialPort.open({ baudRate: 115200 });
-
-        isConnected = true;
-        updateConnectionStatus('connected', '✅ متصل بـ ' + (serialPort.getInfo().usbVendorId || 'الجهاز'));
-
-        const textDecoder = new TextDecoderStream();
-        const readableStreamClosed = serialPort.readable.pipeTo(textDecoder.writable);
-        reader = textDecoder.readable.getReader();
-
-        readLoop();
-
-        setTimeout(() => {
-          sendCommand('GET_CONFIG');
-        }, 500);
-
-        showMessage('✅ تم الاتصال بالجهاز', 'success');
-
-      } catch (error) {
-        console.error('❌ خطأ في الاتصال:', error);
-        showMessage('❌ فشل الاتصال: ' + error.message, 'error');
-        updateConnectionStatus('disconnected', '⚠️ فشل الاتصال');
-        isConnected = false;
-      }
-    }
-
-    async function readLoop() {
-      let buffer = '';
-      try {
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          if (value) {
-            buffer += value;
-            let lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            for (let line of lines) {
-              line = line.trim();
-              if (line) {
-                processSerialResponse(line);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        if (isConnected) {
-          updateConnectionStatus('disconnected', '⚠️ تم قطع الاتصال');
-          isConnected = false;
-          showMessage('⚠️ تم قطع الاتصال بالجهاز', 'error');
-        }
-      }
-    }
-
-    function processSerialResponse(line) {
-
-      if (line === '=== CONFIG_START ===') {
-        currentConfig = { ssid: '', password: '' };
-        return;
-      }
-
-      if (line === '=== CONFIG_END ===') {
-        currentSSID.textContent = currentConfig.ssid || 'غير محدد';
-        currentSSID.className = 'value' + (currentConfig.ssid ? '' : ' empty');
-        currentPassword.textContent = currentConfig.password ? '••••••••' : 'غير محددة';
-        currentPassword.className = 'value' + (currentConfig.password ? '' : ' empty');
-        ssidInput.value = currentConfig.ssid || '';
-        passwordInput.value = currentConfig.password || '';
-        showMessage('✅ تم تحميل الإعدادات', 'info');
-        return;
-      }
-
-      if (line.startsWith('SSID:')) {
-        currentConfig.ssid = line.substring(5);
-        return;
-      }
-      if (line.startsWith('PASS:')) {
-        currentConfig.password = line.substring(5);
-        return;
-      }
-
-      if (line.startsWith('STATUS:')) {
-        const status = line.substring(7);
-        if (status === 'WIFI_CONNECTED') {
-          updateWiFiStatus('✅ متصل بالشبكة');
-          statusDot.className = 'dot connected';
-          statusText.textContent = '✅ متصل بالجهاز';
-        } else if (status === 'WIFI_FAILED') {
-          updateWiFiStatus('❌ فشل الاتصال بالشبكة');
-        } else if (status === 'SERVER_ONLINE') {
-          updateWiFiStatus('✅ متصل بالخادم');
-        } else if (status === 'SERVER_OFFLINE') {
-          updateWiFiStatus('⚠️ الخادم غير متاح');
-        } else if (status === 'WIFI_DISCONNECTED') {
-          updateWiFiStatus('❌ الواي فاي مقطوع');
-        } else if (status === 'PONG_RESPONSE') {
-          showMessage('📡 الاتصال بالجهاز يعمل', 'info');
-        }
-        return;
-      }
-
-      if (line.includes('✅')) {
-        showMessage(line, 'success');
-        if (line.includes('تم حفظ الإعدادات')) {
-          setTimeout(() => sendCommand('GET_CONFIG'), 1000);
-        }
-        return;
-      }
-      if (line.includes('❌') || line.includes('فشل')) {
-        showMessage(line, 'error');
-        return;
-      }
-      if (line.includes('PONG')) {
-        showMessage('📡 الاتصال بالجهاز يعمل', 'info');
-        return;
-      }
-
-      if (line.includes('تم الاتصال') && line.includes('IP:')) {
-        updateWiFiStatus('✅ ' + line);
-        return;
-      }
-      if (line.includes('فشل الاتصال')) {
-        updateWiFiStatus('❌ ' + line);
-        return;
-      }
-    }
-
-    async function sendCommand(command) {
-      if (!isConnected || !serialPort) {
-        showMessage('⚠️ يرجى توصيل الجهاز أولاً', 'error');
-        return;
-      }
-
-      try {
-        const writer = serialPort.writable.getWriter();
-        const encoder = new TextEncoder();
-        await writer.write(encoder.encode(command + '\n'));
-        writer.releaseLock();
-      } catch (error) {
-        console.error('❌ خطأ في الإرسال:', error);
-        showMessage('❌ فشل إرسال الأمر', 'error');
-      }
-    }
-
-    async function saveConfig() {
-      const ssid = ssidInput.value.trim();
-      const password = passwordInput.value.trim();
-
-      if (!ssid) {
-        showMessage('⚠️ يرجى إدخال اسم الشبكة (SSID)', 'warning');
-        return;
-      }
-      if (!password) {
-        showMessage('⚠️ يرجى إدخال كلمة المرور', 'warning');
-        return;
-      }
-
-      const command = 'SET_CONFIG:' + ssid + '|' + password;
-      await sendCommand(command);
-
-      saveBtn.disabled = true;
-      setTimeout(() => {
-        if (isConnected) saveBtn.disabled = false;
-      }, 3000);
-    }
-
-    async function refreshConfig() {
-      if (!isConnected) {
-        showMessage('⚠️ يرجى توصيل الجهاز أولاً', 'error');
-        return;
-      }
-      await sendCommand('GET_CONFIG');
-    }
-
     window.onload = function() {
-      if (!('serial' in navigator)) {
-        showMessage('⚠️ متصفحك لا يدعم Web Serial API. استخدم Chrome أو Edge.', 'error');
-        connectBtn.disabled = true;
-      } else {
-        showMessage('🔌 اضغط "توصيل" ثم اختر منفذ ESP32', 'info');
-      }
       loadContactInfo();
     };
 

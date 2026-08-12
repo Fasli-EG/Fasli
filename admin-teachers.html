@@ -424,6 +424,14 @@
     body.dark-mode .topbar { background: #1C2029; border-bottom-color: #2A2F3A; }
     body.dark-mode .topbar h2 { color: #E8E9EE; }
     body.dark-mode .sidebar-toggle-btn { color: #C3C8D0; }
+    .sub-tab-btn {
+      background: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 20px;
+      padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+    }
+    .sub-tab-btn:hover { background: #e2e8f0; }
+    .sub-tab-btn.active { background: var(--primary, #F2B705); color: #0B1C33; border-color: var(--primary, #F2B705); }
+    [data-theme="dark"] .sub-tab-btn { background: var(--gray-200); color: var(--gray-700); border-color: var(--gray-300); }
+    [data-theme="dark"] .sub-tab-btn.active { background: var(--primary, #F2B705); color: #0B1C33; }
   </style>
 </head>
 <body>
@@ -525,7 +533,16 @@
   <div id="panelCards" class="container" style="display:none;">
     <div id="cardsMessage" class="message"></div>
 
-    <div class="card">
+    <!-- ✅ تبويبات فرعية عشان الشاشة متبقاش طويلة — قسم واحد بس ظاهر في كل مرة -->
+    <div class="sidebar-sub-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+      <button class="sub-tab-btn active" data-subtab="all" onclick="switchCardsSubTab('all')">🪪 كل الكروت</button>
+      <button class="sub-tab-btn" data-subtab="receive" onclick="switchCardsSubTab('receive')">📥 استقبال المخزون</button>
+      <button class="sub-tab-btn" data-subtab="assign" onclick="switchCardsSubTab('assign')">📦 تخصيص لمدرس</button>
+      <button class="sub-tab-btn" data-subtab="teacher" onclick="switchCardsSubTab('teacher')">🪪 كروت مدرس معيّن</button>
+      <button class="sub-tab-btn" data-subtab="config" onclick="switchCardsSubTab('config')">⚙️ إعدادات</button>
+    </div>
+
+    <div class="card cards-subtab-panel" data-subtab-panel="all">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <h2 style="margin:0;">🪪 كل الكروت في النظام</h2>
         <span style="background:var(--primary,#F2B705);color:#0B1C33;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;" id="totalCardsBadge">0 كارت</span>
@@ -537,29 +554,7 @@
       <div id="cardSearchResult" style="margin-top:10px;"></div>
     </div>
 
-    <div class="card">
-      <h2>📶 إعداد واي فاي بورد الماستر</h2>
-      <p style="color:#718096;font-size:13px;margin-bottom:16px;">
-        وصّل بورد الماستر بالكمبيوتر عبر USB، ودوس "توصيل بالبورد"، وبعدين اكتب بيانات الشبكة واحفظها.
-      </p>
-      <button class="btn btn-primary" id="masterWifiConnectBtn" onclick="connectMasterSerial()">🔌 توصيل بالبورد</button>
-      <div id="masterWifiForm" style="display:none;margin-top:16px;">
-        <div class="field-row">
-          <div class="field">
-            <label>اسم الشبكة (SSID)</label>
-            <input type="text" id="masterWifiSsid" placeholder="اسم شبكة الواي فاي">
-          </div>
-          <div class="field">
-            <label>كلمة مرور الشبكة</label>
-            <input type="text" id="masterWifiPassword" placeholder="كلمة المرور">
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="saveMasterWifiConfig()">💾 حفظ إعدادات الشبكة على البورد</button>
-      </div>
-      <div id="masterWifiLog" style="margin-top:12px;font-size:12.5px;color:#64748b;font-family:monospace;max-height:120px;overflow-y:auto;"></div>
-    </div>
-
-    <div class="card">
+    <div class="card cards-subtab-panel" data-subtab-panel="receive" style="display:none;">
       <h2>📥 استقبال كروت المخزون</h2>
       <p style="color:#718096;font-size:13px;margin-bottom:16px;">
         دوس "بدء الاستقبال"، وبعدين مرّغ الكروت واحد ورا التاني على بورد الماستر المخصص. كل كارت هيتسجّل في المخزون لوحده.
@@ -576,7 +571,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card cards-subtab-panel" data-subtab-panel="assign" style="display:none;">
       <h2>📦 تخصيص كروت المخزون لمدرس</h2>
       <div class="field">
         <label>المدرس</label>
@@ -596,7 +591,7 @@
       <button class="btn btn-danger" onclick="deleteSelectedStockCards()">🗑️ حذف الكروت المختارة</button>
     </div>
 
-    <div class="card">
+    <div class="card cards-subtab-panel" data-subtab-panel="teacher" style="display:none;">
       <h2>🪪 كروت مدرس معيّن (تفعيل/تعطيل)</h2>
       <div class="field">
         <label>فلترة بالمدرس</label>
@@ -618,7 +613,7 @@
       <button class="btn btn-secondary" onclick="bulkToggleTeacherCards(false)">⛔ تعطيل المحدد</button>
     </div>
 
-    <div class="card">
+    <div class="card cards-subtab-panel" data-subtab-panel="config" style="display:none;">
       <h2>⚙️ إعداد التحقق الإجباري</h2>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;">
         <input type="checkbox" id="requireCardsToggle" onchange="toggleRequireCards()" style="width:18px;height:18px;">
@@ -630,7 +625,15 @@
   <div id="panelSettings" class="container" style="display:none;">
     <div id="settingsMessage" class="message"></div>
 
-    <div class="card">
+    <!-- ✅ نفس أسلوب التبويبات الفرعية اللي في صفحة الكروت -->
+    <div class="sidebar-sub-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+      <button class="sub-tab-btn active" data-subtab="contact" onclick="switchSettingsSubTab('contact')">⚙️ بيانات التواصل</button>
+      <button class="sub-tab-btn" data-subtab="downloads" onclick="switchSettingsSubTab('downloads')">📥 روابط التحميل</button>
+      <button class="sub-tab-btn" data-subtab="ads" onclick="switchSettingsSubTab('ads')">🖼️ الصور الإعلانية</button>
+      <button class="sub-tab-btn" data-subtab="background" onclick="switchSettingsSubTab('background')">🖼️ صور الخلفية</button>
+    </div>
+
+    <div class="card settings-subtab-panel" data-subtab-panel="contact">
       <h2>⚙️ بيانات التواصل الظاهرة للمستخدمين</h2>
       <p style="color:#718096;font-size:13px;margin-bottom:16px;">
         تظهر هذه البيانات في صفحة تسجيل الدخول، ولصفحة "الحساب غير مفعّل" اللي بتظهر للمدرسين اللي انتهى ترخيصهم.
@@ -655,21 +658,10 @@
           <input type="text" id="settingsYoutube" placeholder="https://youtube.com/@..." dir="ltr">
         </div>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label>اسمك (المشرف الرئيسي)</label>
-          <input type="text" id="settingsAdminName" placeholder="مثال: Sabry Elgammal">
-          <div class="field-hint">💡 بيظهر في تذييل صفحة تسجيل الدخول "تم تصميم هذه المنصة بكل حب من..."</div>
-        </div>
-        <div class="field">
-          <label>رقم واتسابك (المشرف الرئيسي)</label>
-          <input type="text" id="settingsAdminWhatsapp" placeholder="مثال: 201007702434" dir="ltr">
-        </div>
-      </div>
       <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
     </div>
 
-    <div class="card">
+    <div class="card settings-subtab-panel" data-subtab-panel="downloads" style="display:none;">
       <h2>📥 روابط تحميل النظام</h2>
       <p style="color:#718096;font-size:13px;margin-bottom:16px;">
         تظهر هذي الروابط ككارتين إعلانيين في صفحة تسجيل الدخول. اتركها فاضية لو مش عايز الكارت يظهر.
@@ -687,7 +679,7 @@
       <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
     </div>
 
-    <div class="card">
+    <div class="card settings-subtab-panel" data-subtab-panel="ads" style="display:none;">
       <h2>🖼️ الصور الإعلانية في صفحة تسجيل الدخول</h2>
       <p style="color:#718096;font-size:13px;margin-bottom:16px;">
         تظهر الصور دي في مساحة إعلانية بصفحة تسجيل الدخول (خطط اشتراكات، إعلانات، إلخ). عدد الصور مش محدود، والمساحة بتختفي تلقائياً لو مفيش أي صورة مضافة.
@@ -707,7 +699,7 @@
       <div id="loginAdsList" style="margin-top:20px;display:flex;flex-direction:column;gap:10px;"></div>
     </div>
 
-    <div class="card">
+    <div class="card settings-subtab-panel" data-subtab-panel="background" style="display:none;">
       <h2>🖼️ صور خلفية صفحة تسجيل الدخول</h2>
       <p style="color:#718096;font-size:13px;margin-bottom:16px;">
         الصور دي بتظهر كخلفية متحركة في صفحة تسجيل الدخول (لقطات من لوحة التحكم مثلاً). لو مفيش صور مضافة، الخلفية بترجع للتدرّج الغامق العادي تلقائياً.
@@ -730,13 +722,31 @@
     <div class="card">
       <h2>👤 بيانات المشرف</h2>
       <div class="field">
-        <label>الاسم</label>
+        <label>الاسم (بيظهر في القائمة الجانبية عند تسجيل دخولك)</label>
         <input type="text" id="profileName" placeholder="اسم المشرف">
       </div>
       <button class="btn btn-primary" onclick="saveAdminName()">💾 حفظ الاسم</button>
     </div>
 
-    <div class="card">
+    <div class="card" style="margin-top:24px;">
+      <h2>📝 الظهور في صفحة تسجيل الدخول</h2>
+      <p style="color:#718096;font-size:13px;margin-bottom:16px;">
+        الاسم ده مختلف عن اللي فوق — ده اللي بيظهر لكل المستخدمين في تذييل صفحة تسجيل الدخول "تم تصميم هذه المنصة بكل حب من...".
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>اسمك (يظهر في تذييل صفحة تسجيل الدخول)</label>
+          <input type="text" id="settingsAdminName" placeholder="مثال: Sabry Elgammal">
+        </div>
+        <div class="field">
+          <label>رقم واتسابك (يتربط بالاسم في نفس التذييل)</label>
+          <input type="text" id="settingsAdminWhatsapp" placeholder="مثال: 201007702434" dir="ltr">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
       <h2>🔐 تغيير كلمة المرور</h2>
       <div class="field-row">
         <div class="field">
@@ -1349,6 +1359,26 @@
       }
     }
 
+    // ✅ تبديل التبويبات الفرعية جوه صفحة الكروت (بدل ما كل الأقسام تكون تحت بعض في صفحة طويلة)
+    function switchCardsSubTab(tab) {
+      document.querySelectorAll('.cards-subtab-panel').forEach(panel => {
+        panel.style.display = panel.dataset.subtabPanel === tab ? 'block' : 'none';
+      });
+      document.querySelectorAll('#panelCards .sub-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.subtab === tab);
+      });
+    }
+
+    // ✅ نفس فكرة تبديل التبويبات الفرعية، لكن لصفحة إعدادات النظام
+    function switchSettingsSubTab(tab) {
+      document.querySelectorAll('.settings-subtab-panel').forEach(panel => {
+        panel.style.display = panel.dataset.subtabPanel === tab ? 'block' : 'none';
+      });
+      document.querySelectorAll('#panelSettings .sub-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.subtab === tab);
+      });
+    }
+
     function switchAdminTab(tab) {
       document.getElementById('panelTeachers').style.display = tab === 'teachers' ? '' : 'none';
       document.getElementById('panelCards').style.display = tab === 'cards' ? '' : 'none';
@@ -1359,7 +1389,7 @@
       document.getElementById('tabBtnSettings').classList.toggle('active', tab === 'settings');
       document.getElementById('tabBtnProfile').classList.toggle('active', tab === 'profile');
       if (tab === 'settings') loadSystemSettings();
-      if (tab === 'profile') loadAdminProfile();
+      if (tab === 'profile') { loadAdminProfile(); loadSystemSettings(); }
       if (tab === 'cards') initCardsTab();
     }
 
@@ -1458,78 +1488,7 @@
       }
     }
 
-    // ---------- إعداد واي فاي بورد الماستر (عبر USB Serial) ----------
-    let masterSerialPort = null;
-    let masterSerialReader = null;
-    let masterSerialConnected = false;
-
-    function logMasterWifi(text) {
-      const box = document.getElementById('masterWifiLog');
-      box.innerHTML += '<div>' + escapeHtml(text) + '</div>';
-      box.scrollTop = box.scrollHeight;
-    }
-
-    async function connectMasterSerial() {
-      if (!('serial' in navigator)) {
-        showCardsMessage('⚠️ متصفحك لا يدعم Web Serial API. استخدم Chrome أو Edge (أو تطبيق سطح المكتب).', 'error');
-        return;
-      }
-      try {
-        masterSerialPort = await navigator.serial.requestPort();
-        await masterSerialPort.open({ baudRate: 115200 });
-        masterSerialConnected = true;
-        document.getElementById('masterWifiForm').style.display = 'block';
-        document.getElementById('masterWifiConnectBtn').textContent = '✅ متصل';
-        logMasterWifi('✅ تم الاتصال بالبورد');
-
-        const textDecoder = new TextDecoderStream();
-        masterSerialPort.readable.pipeTo(textDecoder.writable);
-        masterSerialReader = textDecoder.readable.getReader();
-        masterSerialReadLoop();
-      } catch (error) {
-        console.error('❌ خطأ في الاتصال:', error);
-        showCardsMessage('❌ فشل الاتصال: ' + error.message, 'error');
-      }
-    }
-
-    async function masterSerialReadLoop() {
-      let buffer = '';
-      try {
-        while (true) {
-          const { value, done } = await masterSerialReader.read();
-          if (done) break;
-          if (value) {
-            buffer += value;
-            let lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            lines.forEach(line => { if (line.trim()) logMasterWifi(line.trim()); });
-          }
-        }
-      } catch (error) {
-        masterSerialConnected = false;
-        logMasterWifi('⚠️ تم قطع الاتصال بالبورد');
-      }
-    }
-
-    async function sendMasterSerialCommand(command) {
-      if (!masterSerialConnected || !masterSerialPort) {
-        showCardsMessage('⚠️ وصّل البورد الأول', 'error');
-        return;
-      }
-      const writer = masterSerialPort.writable.getWriter();
-      const encoder = new TextEncoder();
-      await writer.write(encoder.encode(command + '\n'));
-      writer.releaseLock();
-    }
-
-    async function saveMasterWifiConfig() {
-      const ssid = document.getElementById('masterWifiSsid').value.trim();
-      const password = document.getElementById('masterWifiPassword').value.trim();
-      if (!ssid) { showCardsMessage('⚠️ أدخل اسم الشبكة', 'error'); return; }
-      await sendMasterSerialCommand('SET_CONFIG:' + ssid + '|' + password);
-      showCardsMessage('✅ تم إرسال إعدادات الشبكة للبورد', 'success');
-    }
-
+    // ---------- استقبال المخزون ----------
     async function showMasterDeviceSecret() {
       try {
         const headers = getAuthHeaders();
@@ -1550,7 +1509,6 @@
       }
     }
 
-    // ---------- استقبال المخزون ----------
     async function toggleMasterScanMode() {
       const headers = getAuthHeaders();
       if (!headers) return;
