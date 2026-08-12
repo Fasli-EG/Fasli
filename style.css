@@ -1699,14 +1699,6 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
   border-radius: 14px; box-shadow: var(--shadow-xl);
   z-index: 200; overflow: hidden;
 }
-/* ✅ في الشاشات الأكبر (متصفح، سطح المكتب)، القائمة ترجع تتعلّق بزرار الجرس نفسه بدل مكان ثابت،
-   عشان تفضل قريبة منه بصرياً زي الأصل — المشكلة الأصلية (الفيضان برّه الشاشة) كانت خاصة بالموبايل بس */
-@media (min-width: 769px) {
-  .notif-panel {
-    position: absolute; top: calc(100% + 10px); right: 0;
-    width: 340px;
-  }
-}
 .notif-panel.open { display: block; }
 .notif-panel-header {
   display: flex; align-items: center; justify-content: space-between;

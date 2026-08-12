@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=44">
+  <link rel="stylesheet" href="style.css?v=45">
   <style>
     .student-card .student-name { font-size: 18px; font-weight: 700; color: var(--gray-900); }
     .student-card .student-name .uid { font-size: 12px; font-weight: 400; color: var(--gray-400); font-family: monospace; margin-right: 6px; }
@@ -615,7 +615,29 @@
     }
 
     function toggleNotifPanel() {
-      document.getElementById('notifPanel').classList.toggle('open');
+      const panel = document.getElementById('notifPanel');
+      const isOpening = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+      if (isOpening) positionNotifPanel();
+    }
+
+    // ✅ بنحسب مكان القائمة فعلياً وقت كل فتحة، بناءً على موقع زرار الجرس الحقيقي وحجم الشاشة الحالي —
+    // ده بيضمن رياضياً إنها تفضل جوه حدود الشاشة تماماً، مهما كان حجم الجهاز أو عرض نافذة المتصفح
+    function positionNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const btn = document.getElementById('notifBtn') || document.querySelector('.notif-wrap');
+      if (!panel || !btn) return;
+      const btnRect = btn.getBoundingClientRect();
+      const margin = 12;
+      const panelWidth = Math.min(340, window.innerWidth - margin * 2);
+      let left = btnRect.right - panelWidth;
+      if (left < margin) left = margin;
+      if (left + panelWidth > window.innerWidth - margin) left = window.innerWidth - margin - panelWidth;
+      panel.style.position = 'fixed';
+      panel.style.left = left + 'px';
+      panel.style.right = 'auto';
+      panel.style.top = (btnRect.bottom + 10) + 'px';
+      panel.style.width = panelWidth + 'px';
     }
 
     document.addEventListener('click', function(e) {
