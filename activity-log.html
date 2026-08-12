@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=31">
   <script src="activity-format.js?v=6"></script>
 </head>
 <body>
@@ -107,16 +107,22 @@
             <option value="add_student">إضافة طالب</option>
             <option value="edit_student">تعديل طالب</option>
             <option value="delete_student">حذف طالب</option>
+            <option value="transfer_student">نقل طالب لمجموعة</option>
             <option value="add_grade">رصد درجة</option>
             <option value="edit_grade">تعديل درجة</option>
             <option value="delete_grade">حذف درجة</option>
+            <option value="bulk_add_grade">رصد درجات جماعي</option>
             <option value="add_payment">تسجيل دفعة</option>
             <option value="edit_payment">تعديل دفعة</option>
             <option value="delete_payment">حذف دفعة</option>
+            <option value="bulk_add_payment">تسجيل دفعات جماعي</option>
             <option value="add_book">إضافة مذكرة</option>
             <option value="edit_book">تعديل مذكرة</option>
             <option value="delete_book">حذف مذكرة</option>
             <option value="pay_book">سداد مذكرة</option>
+            <option value="edit_book_payment">تعديل سداد مذكرة</option>
+            <option value="delete_book_payment">حذف سداد مذكرة</option>
+            <option value="bulk_pay_book">سداد مذكرات جماعي</option>
             <option value="record_attendance">تسجيل حضور</option>
             <option value="create_group">إنشاء مجموعة</option>
             <option value="rename_group">تعديل مجموعة</option>
@@ -124,8 +130,12 @@
             <option value="add_assistant">إضافة مساعد</option>
             <option value="update_assistant">تعديل مساعد</option>
             <option value="delete_assistant">حذف مساعد</option>
+            <option value="bulk_message">إرسال رسائل جماعية</option>
+            <option value="link_rfid_card">ربط كارت</option>
             <option value="reset_password">إعادة تعيين كلمة مرور</option>
-            <option value="change_password">تغيير كلمة مرور</option>
+            <option value="reset_parent_password">إعادة تعيين كلمة مرور ولي أمر</option>
+            <option value="export_backup">تصدير نسخة احتياطية</option>
+            <option value="restore_backup">استعادة نسخة احتياطية</option>
             <option value="reset_system">إعادة تهيئة النظام</option>
           </select>
           <input type="date" id="filterDateFrom" placeholder="من تاريخ">

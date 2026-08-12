@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -170,8 +170,10 @@
           <select id="filterExam" onchange="localStorage.setItem('gradesFilterExam_' + clientId, this.value); filterTable();">
             <option value="">📝 كل الامتحانات</option>
           </select>
+          <input type="number" id="filterScore" onkeyup="filterTable()" placeholder="🎯 درجة محددة..." style="max-width:130px;">
           <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو الامتحان...">
         </div>
+        <div id="filterResultsCount" style="margin-top:8px;font-size:12.5px;color:var(--gray-500);"></div>
       </div>
       <div class="card-body" style="padding:0;">
         <div class="table-wrapper">
@@ -508,7 +510,7 @@
         }
 
         const result = await response.json();
-        if (result.success) { allStudents = result.data || []; }
+        if (result.success) { allStudents = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar')); }
       } catch (error) {
         console.error('❌ خطأ في تحميل الطلاب:', error);
       }
@@ -696,16 +698,25 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-grades', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
-        });
+        // ✅ الطلبين بيشتغلوا في نفس الوقت (مش واحد ورا التاني) لتقليل وقت الانتظار الكلي للنص تقريباً
+        const [response, studentsResponse] = await Promise.all([
+          fetch(PROJECT_URL + '/functions/v1/get-grades', {
+            method: 'POST', headers: headers,
+            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
+          }),
+          fetch(PROJECT_URL + '/functions/v1/get-students', {
+            method: 'POST', headers: headers,
+            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
+          }),
+        ]);
 
-        if (response.status === 401) {
+        if (response.status === 401 || studentsResponse.status === 401) {
           handleUnauthorized('انتهت صلاحية الجلسة');
           return;
         }
+
+        const studentsResultForGrades = await studentsResponse.json();
+        const allStudentsForGrades = studentsResultForGrades.success ? (studentsResultForGrades.data || []) : [];
 
         const result = await response.json();
         if (result.success) {
@@ -733,7 +744,7 @@
             if (percent >= 80) scoreClass = 'high';
             else if (percent >= 60) scoreClass = 'medium';
 
-            html += `<tr>
+            html += `<tr data-score="${g.score}">
               <td><strong>${escapeHtml(g.student_name)}</strong></td>
               <td>${escapeHtml(g.exam_name)}</td>
               <td><span class="score-badge ${scoreClass}">${g.score} / ${maxScore}</span></td>
@@ -749,6 +760,31 @@
               </td>
             </tr>`;
           });
+
+          // ✅ لكل مجموعة وامتحان، لو طالب واحد على الأقل امتحن وله درجة، باقي طلاب نفس المجموعة اللي معندهمش
+          // درجة مسجّلة لنفس الامتحان يتحسبوا "محضروش" — نفس منطق غير المسددين بالظبط
+          const examCombos = new Map(); // "group||exam" -> Set uid اللي امتحنوا فعلاً
+          grades.forEach(g => {
+            const key = g.group_name + '||' + g.exam_name;
+            if (!examCombos.has(key)) examCombos.set(key, new Set());
+            examCombos.get(key).add(g.student_uid);
+          });
+          examCombos.forEach((examinedUids, key) => {
+            const [groupName, examName] = key.split('||');
+            allStudentsForGrades
+              .filter(s => s.group_name === groupName && !examinedUids.has(s.uid))
+              .sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+              .forEach(s => {
+                html += `<tr>
+                  <td><strong>${escapeHtml(s.name)}</strong></td>
+                  <td>${escapeHtml(examName)}</td>
+                  <td><span class="score-badge low">لم يحضر</span></td>
+                  <td><span style="background:var(--gray-100);padding:2px 12px;border-radius:12px;font-size:12px;">${escapeHtml(groupName)}</span></td>
+                  <td>—</td>
+                  <td style="text-align:center;"><span style="color:var(--gray-400);font-size:12px;">لم يحضر الامتحان</span></td>
+                </tr>`;
+              });
+          });
           tbody.innerHTML = html;
         } else { showToast('❌ ' + result.message, 'error'); }
       } catch (error) {
@@ -760,16 +796,29 @@
     function filterTable() {
       const q = document.getElementById('searchInput').value.toLowerCase();
       const selectedExam = document.getElementById('filterExam').value;
+      const scoreFilter = document.getElementById('filterScore').value.trim();
       const rows = document.querySelectorAll('#gradesBody tr');
+      let visibleCount = 0;
+      let totalCount = 0;
       rows.forEach(row => {
         if (row.cells && row.cells.length > 1) {
+          totalCount++;
           const name = row.cells[0]?.textContent.toLowerCase() || '';
           const exam = row.cells[1]?.textContent.trim() || '';
           const matchesSearch = name.includes(q) || exam.toLowerCase().includes(q);
           const matchesExam = !selectedExam || exam === selectedExam;
-          row.style.display = (matchesSearch && matchesExam) ? '' : 'none';
+          const matchesScore = !scoreFilter || row.dataset.score === scoreFilter;
+          const isVisible = matchesSearch && matchesExam && matchesScore;
+          row.style.display = isVisible ? '' : 'none';
+          if (isVisible) visibleCount++;
         }
       });
+      const countEl = document.getElementById('filterResultsCount');
+      if (countEl) {
+        countEl.textContent = (q || selectedExam || scoreFilter)
+          ? `📋 بيعرض ${visibleCount} من ${totalCount} نتيجة`
+          : `📋 إجمالي ${totalCount} نتيجة`;
+      }
     }
 
     function openEditGradeModal(gradeId) {

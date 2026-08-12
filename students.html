@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -502,7 +502,7 @@
 
         const result = await response.json();
         if (result.success) {
-          const students = result.data || [];
+          const students = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
           document.getElementById('statTotal').textContent = students.length;
           document.getElementById('statGroups').textContent = [...new Set(students.map(s => s.group_name))].length;
           loadTodayAttendanceCount(filterGroup);
@@ -723,14 +723,14 @@
           clearInterval(cardLinkPollTimer);
           document.getElementById('cardLinkWaiting').style.display = 'none';
           const resultBox = document.getElementById('cardLinkResult');
-          resultBox.innerHTML = '<i class="fas fa-check-circle" style="font-size:28px;color:var(--success);"></i><p style="margin-top:8px;font-size:13.5px;">✅ تم ربط الكارت بنجاح</p>';
+          resultBox.innerHTML = '<i class="fas fa-check-circle" style="font-size:28px;color:var(--success);"></i><p style="margin-top:8px;font-size:13.5px;color:var(--gray-800);">✅ تم ربط الكارت بنجاح</p>';
           resultBox.style.display = 'block';
           setTimeout(closeCardLinkModal, 1800);
         } else if (result.status === 'error') {
           clearInterval(cardLinkPollTimer);
           document.getElementById('cardLinkWaiting').style.display = 'none';
           const resultBox = document.getElementById('cardLinkResult');
-          resultBox.innerHTML = '<i class="fas fa-circle-exclamation" style="font-size:28px;color:var(--danger);"></i><p style="margin-top:8px;font-size:13.5px;">' + escapeHtml(result.message) + '</p>';
+          resultBox.innerHTML = '<i class="fas fa-circle-exclamation" style="font-size:28px;color:var(--danger);"></i><p style="margin-top:8px;font-size:13.5px;color:var(--gray-800);">' + escapeHtml(result.message) + '</p>';
           resultBox.style.display = 'block';
         }
       } catch (error) {

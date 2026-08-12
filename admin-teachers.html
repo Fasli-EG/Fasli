@@ -587,6 +587,8 @@
       <label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:13px;cursor:pointer;">
         <input type="checkbox" id="inStockSelectAll" onchange="toggleSelectAllInStock()"> تحديد الكل
       </label>
+      <input type="text" id="inStockCardsFilter" placeholder="🔍 فلترة برقم الكارت..." oninput="filterInStockCards()" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;margin-bottom:8px;" dir="ltr">
+      <div id="inStockCardsCount" style="font-size:12px;color:#718096;margin-bottom:6px;"></div>
       <div id="inStockCardsList" style="margin:4px 0 12px;max-height:260px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;padding:8px;">
         <p style="color:#a0aec0;font-size:13px;">اختر مدرس عشان تشوف كروت المخزون المتاحة.</p>
       </div>
@@ -605,6 +607,8 @@
       <label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:13px;cursor:pointer;">
         <input type="checkbox" id="teacherCardsSelectAll" onchange="toggleSelectAllTeacherCards()"> تحديد الكل
       </label>
+      <input type="text" id="teacherCardsFilter" placeholder="🔍 فلترة برقم الكارت أو اسم الطالب..." oninput="filterTeacherCards()" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;margin-bottom:8px;">
+      <div id="teacherCardsCount" style="font-size:12px;color:#718096;margin-bottom:6px;"></div>
       <div id="teacherCardsList" style="margin:4px 0 12px;">
         <p style="color:#a0aec0;font-size:13px;">اختر مدرس عشان تشوف كروته.</p>
       </div>
@@ -1627,19 +1631,35 @@
           return;
         }
         container.innerHTML = cards.map(c => `
-          <label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #f1f5f9;font-size:13px;cursor:pointer;">
-            <input type="checkbox" class="instock-card-cb" value="${c.id}">
+          <label class="instock-card-row" data-uid="${escapeHtml(c.cardUid.toLowerCase())}" style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #f1f5f9;font-size:13px;cursor:pointer;">
+            <input type="checkbox" class="instock-card-cb" value="${c.id}" onchange="updateInStockCount()">
             <span dir="ltr">${escapeHtml(c.cardUid)}</span>
           </label>
         `).join('');
+        updateInStockCount();
       } catch (error) {
         console.error('❌ خطأ في تحميل كروت المخزون:', error);
       }
     }
 
+    function filterInStockCards() {
+      const q = document.getElementById('inStockCardsFilter').value.trim().toLowerCase();
+      document.querySelectorAll('#inStockCardsList .instock-card-row').forEach(row => {
+        row.style.display = row.dataset.uid.includes(q) ? '' : 'none';
+      });
+    }
+
+    function updateInStockCount() {
+      const total = document.querySelectorAll('.instock-card-cb').length;
+      const selected = document.querySelectorAll('.instock-card-cb:checked').length;
+      const countEl = document.getElementById('inStockCardsCount');
+      if (countEl) countEl.textContent = total ? `📊 الإجمالي: ${total} كارت — المحدد: ${selected}` : '';
+    }
+
     function toggleSelectAllInStock() {
       const checked = document.getElementById('inStockSelectAll').checked;
       document.querySelectorAll('.instock-card-cb').forEach(cb => { cb.checked = checked; });
+      updateInStockCount();
     }
 
     async function deleteSelectedStockCards() {
@@ -1714,8 +1734,8 @@
           return;
         }
         container.innerHTML = cards.map(c => `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;">
-            <input type="checkbox" class="teacher-card-cb" value="${c.id}">
+          <div class="teacher-card-row" data-search="${escapeHtml((c.cardUid + ' ' + (c.studentName || '')).toLowerCase())}" style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;">
+            <input type="checkbox" class="teacher-card-cb" value="${c.id}" onchange="updateTeacherCardsCount()">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
               <input type="checkbox" ${c.isActive ? 'checked' : ''} onchange="toggleCardActive(${c.id}, this.checked)">
               <span style="font-size:12px;color:${c.isActive ? '#22c55e' : '#a0aec0'};">${c.isActive ? 'مفعّل' : 'معطّل'}</span>
@@ -1726,14 +1746,30 @@
             </div>
           </div>
         `).join('');
+        updateTeacherCardsCount();
       } catch (error) {
         console.error('❌ خطأ في تحميل كروت المدرس:', error);
       }
     }
 
+    function filterTeacherCards() {
+      const q = document.getElementById('teacherCardsFilter').value.trim().toLowerCase();
+      document.querySelectorAll('#teacherCardsList .teacher-card-row').forEach(row => {
+        row.style.display = row.dataset.search.includes(q) ? '' : 'none';
+      });
+    }
+
+    function updateTeacherCardsCount() {
+      const total = document.querySelectorAll('.teacher-card-cb').length;
+      const selected = document.querySelectorAll('.teacher-card-cb:checked').length;
+      const countEl = document.getElementById('teacherCardsCount');
+      if (countEl) countEl.textContent = total ? `📊 الإجمالي: ${total} كارت — المحدد: ${selected}` : '';
+    }
+
     function toggleSelectAllTeacherCards() {
       const checked = document.getElementById('teacherCardsSelectAll').checked;
       document.querySelectorAll('.teacher-card-cb').forEach(cb => { cb.checked = checked; });
+      updateTeacherCardsCount();
     }
 
     async function returnSelectedCardsToStock() {

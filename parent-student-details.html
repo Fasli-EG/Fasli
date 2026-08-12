@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=31">
 </head>
 <style>
   [data-theme="dark"] .student-card { background: var(--gray-100); border-color: var(--gray-200); }
@@ -107,7 +107,7 @@
         <div class="stats-row">
           <div class="stat-box green">
             <div class="number" id="statPresent">0</div>
-            <div class="label">✅ أيام الحضور (آخر 30 يوم)</div>
+            <div class="label">✅ أيام الحضور</div>
           </div>
           <div class="stat-box blue">
             <div class="number" id="statAttendancePercent">0%</div>
@@ -438,6 +438,10 @@
       if (data.name) {
         document.getElementById('parentName').textContent = 'مرحباً، ولي أمر ' + data.name;
       }
+      // ✅ نستخدم نفس القيمة بالظبط اللي لوحة تحكم ولي الأمر بتعرضها (أيام حضور الطالب ÷ الأيام اللي المجموعة
+      // كلها حضرت فيها فعلياً)، بدل حساب منفصل كان بيدّي نتيجة مختلفة ومضلّلة أحياناً
+      document.getElementById('statPresent').textContent = data.present_days ?? 0;
+      document.getElementById('statAttendancePercent').textContent = (data.attendance_percent ?? 0) + '%';
     }
 
     function updateLastUpdate() {
@@ -511,11 +515,9 @@
             `;
           });
           tbody.innerHTML = html;
-
-          const totalDays = data.length;
-          const percent = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
-          document.getElementById('statPresent').textContent = presentCount;
-          document.getElementById('statAttendancePercent').textContent = percent + '%';
+          // ✅ نسبة الحضور والأيام بتتعرض من displayStudentInfo (نفس مصدر لوحة التحكم)، مش من هنا —
+          // الحساب اللي كان هنا قبل كده كان بيعتمد بس على عدد سجلات آخر 30 يوم للطالب ده لوحده،
+          // وده كان بيدّي نسبة مختلفة عن اللي في الكارت الرئيسي (وأحياناً مضلّلة لو مفيش سجلات غياب صريحة)
         } else {
           tbody.innerHTML = `<tr><td colspan="3" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadAttendance('${uid}')">إعادة المحاولة</button></td></tr>`;
         }
@@ -572,9 +574,20 @@
             return;
           }
 
-          let totalScore = 0, totalMax = 0;
+          let totalScore = 0, totalMax = 0, takenCount = 0;
           let html = '';
           data.forEach(grade => {
+            if (grade.missed) {
+              html += `
+                <tr class="report-row-alert">
+                  <td><strong>${escapeHtml(grade.exam_name)}</strong></td>
+                  <td>—</td>
+                  <td><span class="status-badge status-unpaid">❌ لم يحضر الامتحان</span></td>
+                </tr>
+              `;
+              return;
+            }
+            takenCount++;
             const date = new Date(grade.created_at);
             const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
             const max = grade.max_score || 1;
@@ -591,7 +604,7 @@
           tbody.innerHTML = html;
 
           const avg = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
-          document.getElementById('statGrades').textContent = data.length;
+          document.getElementById('statGrades').textContent = takenCount;
           document.getElementById('statAvg').textContent = avg + '%';
         } else {
           tbody.innerHTML = `<tr><td colspan="3" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadGrades('${uid}')">إعادة المحاولة</button></td></tr>`;
@@ -636,13 +649,24 @@
 
         if (result.success) {
           const data = result.data || [];
-          paymentsCount = data.length;
+          paymentsCount = data.filter(p => !p.missed).length;
 
           if (data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><i class="fas fa-coins" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد مدفوعات شهرية</td></tr>';
           } else {
             let html = '';
             data.forEach(payment => {
+              if (payment.missed) {
+                html += `
+                  <tr class="report-row-alert">
+                    <td><strong>${escapeHtml(payment.title)}</strong></td>
+                    <td>0 / ${payment.total_amount} ج.م</td>
+                    <td><span class="status-badge status-unpaid">❌ غير مدفوع</span></td>
+                    <td>—</td>
+                  </tr>
+                `;
+                return;
+              }
               const date = new Date(payment.created_at);
               const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
               const isFull = payment.amount >= payment.total_amount;
@@ -734,6 +758,18 @@
 
           let html = '';
           data.forEach(book => {
+            if (book.missed) {
+              html += `
+                <tr class="report-row-alert">
+                  <td><strong>${escapeHtml(book.book_name || 'مذكرة')}</strong></td>
+                  <td>${book.price || 0} ج.م</td>
+                  <td>0 ج.م</td>
+                  <td><span class="status-badge status-unpaid">❌ غير مسدد</span></td>
+                  <td>—</td>
+                </tr>
+              `;
+              return;
+            }
             const date = new Date(book.paid_at || book.created_at);
             const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
             const isFull = book.amount >= book.price;
@@ -750,7 +786,7 @@
             `;
           });
           tbody.innerHTML = html;
-          document.getElementById('statBooks').textContent = data.length;
+          document.getElementById('statBooks').textContent = data.filter(b => !b.missed).length;
         } else {
           tbody.innerHTML = `<tr><td colspan="5" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadBooks('${uid}')">إعادة المحاولة</button></td></tr>`;
         }

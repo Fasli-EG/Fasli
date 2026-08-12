@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -194,7 +194,21 @@
               <option value="">-- اختر المذكرة --</option>
             </select>
           </div>
+          <div class="form-group">
+            <label>بحث عن طالب</label>
+            <input type="text" id="bookStatusSearch" placeholder="🔍 اكتب اسم الطالب..." oninput="filterBookStatusTable()">
+          </div>
+          <div class="form-group">
+            <label>الحالة</label>
+            <select id="bookStatusFilterSelect" onchange="filterBookStatusTable()">
+              <option value="">📊 كل الحالات</option>
+              <option value="paid">✅ مدفوع بالكامل</option>
+              <option value="partial">🟡 دفعة جزئية</option>
+              <option value="unpaid">❌ غير مدفوع</option>
+            </select>
+          </div>
         </div>
+        <div id="bookStatusResultsCount" style="margin-top:8px;font-size:12.5px;color:var(--gray-500);"></div>
         <div id="bookStatusContainer" style="margin-top:16px;">
           <div class="empty-state">
             <i class="fas fa-info-circle" style="font-size:24px;"></i>
@@ -697,7 +711,7 @@
         }
 
         const result = await response.json();
-        if (result.success) { bookStudentsList = result.data || []; }
+        if (result.success) { bookStudentsList = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar')); }
       } catch (error) { console.error('❌ خطأ في تحميل الطلاب:', error); }
     }
 
@@ -844,6 +858,8 @@
       const group = document.getElementById('bookStatusGroup').value;
       const bookId = document.getElementById('bookStatusSelect').value;
       const container = document.getElementById('bookStatusContainer');
+      document.getElementById('bookStatusSearch').value = '';
+      document.getElementById('bookStatusFilterSelect').value = '';
 
       if (!group || !bookId) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-info-circle" style="font-size:24px;"></i><h4>اختر المجموعة والمذكرة لعرض حالتها</h4></div>';
@@ -870,7 +886,7 @@
         const result = await response.json();
 
         if (result.success) {
-          const data = result.data || [];
+          const data = (result.data || []).sort((a, b) => a.student_name.localeCompare(b.student_name, 'ar'));
           if (data.length === 0) {
             container.innerHTML = '<div class="empty-state"><i class="fas fa-user-slash" style="font-size:32px;opacity:0.5;"></i><h4>لا يوجد طلاب في هذه المجموعة</h4></div>';
             return;
@@ -934,7 +950,7 @@
             }
 
             html += `
-              <tr>
+              <tr data-student-name="${escapeAttr(item.student_name.toLowerCase())}" data-status="${statusClass.replace('status-', '')}">
                 <td><strong>${escapeHtml(item.student_name)}</strong></td>
                 <td>${item.amount || 0} / ${item.price} ج.م</td>
                 <td>${dateStr}</td>
@@ -946,12 +962,33 @@
 
           html += `</tbody></table></div>`;
           container.innerHTML = html;
+          filterBookStatusTable();
         } else {
           showToast('❌ ' + result.message, 'error');
         }
       } catch (error) {
         console.error('❌ خطأ:', error);
         container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle" style="font-size:32px;opacity:0.5;"></i><h4>خطأ في التحميل</h4></div>';
+      }
+    }
+
+    function filterBookStatusTable() {
+      const q = document.getElementById('bookStatusSearch').value.trim().toLowerCase();
+      const selectedStatus = document.getElementById('bookStatusFilterSelect').value;
+      const rows = document.querySelectorAll('#bookStatusContainer tr[data-student-name]');
+      let visibleCount = 0;
+      rows.forEach(row => {
+        const matchesSearch = row.dataset.studentName.includes(q);
+        const matchesStatus = !selectedStatus || row.dataset.status === selectedStatus;
+        const isVisible = matchesSearch && matchesStatus;
+        row.style.display = isVisible ? '' : 'none';
+        if (isVisible) visibleCount++;
+      });
+      const countEl = document.getElementById('bookStatusResultsCount');
+      if (countEl) {
+        countEl.textContent = rows.length
+          ? ((q || selectedStatus) ? `📋 بيعرض ${visibleCount} من ${rows.length} طالب` : `📋 إجمالي ${rows.length} طالب`)
+          : '';
       }
     }
 

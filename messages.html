@@ -1,6 +1,31 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
+  <script>
+    // ✅ تحديد الوضع الليلي أول حاجة في الصفحة (قبل أي CSS)، مستقل تماماً عن باقي متغيرات السكريبت.
+    // ✅ السبب الحقيقي وراء الباگ اللي فضل موجود قبل كده: لو خانة "تذكرني" مفعّلة، بيانات الجلسة
+    // (client ID وغيرها) بتتخزّن الأول في localStorage الدائم، وبتتنسخ لـsessionStorage المؤقت بعدين
+    // بكود تاني في نص الصفحة — لكن السكريبت المبكر ده كان بيتنفّذ *قبل* عملية النسخ دي، فكان بيلاقي
+    // sessionStorage فاضي ويفشل يحدد الوضع الصحيح. الحل: ندوّر في localStorage الدائم كمان كبديل فوري.
+    (function() {
+      try {
+        var role = sessionStorage.getItem('userRole') || localStorage.getItem('userRole') || 'teacher';
+        var id = role === 'assistant'
+          ? (sessionStorage.getItem('assistantId') || localStorage.getItem('assistantId'))
+          : (sessionStorage.getItem('clientId') || localStorage.getItem('clientId')
+             || sessionStorage.getItem('teacherClientId') || localStorage.getItem('teacherClientId'));
+        var theme = localStorage.getItem('theme_' + (id || 'guest'));
+        if (theme) {
+          document.documentElement.setAttribute('data-theme', theme);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          // ✅ ده كان السبب الحقيقي وراء المشكلة كلها: لو مفيش تفضيل محفوظ صراحة (زي حالتك بالظبط)،
+          // باقي الصفحات (زي لوحة التحكم) بترجع لتفضيل نظام التشغيل/المتصفح نفسه، لكن صفحة الرسائل
+          // ما كانتش بتعمل الفحص ده خالص، فكانت بتفضل في الوضع النهاري دايماً مهما كان جهازك مضبوط إزاي
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>رسائل جماعية - فَصلي</title>
@@ -11,7 +36,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=31">
   <style>
     .target-options{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:20px; }
     .target-card{
@@ -420,7 +445,11 @@
     }
     (function() {
       const savedTheme = localStorage.getItem(getThemeKey());
-      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
       setTimeout(() => {
         const theme = document.documentElement.getAttribute('data-theme') || 'light';
         updateThemeIcon(theme);
@@ -755,6 +784,7 @@ async function markAllRead() {
       const icon = btn && btn.querySelector('i');
       if (!icon) return;
       icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+      if (btn) btn.title = theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي';
     }
 
     // ============================================
@@ -843,7 +873,7 @@ async function markAllRead() {
         if (response.status === 401) { handleUnauthorized(); return; }
         const result = await response.json();
         if (result.success) {
-          currentGroupStudents = result.data || [];
+          currentGroupStudents = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
         }
         renderStudentsPicker();
         updateRecipientsNote();
@@ -1044,9 +1074,13 @@ async function markAllRead() {
       if (!isAssistant) document.getElementById('assistantsCategoryTab').style.display = '';
       // ✅ إعادة تطبيق الوضع الليلي مرة تانية هنا كإجراء احتياطي، لضمان تطابقه مع باقي الصفحات من أول تحميل
       const savedThemeCheck = localStorage.getItem(getThemeKey());
-      if (savedThemeCheck && document.documentElement.getAttribute('data-theme') !== savedThemeCheck) {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      if (savedThemeCheck && currentTheme !== savedThemeCheck) {
         document.documentElement.setAttribute('data-theme', savedThemeCheck);
         updateThemeIcon(savedThemeCheck);
+      } else if (!savedThemeCheck && !currentTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        updateThemeIcon('dark');
       }
     };
   </script>

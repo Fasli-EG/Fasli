@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -175,8 +175,15 @@
           <select id="filterTitle" onchange="localStorage.setItem('paymentsFilterTitle_' + clientId, this.value); filterTable();">
             <option value="">💰 كل البنود</option>
           </select>
+          <select id="filterStatus" onchange="localStorage.setItem('paymentsFilterStatus_' + clientId, this.value); filterTable();">
+            <option value="">📊 كل الحالات</option>
+            <option value="paid">✅ مدفوع بالكامل</option>
+            <option value="partial">🟡 دفعة جزئية</option>
+            <option value="unpaid">❌ غير مدفوع</option>
+          </select>
           <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو البند...">
         </div>
+        <div id="filterResultsCount" style="margin-top:8px;font-size:12.5px;color:var(--gray-500);"></div>
       </div>
       <div class="card-body" style="padding:0;">
         <div class="table-wrapper">
@@ -518,7 +525,7 @@
         }
 
         const result = await response.json();
-        if (result.success) { allStudents = result.data || []; }
+        if (result.success) { allStudents = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar')); }
       } catch (error) {
         console.error('❌ خطأ في تحميل الطلاب:', error);
       }
@@ -695,6 +702,9 @@
       renderSelectedStudentsChips();
     }
 
+    let allPaymentsData = [];
+    let allStudentsForStats = [];
+
     async function loadPayments() {
       const filterGroup = document.getElementById('filterGroup').value;
       const tbody = document.getElementById('paymentsBody');
@@ -705,28 +715,33 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-payments', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
-        });
+        // ✅ الطلبين بيشتغلوا في نفس الوقت (مش واحد ورا التاني) لتقليل وقت الانتظار الكلي للنص تقريباً
+        const [response, studentsResponse] = await Promise.all([
+          fetch(PROJECT_URL + '/functions/v1/get-payments', {
+            method: 'POST', headers: headers,
+            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
+          }),
+          fetch(PROJECT_URL + '/functions/v1/get-students', {
+            method: 'POST', headers: headers,
+            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
+          }),
+        ]);
 
-        if (response.status === 401) {
+        if (response.status === 401 || studentsResponse.status === 401) {
           handleUnauthorized('انتهت صلاحية الجلسة');
           return;
         }
 
+        const studentsResult = await studentsResponse.json();
+        const allStudentsInView = studentsResult.success ? (studentsResult.data || []) : [];
+
         const result = await response.json();
         if (result.success) {
-          const payments = result.data || [];
-          const totalPayments = payments.length;
-          const fullPaid = payments.filter(p => p.amount >= p.total_amount).length;
-          const partial = payments.filter(p => p.amount > 0 && p.amount < p.total_amount).length;
-          const unpaid = payments.filter(p => p.amount === 0).length;
-          document.getElementById('statTotalPayments').textContent = totalPayments;
-          document.getElementById('statFullPaid').textContent = fullPaid;
-          document.getElementById('statPartial').textContent = partial;
-          document.getElementById('statUnpaid').textContent = unpaid;
+          const payments = (result.data || []).sort((a, b) => a.student_name.localeCompare(b.student_name, 'ar'));
+          allPaymentsData = payments;
+          allStudentsForStats = allStudentsInView;
+
+          updatePaymentStats();
 
           if (payments.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
@@ -769,6 +784,36 @@
               <td style="text-align:center;"><div class="payment-actions">${actionsHtml}</div></td>
             </tr>`;
           });
+
+          // ✅ صفوف إضافية للطلاب اللي معندهمش أي سجل دفع خالص لبند مفعّل في مجموعتهم — عشان تبان واضحة "مين بالظبط مش دافع"
+          const paidCombosForTable = new Map(); // "group||title" -> {Set uid, total_amount}
+          payments.forEach(p => {
+            if (Number(p.amount) > 0) {
+              const key = p.group_name + '||' + p.title;
+              if (!paidCombosForTable.has(key)) paidCombosForTable.set(key, { uids: new Set(), totalAmount: p.total_amount });
+              paidCombosForTable.get(key).uids.add(p.student_uid);
+            }
+          });
+          paidCombosForTable.forEach((info, key) => {
+            const [groupName, title] = key.split('||');
+            allStudentsInView
+              .filter(s => s.group_name === groupName)
+              .sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+              .forEach(s => {
+                const hasAnyRecord = payments.some(p => p.student_uid === s.uid && p.title === title);
+                if (!hasAnyRecord) {
+                  html += `<tr>
+                    <td><strong>${escapeHtml(s.name)}</strong></td>
+                    <td>${escapeHtml(title)}</td>
+                    <td><strong>0</strong> / ${info.totalAmount} ج.م</td>
+                    <td><span style="background:var(--gray-100);padding:2px 12px;border-radius:12px;font-size:12px;">${escapeHtml(groupName)}</span></td>
+                    <td><span class="status-badge status-unpaid">❌ غير مدفوع</span></td>
+                    <td style="text-align:center;"><span style="color:var(--gray-400);font-size:12px;">لسه ما سددش</span></td>
+                  </tr>`;
+                }
+              });
+          });
+
           tbody.innerHTML = html;
         } else { showToast('❌ ' + result.message, 'error'); }
       } catch (error) {
@@ -777,19 +822,78 @@
       }
     }
 
+    // ✅ بتتحسب من جديد في كل مرة فلتر البند يتغيّر، مش مرة واحدة بس وقت التحميل — عشان لو اخترتي بند معيّن
+    // تشوفي إحصائيات البند ده تحديداً، مش كل البنود مجمّعة مع بعض
+    function updatePaymentStats() {
+      const selectedTitle = document.getElementById('filterTitle').value;
+      const relevantPayments = selectedTitle ? allPaymentsData.filter(p => p.title === selectedTitle) : allPaymentsData;
+
+      const totalPayments = relevantPayments.length;
+      const fullPaid = relevantPayments.filter(p => p.amount >= p.total_amount).length;
+      const partial = relevantPayments.filter(p => p.amount > 0 && p.amount < p.total_amount).length;
+
+      // ✅ "غير مسددين" بيشمل حالتين مع بعض:
+      // 1) طالب عنده سجل دفعة فعلي بمبلغ صفر (مسجّل في الجدول، وواضح إنه غير مسدد بغض النظر عن باقي المجموعة)
+      // 2) طالب معندوش أي سجل دفعة خالص، لكن حد تاني في نفس مجموعته سدد نفس البند (فده مؤشر إن البند ده مفعّل لمجموعته)
+      const unpaidStudentUids = new Set();
+
+      // الحالة الأولى: سجلات صريحة بمبلغ صفر
+      relevantPayments.forEach(p => {
+        if (Number(p.amount) === 0) unpaidStudentUids.add(p.student_uid);
+      });
+
+      // الحالة الثانية: طلاب غايبين تماماً من السجل، في مجموعة فيها حد سدد نفس البند
+      const paidCombos = new Map(); // "group||title" -> Set من uid اللي سددوا فعلياً (amount > 0)
+      relevantPayments.forEach(p => {
+        if (Number(p.amount) > 0) {
+          const key = p.group_name + '||' + p.title;
+          if (!paidCombos.has(key)) paidCombos.set(key, new Set());
+          paidCombos.get(key).add(p.student_uid);
+        }
+      });
+      const hasAnyRecord = new Set(relevantPayments.map(p => p.student_uid + '||' + p.title));
+      paidCombos.forEach((paidUids, key) => {
+        const [groupName, title] = key.split('||');
+        allStudentsForStats
+          .filter(s => s.group_name === groupName)
+          .forEach(s => {
+            if (!hasAnyRecord.has(s.uid + '||' + title)) unpaidStudentUids.add(s.uid);
+          });
+      });
+
+      document.getElementById('statTotalPayments').textContent = totalPayments;
+      document.getElementById('statFullPaid').textContent = fullPaid;
+      document.getElementById('statPartial').textContent = partial;
+      document.getElementById('statUnpaid').textContent = unpaidStudentUids.size;
+    }
+
     function filterTable() {
+      updatePaymentStats();
       const q = document.getElementById('searchInput').value.toLowerCase();
       const selectedTitle = document.getElementById('filterTitle').value;
+      const selectedStatus = document.getElementById('filterStatus').value;
       const rows = document.querySelectorAll('#paymentsBody tr');
+      let visibleCount = 0;
+      let totalCount = 0;
       rows.forEach(row => {
         if (row.cells && row.cells.length > 1) {
+          totalCount++;
           const name = row.cells[0]?.textContent.toLowerCase() || '';
           const title = row.cells[1]?.textContent.trim() || '';
           const matchesSearch = name.includes(q) || title.toLowerCase().includes(q);
           const matchesTitle = !selectedTitle || title === selectedTitle;
-          row.style.display = (matchesSearch && matchesTitle) ? '' : 'none';
+          const matchesStatus = !selectedStatus || row.querySelector('.status-badge')?.classList.contains('status-' + selectedStatus);
+          const isVisible = matchesSearch && matchesTitle && matchesStatus;
+          row.style.display = isVisible ? '' : 'none';
+          if (isVisible) visibleCount++;
         }
       });
+      const countEl = document.getElementById('filterResultsCount');
+      if (countEl) {
+        countEl.textContent = (q || selectedTitle || selectedStatus)
+          ? `📋 بيعرض ${visibleCount} من ${totalCount} نتيجة`
+          : `📋 إجمالي ${totalCount} نتيجة`;
+      }
     }
 
     let editingPaymentId = null;
@@ -1316,6 +1420,8 @@ async function markAllRead() {
 
     window.onload = async function() {
       applyPermissions();
+      const savedStatus = localStorage.getItem('paymentsFilterStatus_' + clientId);
+      if (savedStatus) document.getElementById('filterStatus').value = savedStatus;
       await loadGroups();
       await loadPaymentTitles();
       await loadPayments();
