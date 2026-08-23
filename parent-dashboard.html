@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=52">
   <style>
     .student-card .student-name { font-size: 18px; font-weight: 700; color: var(--gray-900); }
     .student-card .student-name .uid { font-size: 12px; font-weight: 400; color: var(--gray-400); font-family: monospace; margin-right: 6px; }
@@ -21,7 +21,13 @@
     .student-card .student-status.absent { background: var(--danger-light); color: var(--danger); }
     .student-card .student-details .detail { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--gray-600); padding: 4px 0; }
     .student-card .student-details .detail .icon { width: 24px; text-align: center; font-size: 16px; }
-    .student-card .student-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-200); }
+    /* ✅ Batch 23 (بند 2): بقى 5 عناصر (زيادة الاختبارات الإلكترونية) — 3 أعمدة بدل 4 عشان
+       تترتب 3+2 بشكل متناسق بدل ما يبقى عمود خامس ضيق */
+    .student-card .student-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-200); }
+    /* ✅ Batch 22: 4 إحصائيات بقت زحمة على شاشات الموبايل الضيقة بعد إضافة "إجمالي المدفوعات" */
+    @media (max-width: 420px) {
+      .student-card .student-stats { grid-template-columns: 1fr 1fr; row-gap: 12px; }
+    }
     .student-card .student-stats .stat-item { text-align: center; }
     .student-card .student-stats .stat-item .num { font-size: 18px; font-weight: 700; color: var(--gray-900); }
     .student-card .student-stats .stat-item .num.green { color: var(--success); }
@@ -95,6 +101,11 @@
     </div>
   </header>
 
+  <!-- ✅ Batch 24 (بند 8): لافتة إعلانية بعرض الشاشة يتحكم في ظهورها الماستر من إعدادات النظام -->
+  <a id="portalAdBanner" href="#" target="_blank" rel="noopener" style="display:none;width:100%;overflow:hidden;">
+    <img id="portalAdBannerImg" style="width:100%;height:auto;max-height:320px;object-fit:contain;display:block;">
+  </a>
+
   <div class="container">
     <div class="breadcrumb">
       <span>📊 لوحة تحكم ولي الأمر</span>
@@ -123,9 +134,9 @@
         <span class="badge-count" id="childrenCount">0 طالب</span>
       </div>
       <div id="studentsContainer">
-        <div class="loading">
-          <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>
-          جاري تحميل الأبناء...
+        <div class="empty-state loading-state">
+          <div class="icon"><i class="fas fa-spinner fa-spin"></i></div>
+          <h4>جاري تحميل الأبناء...</h4>
         </div>
       </div>
     </div>
@@ -264,7 +275,7 @@
 
     async function loadChildren() {
       const container = document.getElementById('studentsContainer');
-      container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>جاري تحميل الأبناء...</div>';
+      container.innerHTML = '<div class="empty-state loading-state"><div class="icon"><i class="fas fa-spinner fa-spin"></i></div><h4>جاري تحميل الأبناء...</h4></div>';
 
       try {
         const headers = getAuthHeaders();
@@ -307,7 +318,7 @@
             container.innerHTML = `
               <div class="empty-state">
                 <div class="icon">📭</div>
-                <h3>لا يوجد أبناء مسجلون</h3>
+                <h4>لا يوجد أبناء مسجلون</h4>
                 <p>يرجى التواصل مع المدرس لتسجيل رقم هاتفك كولي أمر للطالب</p>
               </div>
             `;
@@ -315,7 +326,8 @@
           }
 
           let html = '<div class="students-grid">';
-          const cardAccents = ['#F2B705', '#5FBF9A', '#7FA8E8', '#E88AC4', '#E89B5F'];
+          const brandPrimary = (getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()) || '#F2B705';
+          const cardAccents = [brandPrimary, '#5FBF9A', '#7FA8E8', '#E88AC4', '#E89B5F'];
           children.forEach((student, idx) => {
             const isPresent = student.today_attendance === 'present';
             const avg = student.avg_grade !== undefined && student.avg_grade !== null ? Math.round(student.avg_grade) : '—';
@@ -359,11 +371,22 @@
                   </div>
                   <div class="stat-item">
                     <div class="num blue">${student.grades_count || 0}</div>
-                    <div class="label">عدد الامتحانات</div>
+                    <div class="label">عدد الدرجات</div>
                   </div>
                   <div class="stat-item">
                     <div class="num ${avgClass}">${avg}</div>
                     <div class="label">المتوسط</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="num" style="color:${accent};">${(student.total_paid || 0).toLocaleString('ar-EG')}</div>
+                    <div class="label">إجمالي المدفوعات</div>
+                  </div>
+                  <!-- ✅ Batch 23 (بند 2): عدد الاختبارات الإلكترونية الفعلي (exam_attempts)، منفصل
+                       عن "عدد الدرجات" اللي كان بيتسمى غلط "عدد الامتحانات" وهو فعليًا كل الدرجات
+                       (يدوية + إلكترونية محتسبة بس) -->
+                  <div class="stat-item">
+                    <div class="num" style="color:var(--info);">${student.exams_count || 0}</div>
+                    <div class="label">الاختبارات الإلكترونية</div>
                   </div>
                 </div>
                 <div class="view-link" style="text-align:left;margin-top:8px;color:var(--primary);opacity:0.6;">
@@ -378,7 +401,7 @@
           container.innerHTML = `
             <div class="empty-state">
               <div class="icon">⚠️</div>
-              <h3>حدث خطأ</h3>
+              <h4>حدث خطأ</h4>
               <p>${result.message}</p>
             </div>
           `;
@@ -389,7 +412,7 @@
         container.innerHTML = `
           <div class="empty-state">
             <div class="icon">⚠️</div>
-            <h3>خطأ في الاتصال</h3>
+            <h4>خطأ في الاتصال</h4>
             <p>حدث خطأ أثناء تحميل البيانات</p>
           </div>
         `;
@@ -414,10 +437,10 @@
         }
         if (jwt && pushToken) {
           // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
-          fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ token: pushToken })
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
           }).catch(() => {});
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
@@ -491,14 +514,74 @@
             localStorage.setItem('fasliPushToken', token.value);
             const Preferences = window.Capacitor?.Plugins?.Preferences;
             if (Preferences) Preferences.set({ key: 'fasliPushToken', value: token.value }).catch(() => {});
-            await fetch(PROJECT_URL + '/functions/v1/register-push-token', {
+            await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-              body: JSON.stringify({ token: token.value, platform: 'android' })
+              body: JSON.stringify({ action: 'register', token: token.value, platform: 'android' })
             });
           } catch (e) { /* تجاهل */ }
         });
       } catch (e) { /* تجاهل */ }
+    }
+
+    // ✅ (طلب) تفعيل الإشعارات الحقيقية لما ولي الأمر بيفتح الموقع من متصفح عادي (مش تطبيق
+    // موبايل) — عن طريق Firebase Web Push. مايشتغلش غير لو الماستر ضبط إعدادات Firebase من
+    // لوحة التحكم (get-system-settings)، وإلا بيتجاهل بهدوء من غير أي تأثير على باقي الصفحة
+    function loadScriptOnce(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function initWebPushNotifications() {
+      try {
+        if (window.Capacitor?.isNativePlatform?.()) return; // جوه التطبيق الأصلي بيستخدم مسار Capacitor فوق
+        if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+
+        const settingsRes = await fetch(PROJECT_URL + '/functions/v1/get-system-settings');
+        const settingsResult = await settingsRes.json();
+        const cfg = settingsResult.data || {};
+        if (!cfg.firebase_api_key || !cfg.firebase_project_id || !cfg.firebase_vapid_key) return;
+
+        if (!window.firebase) {
+          await loadScriptOnce('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+          await loadScriptOnce('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+        }
+        if (!firebase.apps.length) {
+          firebase.initializeApp({
+            apiKey: cfg.firebase_api_key, authDomain: cfg.firebase_auth_domain, projectId: cfg.firebase_project_id,
+            storageBucket: cfg.firebase_storage_bucket, messagingSenderId: cfg.firebase_messaging_sender_id, appId: cfg.firebase_app_id,
+          });
+        }
+
+        let permission = Notification.permission;
+        if (permission === 'default') permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        // ✅ (طلب) Scope مطلق (بيبدأ بـ /) بيتفسّر بالنسبة لجذر الدومين بالكامل — لكن الموقع
+        // منشور على GitHub Pages تحت مسار فرعي (.../Fasli/)، فالـ scope المطلق ده كان بره
+        // الحد المسموح لعامل خدمة متسجّل من جوه المسار الفرعي، وده كان بيفشل بصمت (SecurityError
+        // متبلوع جوه try/catch) — فمفيش أي إشعار حقيقي كان بيتسجّل خالص حتى بعد ضبط Firebase.
+        // الحل: scope نسبي (من غير / في الأول) بيتفسّر بالنسبة لمسار الصفحة الحالية بدل جذر الدومين
+        const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js', { scope: 'firebase-cloud-messaging-push-scope' });
+        const messaging = firebase.messaging();
+        const token = await messaging.getToken({ vapidKey: cfg.firebase_vapid_key, serviceWorkerRegistration: reg });
+        if (!token) return;
+
+        const jwt = sessionStorage.getItem('jwtToken');
+        if (!jwt) return;
+        await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+          body: JSON.stringify({ action: 'register', token, platform: 'web' })
+        });
+
+        messaging.onMessage(() => { if (typeof loadNotifications === 'function') loadNotifications(); });
+      } catch (error) {
+        console.error('⚠️ تعذّر تفعيل الإشعارات الحقيقية:', error);
+      }
     }
 
     function toggleDarkMode() {
@@ -542,7 +625,7 @@
     }
 
     const NOTIF_ICONS = {
-      attendance: '✅', payment: '💰', book_payment: '📖', grade: '📝', bulk_message: '📨'
+      attendance: '✅', payment: '💰', book_payment: '📖', grade: '📝', bulk_message: '📨', teacher_message: '💬'
     };
 
         function playNotificationSound() {
@@ -649,19 +732,30 @@
 
     async function markOneRead(id) {
       const item = notifData.find(n => n.id === id);
-      if (item && item.is_read) return;
+      const wasUnread = item && !item.is_read;
       try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
-          method: 'POST', headers, body: JSON.stringify({ notificationId: id })
-        });
-        if (item) item.is_read = true;
-        const badge = document.getElementById('notifBadge');
-        const unread = notifData.filter(n => !n.is_read).length;
-        if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
-        else badge.style.display = 'none';
-        renderNotifList();
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل بيوديك لمكانه برضه، مش بس أول مرة
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه ولي الأمر لتبويب الطالب المرتبط
+        // بالإشعار مباشرة (حضور/درجات/مدفوعات/مذكرات/تواصل) بدل ما يفضل واقف في نفس الصفحة
+        if (item && item.student_uid) {
+          const tabByType = { attendance: 'attendance', grade: 'grades', payment: 'payments', book_payment: 'books', exam: 'exams' };
+          const tab = tabByType[item.type] || (['teacher_message', 'bulk_message', 'center_bulk_message'].includes(item.type) ? 'messages' : null);
+          if (tab) window.location.href = 'parent-student-details.html?uid=' + encodeURIComponent(item.student_uid) + '&tab=' + tab;
+        }
       } catch (error) {
         console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
       }
@@ -682,12 +776,65 @@
       }
     }
 
+    // ✅ Batch 24 (بند 8): اللافتة الإعلانية اللي بيتحكم فيها الماستر (عرض/إخفاء لصفحة ولي
+    // الأمر تحديداً) من إعدادات النظام العامة
+    // ✅ Batch 33 (بند 1): اللافتة بقت تدعم أكتر من صورة تتقلّب تلقائياً ورا بعض، كل صورة
+    // برابطها الخاص عند الضغط عليها — بدل صورة واحدة ثابتة زي ما كانت قبل كده
+    let portalBannerSlides = [];
+    let portalBannerIndex = 0;
+    let portalBannerTimer = null;
+
+    function showPortalBannerSlide(i) {
+      const slide = portalBannerSlides[i];
+      if (!slide) return;
+      document.getElementById('portalAdBannerImg').src = slide.image_url;
+      const banner = document.getElementById('portalAdBanner');
+      banner.href = slide.link_url || '#';
+      banner.style.cursor = slide.link_url ? 'pointer' : 'default';
+    }
+
+    async function loadPortalAdBanner() {
+      try {
+        const [settingsRes, adsRes] = await Promise.all([
+          fetch(PROJECT_URL + '/functions/v1/get-system-settings'),
+          fetch(PROJECT_URL + '/functions/v1/get-login-ads'),
+        ]);
+        const settingsResult = await settingsRes.json();
+        const adsResult = await adsRes.json();
+        const data = settingsResult.data || {};
+        const slides = (adsResult.portalBanners && adsResult.portalBanners.parent) || [];
+        if (data.portal_banner_show_parent && slides.length > 0) {
+          portalBannerSlides = slides;
+          portalBannerIndex = 0;
+          const banner = document.getElementById('portalAdBanner');
+          banner.onclick = (e) => {
+            const current = portalBannerSlides[portalBannerIndex];
+            if (!current || !current.link_url) e.preventDefault();
+          };
+          showPortalBannerSlide(0);
+          banner.style.display = 'block';
+          if (portalBannerTimer) clearInterval(portalBannerTimer);
+          if (slides.length > 1) {
+            portalBannerTimer = setInterval(() => {
+              portalBannerIndex = (portalBannerIndex + 1) % portalBannerSlides.length;
+              showPortalBannerSlide(portalBannerIndex);
+            }, 5000);
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل اللافتة الإعلانية:', error);
+      }
+    }
+
     window.onload = function() {
       loadChildren();
       loadNotifications();
       registerPushIfNative();
+      initWebPushNotifications();
+      loadPortalAdBanner();
       setInterval(() => { loadChildren(); }, 30000);
-      setInterval(() => { loadNotifications(); }, 20000);
+      // ✅ (طلب) تقصير فترة تحديث الإشعارات عشان تكون أقرب للحظية
+      setInterval(() => { loadNotifications(); }, 10000);
     };
   </script>
   <script>
@@ -699,18 +846,19 @@
   </script>
 
   <div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-    <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.3);">
-      <div style="width:64px;height:64px;background:#E7F8F0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">🔔</div>
-      <h3 style="font-size:17px;font-weight:800;color:#0B1C33;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
-      <p style="font-size:13.5px;color:#6b7280;line-height:1.7;margin-bottom:22px;">
+    <div class="perm-dialog-box">
+      <div class="perm-dialog-icon">🔔</div>
+      <h3 class="perm-dialog-title">تفعيل الإشعارات الفورية</h3>
+      <p class="perm-dialog-text">
         عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
       </p>
       <div style="display:flex;gap:10px;">
-        <button onclick="declinePermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #E1E4E9;background:#fff;color:#4A5568;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;">مش دلوقتي</button>
-        <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#F2B705;color:#0B1C33;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
+        <button onclick="declinePermissionDialog()" class="perm-dialog-decline">مش دلوقتي</button>
+        <button onclick="acceptPermissionDialog()" class="perm-dialog-accept">فعّل الإشعارات</button>
       </div>
     </div>
   </div>
+<script src="branding.js?v=2"></script>
 <script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

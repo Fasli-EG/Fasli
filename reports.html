@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -24,19 +24,24 @@
 
       <nav class="sidebar-nav">
         <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="students.html" class="sidebar-item "><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item "><i class="fas fa-pen-to-square"></i> الدرجات</a>
-        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات</a>
-        <a href="books.html" class="sidebar-item "><i class="fas fa-book"></i> المذكرات</a>
-        <a href="reports.html" class="sidebar-item active"><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="messages.html" class="sidebar-item " id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+
+        <div class="sidebar-section-label">🎓 الأكاديمية</div>
+        <a href="students.html" class="sidebar-item " id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item " id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item " id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
+
+        <div class="sidebar-section-label">💰 المالية</div>
+        <a href="payments.html" class="sidebar-item " id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
         <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
 
-        <div class="sidebar-section-label">إدارة</div>
-        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <div class="sidebar-section-label">📊 التقارير</div>
+        <a href="reports.html" class="sidebar-item active" id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
+
+        <div class="sidebar-section-label">⚙️ الإعدادات</div>
         <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
-        <a href="assistants-management.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
-        <a href="wifi-config.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-headset"></i> التواصل والنُسخ</a>
+        <a href="staff.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
+        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
       </nav>
 
       <div class="sidebar-footer">
@@ -52,6 +57,21 @@
           <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
         </button>
         <div class="sidebar-footer-actions">
+          <div class="notif-wrap" id="notifWrap" style="display:none;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-panel-header">
+                <span>الإشعارات</span>
+                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
           <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
           <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
         </div>
@@ -62,21 +82,6 @@
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
         <h2>التقارير</h2>
-        <div class="notif-wrap" id="notifWrap" style="display:none;">
-          <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
-            <i class="fas fa-bell"></i>
-            <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-          </button>
-          <div class="notif-panel" id="notifPanel">
-            <div class="notif-panel-header">
-              <span>الإشعارات</span>
-              <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
-            </div>
-            <div class="notif-list" id="notifList">
-              <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
-            </div>
-          </div>
-        </div>
         <div style="width:24px;"></div>
       </div>
   <div class="container">
@@ -226,7 +231,11 @@
           const clone = res.clone();
           const data = await clone.json();
           if (data && data.code === 'LICENSE_EXPIRED') {
-            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+            // ✅ بنحط الرسالة الحقيقية + اسم الدالة اللي رجّعت الخطأ في sessionStorage
+            // (مش URL parameter) عشان صفحة القفل تقدر تقراها وتعرضها صح للتشخيص
+            sessionStorage.setItem('lockReason', data.message || 'انتهت صلاحية الترخيص');
+            sessionStorage.setItem('lockSourceFunction', urlStr);
+            window.location.href = 'license-locked.html';
           }
         }
       } catch (e) { /* تجاهل */ }
@@ -318,7 +327,8 @@
 
     const assistantPermissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
     const isAssistant = userRole === 'assistant';
-    if (isAssistant) {
+    // ✅ الجرس ده بيشتغل للمدرس والمساعد الاتنين (Aug 2026) — كان قبل كده مقصور على المساعد بس
+    {
       const notifWrap = document.getElementById('notifWrap');
       if (notifWrap) {
         notifWrap.style.display = 'block';
@@ -337,6 +347,27 @@
       if (navR) navR.style.display = 'flex';
       if (navF) navF.style.display = 'flex';
       if (navL) navL.style.display = 'flex';
+    } else {
+      // ✅ Batch 21: القائمة الجانبية للمساعد لازم تعكس صلاحياته الفعلية في كل صفحة يزورها،
+      // مش لوحة التحكم بس — نفس منطق التفعيل المستخدم في assistant-dashboard.html
+      const navSt = document.getElementById('navStudents');
+      const navGr = document.getElementById('navGroups');
+      const navGd = document.getElementById('navGrades');
+      const navPay = document.getElementById('navPayments');
+      const navRep = document.getElementById('navReports');
+      const navMsg = document.getElementById('navMessages');
+      const navF = document.getElementById('navFinancial');
+      const navL = document.getElementById('navActivityLog');
+      const navA = document.getElementById('navManageAssistants');
+      if (navSt) navSt.style.display = assistantPermissions.view_students !== false ? 'flex' : 'none';
+      if (navGr) navGr.style.display = (assistantPermissions.manage_groups === true || assistantPermissions.manage_registration === true) ? 'flex' : 'none';
+      if (navGd) navGd.style.display = assistantPermissions.record_grades === true ? 'flex' : 'none';
+      if (navPay) navPay.style.display = assistantPermissions.record_payments === true ? 'flex' : 'none';
+      if (navRep) navRep.style.display = assistantPermissions.view_reports === true ? 'flex' : 'none';
+      if (navMsg) navMsg.style.display = (assistantPermissions.send_messages === true || assistantPermissions.manage_conversations === true) ? 'flex' : 'none';
+      if (navF) navF.style.display = assistantPermissions.view_financial === true ? 'flex' : 'none';
+      if (navL) navL.style.display = assistantPermissions.view_activity_log === true ? 'flex' : 'none';
+      if (navA) navA.style.display = assistantPermissions.view_staff === true ? 'flex' : 'none';
     }
     const canViewReports = isAssistant ? (assistantPermissions.view_reports === true) : true;
 
@@ -444,10 +475,10 @@
           const headers = getAuthHeaders();
           if (!headers) return;
 
-          const response = await fetch(PROJECT_URL + '/functions/v1/get-exams', {
+          const response = await fetch(PROJECT_URL + '/functions/v1/get-titles', {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify({ clientId: clientId, groupName: group })
+            body: JSON.stringify({ clientId: clientId, groupName: group, type: 'exam' })
           });
 
           if (response.status === 401) {
@@ -476,10 +507,10 @@
           const headers = getAuthHeaders();
           if (!headers) return;
 
-          const response = await fetch(PROJECT_URL + '/functions/v1/get-payment-titles', {
+          const response = await fetch(PROJECT_URL + '/functions/v1/get-titles', {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify({ clientId: clientId, groupName: group })
+            body: JSON.stringify({ clientId: clientId, groupName: group, type: 'payment' })
           });
 
           if (response.status === 401) {
@@ -678,8 +709,15 @@
         htmlContent += 'h1{text-align:center;color:#4f46e5;}';
         htmlContent += 'hr{border:1px solid #e2e8f0;margin:16px 0;}';
         htmlContent += '.footer{text-align:center;font-size:12px;color:#94a3b8;margin-top:20px;}';
+        // ✅ Batch 20 (بند 3): هيدر شعار المركز + الاسم أعلى التقرير المطبوع — بنفس أسلوب هيدر
+        // الطباعة المستخدم في grades.html/groups.html (شعار مربّع + اسم المدرس/المركز جنبه)
+        htmlContent += '.rpt-print-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e2e8f0;}';
+        htmlContent += '.rpt-print-header img{height:46px;width:46px;object-fit:contain;border-radius:8px;}';
+        htmlContent += '.rpt-print-header h2{margin:0;font-size:19px;color:#1f2937;}';
         htmlContent += '<\/style><\/head>';
         htmlContent += '<body>';
+        var brandLogoUrl = sessionStorage.getItem('brandLogoUrl') || 'assets/logo-icon.svg';
+        htmlContent += '<div class="rpt-print-header"><img src="' + brandLogoUrl + '" alt="شعار" onerror="this.src=\'assets/logo-icon.svg\';"><h2>' + teacherName + '<\/h2><\/div>';
         // ✅ منضيفش تذييل تاني هنا — lastReportData أصلاً فيه تذييل "تم إنشاء هذا التقرير..." من وقت التوليد
         htmlContent += lastReportData;
         htmlContent += '<\/body><\/html>';
@@ -778,10 +816,10 @@
         }
         if (jwt && pushToken) {
           // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
-          fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ token: pushToken })
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
           }).catch(() => {});
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
@@ -821,10 +859,10 @@
   try {
     const headers = getAuthHeaders();
     if (!headers) return;
-    const response = await fetch(PROJECT_URL + '/functions/v1/export-backup', {
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-backup', {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify({ clientId })
+      body: JSON.stringify({ action: 'export', clientId })
     });
     if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
     const result = await response.json();
@@ -870,17 +908,54 @@ function openResetConfirm() {
   overlay.innerHTML = `
     <div class="reset-modal-box">
       <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
-      <h3>⚠️ تحذير خطير!</h3>
-      <p>أنت على وشك حذف <strong>جميع بيانات النظام</strong> بما في ذلك:</p>
-      <ul style="text-align:right;list-style:none;padding:8px 0;color:var(--gray-600);font-size:14px;">
-        <li>📋 <strong>جميع الطلاب</strong> المسجلين</li>
-        <li>📝 <strong>جميع الدرجات</strong> والامتحانات</li>
-        <li>💰 <strong>جميع المدفوعات</strong> (شهرية ومذكرات)</li>
-        <li>📖 <strong>جميع المذكرات</strong> وسجلاتها</li>
-        <li>✅ <strong>جميع سجلات الحضور</strong></li>
-      </ul>
+      <h3>⚠️ إعادة تهيئة النظام</h3>
+      <p>حدّد البيانات اللي عايز تحذفها بس — مش لازم تحذف كل حاجة (مثلاً لو العام الدراسي انتهى بس الطلاب مكملين سنة جديدة، سيب "الطلاب أنفسهم" من غير تحديد).</p>
+      <div class="reset-opts-list" style="text-align:right;padding:4px 12px;font-size:13.5px;margin:10px 0;">
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="attendance" checked> ✅ سجلات الحضور
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="payments" checked> 💰 المدفوعات الشهرية
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="grades" checked> 📝 الدرجات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="bookPayments" checked> 📖 سداد المذكرات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-top:1px solid var(--gray-200);margin-top:6px;padding-top:12px;">
+          <input type="checkbox" class="reset-opt" value="students"> 📋 الطلاب أنفسهم (بيانتهم وأرقامهم وكروتهم)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="groups"> 🏫 المجموعات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="books"> 📚 المذكرات نفسها (كبند، مش سداداتها بس)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="paymentTitles"> 🏷️ بنود السداد المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="examTitles"> 🏷️ أسماء الامتحانات المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="onlineExams"> 🖥️ الامتحانات الإلكترونية (أسئلتها ومحاولات الطلاب فيها)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="notifications"> 🔔 الإشعارات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="activityLogs"> 📜 سجل النشاطات القديم
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="registrationRequests"> 📋 طلبات التسجيل
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="conversations"> 💬 المحادثات مع أولياء الأمور
+        </label>
+      </div>
       <div class="warning-text">
-        <i class="fas fa-skull"></i> هذا الإجراء لا يمكن التراجع عنه!
+        <i class="fas fa-skull"></i> اللي هتحدده هيتحذف نهائياً، مفيش رجوع بعد كده!
       </div>
       <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
         <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
@@ -948,7 +1023,9 @@ async function confirmReset() {
     }
 
     // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
-    const requestBody = JSON.stringify({ clientId: clientId, password: password });
+    const selectedOptions = {};
+    document.querySelectorAll('.reset-opt').forEach(cb => { selectedOptions[cb.value] = cb.checked; });
+    const requestBody = JSON.stringify({ clientId: clientId, password: password, options: selectedOptions });
 
     const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
       method: 'POST',
@@ -1001,7 +1078,7 @@ function timeAgo(dateStr) {
       return `منذ ${days} يوم`;
     }
 
-const NOTIF_ICONS = { bulk_message: '📨' };
+const NOTIF_ICONS = { bulk_message: '📨', center_teacher_message: '🏢', parent_message: '💬', teacher_message: '💬' };
 
     function playNotificationSound() {
       try {
@@ -1094,8 +1171,18 @@ function toggleNotifPanel() {
       panel.style.position = 'fixed';
       panel.style.left = left + 'px';
       panel.style.right = 'auto';
-      panel.style.top = (btnRect.bottom + 10) + 'px';
       panel.style.width = panelWidth + 'px';
+      // ✅ Batch 24 (بند 4): بعد نقل الجرس لذيل القائمة الجانبية (تحت خالص)، فتح البانل تحت
+      // الزرار عادي هيطلعه خارج حدود الشاشة — لو مفيش مساحة كافية تحت، نفتحه لفوق بدل كده
+      const estimatedHeight = Math.min(420, window.innerHeight - margin * 2);
+      const spaceBelow = window.innerHeight - btnRect.bottom - margin;
+      if (spaceBelow < estimatedHeight && btnRect.top > estimatedHeight) {
+        panel.style.bottom = (window.innerHeight - btnRect.top + 10) + 'px';
+        panel.style.top = 'auto';
+      } else {
+        panel.style.top = (btnRect.bottom + 10) + 'px';
+        panel.style.bottom = 'auto';
+      }
     }
 
 document.addEventListener('click', function(e) {
@@ -1107,19 +1194,35 @@ document.addEventListener('click', function(e) {
 
 async function markOneRead(id) {
       const item = notifData.find(n => n.id === id);
-      if (item && item.is_read) return;
+      const wasUnread = item && !item.is_read;
       try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
-          method: 'POST', headers, body: JSON.stringify({ notificationId: id })
-        });
-        if (item) item.is_read = true;
-        const badge = document.getElementById('notifBadge');
-        const unread = notifData.filter(n => !n.is_read).length;
-        if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
-        else badge.style.display = 'none';
-        renderNotifList();
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل كان مش بيعمل أي حاجة خالص (return مبكر) —
+        // دلوقتي بيوديك لمكان الإشعار برضه حتى لو كان مقروء من قبل، وبس اللي بيتعلَّم كمقروء
+        // فعلياً (نداء الـ API) هو اللي بيتخطّى لو كان مقروء أصلاً
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه المستخدم لمكان الإشعار نفسه بدل
+        // ما يفضل واقف في نفس الصفحة من غير ما يعرف يوصل للمحادثة/الطالب الخاص بالإشعار
+        if (item) {
+          if (item.type === 'parent_message' && item.student_uid) {
+            const nm = (item.details && item.details.student_name) || '';
+            window.location.href = 'messages.html?openConversation=' + encodeURIComponent(item.student_uid) + (nm ? '&name=' + encodeURIComponent(nm) : '');
+          } else if (item.type === 'center_teacher_message') {
+            window.location.href = 'messages.html';
+          }
+        }
       } catch (error) {
         console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
       }
@@ -1192,6 +1295,7 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="branding.js?v=2"></script>
 <script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

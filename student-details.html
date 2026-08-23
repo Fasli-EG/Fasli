@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>إدارة الطلاب - فَصلي</title>
-  <meta name="description" content="إدارة بيانات الطلاب في نظام فَصلي لإدارة الدروس الخصوصية">
+  <title>تفاصيل الطالب - فَصلي</title>
+  <meta name="description" content="بيانات طالب محدد ومخطط نمو مستواه - نظام فَصلي">
   <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0B1C33">
@@ -24,19 +24,19 @@
 
       <nav class="sidebar-nav">
         <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="messages.html" class="sidebar-item " id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
 
         <div class="sidebar-section-label">🎓 الأكاديمية</div>
-        <a href="students.html" class="sidebar-item active" id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item " id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item " id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
+        <a href="students.html" class="sidebar-item active"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item "><i class="fas fa-file-pen"></i> الاختبارات</a>
 
         <div class="sidebar-section-label">💰 المالية</div>
-        <a href="payments.html" class="sidebar-item " id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
+        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
         <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
 
         <div class="sidebar-section-label">📊 التقارير</div>
-        <a href="reports.html" class="sidebar-item " id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
 
         <div class="sidebar-section-label">⚙️ الإعدادات</div>
         <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
@@ -88,192 +88,188 @@
         </div>
       </div>
   <div class="container">
-    <div class="breadcrumb"><a onclick="goBackToDashboard()">الرئيسية</a><span class="separator">›</span><span style="color:var(--gray-700);font-weight:500;">إدارة الطلاب</span></div>
-    <div class="page-header">
-      <div><h2>👥 إدارة الطلاب</h2></div>
-      <span id="roleIndicator" style="font-size:13px;color:var(--gray-500);"><i class="fas fa-user-tag"></i> دور: <strong id="userRoleDisplay">مدرس</strong></span>
+    <div class="breadcrumb"><a onclick="window.location.href='students.html'">إدارة الطلاب</a><span class="separator">›</span><span style="color:var(--gray-700);font-weight:500;">تفاصيل الطالب</span></div>
+
+    <div id="studentDetailsLoading" style="text-align:center;padding:60px;color:var(--gray-400);">
+      <i class="fas fa-spinner fa-spin" style="font-size:28px;display:block;margin-bottom:10px;"></i>جاري تحميل بيانات الطالب...
     </div>
 
-    <!-- ✅ (طلب) كروت الإحصائيات اللي كانت هنا اتشالت — الاستيراد من إكسل ورابط التسجيل العام
-         نُقلوا لصفحة الإعدادات (teacher-settings.html) عشان الصفحة دي تفضل مركّزة على إدارة الطلاب بس -->
-
-    <div class="card" id="addStudentCard">
-      <div class="card-header">
-        <h3><i class="fas fa-user-plus" style="color:var(--primary);"></i> تسجيل طالب جديد</h3>
-        <span style="font-size:12px;color:var(--gray-400);"><i class="fas fa-info-circle"></i> الحقول التي تحمل <span style="color:var(--danger);">*</span> إجبارية</span>
-      </div>
-      <div class="card-body">
-        <div class="form-grid">
-          <!-- ✅ (طلب) لحسابات السنتر: المدرس الأول، وبعدين مجموعاته بس تظهر عشان يختار الطالب هينضم لأنهي مجموعة -->
-          <div class="form-group full" id="addStudentInstructorField" style="display:none;">
-            <label>👤 المدرس <span class="required">*</span></label>
-            <select id="addStudentInstructor" onchange="onAddStudentInstructorChange()">
-              <option value="">-- اختر المدرس --</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>المجموعة <span class="required">*</span></label>
-            <select id="addGroup"><option value="">-- اختر المجموعة --</option></select>
-          </div>
-          <div class="form-group">
-            <label>UID (رقم الكارت) <span class="required">*</span></label>
-            <div class="uid-input-wrapper">
-              <input type="text" id="addUid" placeholder="اضغط زر التفعيل ثم امسح الكارت..." dir="ltr" autofocus>
-              <button class="btn-read" id="toggleReadBtn" onclick="toggleReading()">
-                <i class="fas fa-fingerprint"></i> <span id="readBtnText">تفعيل القراءة</span>
-              </button>
+    <div id="studentDetailsContent" style="display:none;">
+      <div class="card">
+        <div class="card-body" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+          <div style="width:60px;height:60px;border-radius:50%;background:var(--primary);color:#0B1C33;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;" id="studentAvatar">؟</div>
+          <div style="flex:1;min-width:200px;">
+            <h2 style="margin:0 0 4px;" id="studentNameHeader">—</h2>
+            <div style="font-size:13px;color:var(--gray-500);">
+              <span id="studentGroupHeader">—</span> · UID: <span dir="ltr" id="studentUidHeader">—</span>
             </div>
-            <span class="hint" id="readHint">💡 اضغط زر "تفعيل القراءة" ثم امسح الكارت على القارئ</span>
           </div>
-          <div class="form-group full">
-            <label>اسم الطالب <span class="required">*</span></label>
-            <input type="text" id="addName" placeholder="أدخل اسم الطالب بالكامل">
-          </div>
-          <div class="form-group">
-            <label>هاتف الطالب</label>
-            <input type="tel" id="addPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr">
-          </div>
-          <div class="form-group">
-            <label>هاتف ولي الأمر <span class="required">*</span></label>
-            <input type="tel" id="addParentPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr">
-            <span class="hint">📱 سيتم ربط ولي الأمر بهذا الرقم</span>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-success" id="addStudentBtn" onclick="submitStudent()"><i class="fas fa-save"></i> تسجيل الطالب</button>
-          <button class="btn btn-outline" onclick="resetForm()"><i class="fas fa-undo"></i> تفريغ</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h3><i class="fas fa-users" style="color:var(--primary);"></i> قائمة الطلاب</h3>
-        <div class="search-bar">
-          <!-- ✅ (طلب) فلترة حسب المدرس في وضع السنتر — تضيّق قائمة "المجموعة" على مجموعات المدرس المختار بس -->
-          <select id="filterInstructor" onchange="onFilterInstructorChange()" style="display:none;">
-            <option value="">-- كل المدرسين --</option>
-          </select>
-          <select id="filterGroup" onchange="loadStudents()"><option value="ALL">📚 جميع المجموعات</option></select>
-          <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 بحث بالاسم أو UID...">
-          <button class="btn btn-outline btn-sm" onclick="toggleArchivedPanel()"><i class="fas fa-box-archive"></i> الطلاب المؤرشفون</button>
-        </div>
-      </div>
-      <div id="groupFilterSummary" style="padding:0 20px 4px;font-size:12.5px;color:var(--gray-500);"></div>
-      <div id="filterResultsCount" style="padding:0 20px 12px;font-size:12.5px;color:var(--gray-500);"></div>
-      <div class="card-body" style="padding:0;">
-        <div class="table-wrapper">
-          <table>
-            <thead><tr><th>UID</th><th>الاسم</th><th>هاتف الطالب</th><th>ولي الأمر</th><th>المجموعة</th><th style="text-align:center;">إجراءات</th></tr></thead>
-            <tbody id="studentsBody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>جاري تحميل البيانات...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" id="archivedStudentsPanel" style="display:none;">
-      <div class="card-header">
-        <h3><i class="fas fa-box-archive" style="color:var(--gray-500);"></i> الطلاب المؤرشفون</h3>
-      </div>
-      <div class="card-body">
-        <p style="color:var(--gray-500);font-size:13px;margin-bottom:14px;">
-          بياناتهم محفوظة بالكامل (درجات، حضور، مدفوعات) لكنهم مش ظاهرين في القائمة النشطة ومش محسوبين على حد الطلاب.
-        </p>
-        <div id="archivedStudentsList"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="transferModal">
-    <div class="modal-box" style="max-width:420px;">
-      <div class="modal-header">
-        <h3>🔄 نقل طالب لمجموعة تانية</h3>
-        <button class="modal-close" onclick="closeTransferModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size:13.5px;color:var(--gray-600);margin-bottom:14px;">
-          نقل <strong id="transferStudentName"></strong> من مجموعة <strong id="transferOldGroup"></strong> — هيتم نقل كل بياناته (درجات، مدفوعات، سداد مذكرات، حضور) معاه.
-        </p>
-        <div class="field">
-          <label>المجموعة الجديدة</label>
-          <select id="transferNewGroup"></select>
-        </div>
-        <input type="hidden" id="transferStudentUid">
-        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px;" onclick="confirmTransfer()">
-          <i class="fas fa-right-left"></i> تأكيد النقل
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✅ Aug 2026 (Phase I): ربط الطالب بمجموعات إضافية (تعدد المواد/المدرسين) — لحسابات السنتر بس -->
-  <div class="modal-overlay" id="groupLinksModal">
-    <div class="modal-box" style="max-width:440px;">
-      <div class="modal-header">
-        <h3>🔗 مجموعات إضافية</h3>
-        <button class="modal-close" onclick="closeGroupLinksModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size:13.5px;color:var(--gray-600);margin-bottom:14px;">
-          ربط <strong id="groupLinksStudentName"></strong> (مجموعته الأساسية: <strong id="groupLinksPrimaryGroup"></strong>) بمجموعات تانية — لطالب بياخد أكتر من مادة عند أكتر من مدرس.
-        </p>
-        <div id="groupLinksExistingList" style="margin-bottom:14px;"></div>
-        <div class="field">
-          <label>ربط بمجموعة جديدة</label>
-          <select id="groupLinksNewGroupSelect"></select>
-          <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:8px;" onclick="confirmLinkStudentToGroup()">
-            <i class="fas fa-link"></i> ربط
+          <button class="btn btn-outline btn-sm" onclick="printStudentReport()" id="printReportBtn" title="طباعة أو حفظ تقرير الطالب PDF">
+            <i class="fas fa-print"></i> طباعة التقرير
           </button>
         </div>
-        <input type="hidden" id="groupLinksStudentUid">
       </div>
-    </div>
-  </div>
 
-  <div class="modal-overlay" id="cardLinkModal">
-    <div class="modal-box" style="max-width:420px;">
-      <div class="modal-header">
-        <h3>🪪 ربط كارت RFID</h3>
-        <button class="modal-close" onclick="closeCardLinkModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size:13.5px;color:var(--gray-600);margin-bottom:14px;">
-          ربط كارت جديد لـ<strong id="cardLinkStudentName"></strong> — بعد الضغط، مرّغ الكارت على البورد بتاعك.
-        </p>
-        <div id="cardLinkIdle">
-          <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="startCardLink()">
-            <i class="fas fa-id-card"></i> بدء ربط الكارت
-          </button>
+      <div class="card">
+        <div class="card-body" style="padding-bottom:0;">
+          <div class="tabs" style="border-bottom:none;margin-bottom:0;padding-bottom:12px;">
+            <button class="tab active" data-tab="grades" onclick="switchStudentDetailTab('grades')"><i class="fas fa-list-check"></i> الدرجات والتقييم</button>
+            <button class="tab" data-tab="attendance" onclick="switchStudentDetailTab('attendance')"><i class="fas fa-calendar-check"></i> الحضور والغياب</button>
+            <button class="tab" data-tab="payments" onclick="switchStudentDetailTab('payments')"><i class="fas fa-money-bill-wave"></i> سجل المدفوعات</button>
+            <button class="tab" data-tab="books" onclick="switchStudentDetailTab('books')"><i class="fas fa-book"></i> المذكرات</button>
+          </div>
         </div>
-        <div id="cardLinkWaiting" style="display:none;text-align:center;padding:10px 0;">
-          <i class="fas fa-spinner fa-spin" style="font-size:22px;color:var(--primary);"></i>
-          <p style="font-size:13px;color:var(--gray-600);margin-top:10px;">في انتظار تمريغ الكارت على البورد...</p>
-          <button class="btn btn-danger btn-sm" onclick="cancelCardLink()">إلغاء</button>
+      </div>
+
+      <!-- ✅ (طلب) لو الطالب مربوط بأكتر من مجموعة، بيظهر هنا اختيار (راديو) للمجموعة اللي عايز
+           تشوف بياناتها — الصفحة كلها (الإحصائيات/الدرجات/الحضور/المدفوعات/المذكرات) بتتفلتر على
+           المجموعة المختارة بس، من غير خيار "كل المجموعات" -->
+      <div class="card" id="studentGroupFilterCard" style="display:none;">
+        <div class="card-body" style="padding:12px 16px;">
+          <label style="font-size:13.5px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:8px;"><i class="fas fa-layer-group"></i> اختر المجموعة اللي عايز تشوف بياناتها:</label>
+          <div id="studentGroupFilterRadios" style="display:flex;flex-wrap:wrap;gap:14px;"></div>
         </div>
-        <div id="cardLinkResult" style="display:none;text-align:center;padding:10px 0;"></div>
-        <input type="hidden" id="cardLinkStudentUid">
+      </div>
+
+      <div id="studentTab-grades" class="tab-content active">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">📝 امتحانات اتقدّم لها</div><div class="stat-value primary" id="statExamsTaken">0</div></div>
+          <div class="stat-card"><div class="stat-label">📊 متوسط المستوى الحالي</div><div class="stat-value success" id="statCurrentAvg">0%</div></div>
+          <div class="stat-card"><div class="stat-label">📈 اتجاه المستوى</div><div class="stat-value" id="statTrend">—</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-chart-line" style="color:var(--primary);"></i> مخطط نمو المستوى</h3>
+          </div>
+          <div class="card-body">
+            <p style="color:var(--gray-500);font-size:13px;margin-bottom:14px;">
+              بيوضّح نسبة الطالب في كل امتحان بالترتيب الزمني (من الأقدم للأحدث) — عشان تشوفي هل مستواه بيرتفع ولا بينخفض مع الوقت.
+            </p>
+            <div id="growthChartContainer" style="width:100%;overflow-x:auto;"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-list-check" style="color:var(--primary);"></i> تفاصيل الدرجات</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>الامتحان</th><th>الدرجة</th><th>النسبة</th><th>التاريخ</th></tr></thead>
+                <tbody id="gradesDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="studentTab-attendance" class="tab-content">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">✅ نسبة الحضور</div><div class="stat-value primary" id="statAttendancePercentDetail">0%</div></div>
+          <div class="stat-card"><div class="stat-label">🟢 أيام الحضور</div><div class="stat-value success" id="statPresentDays">0</div></div>
+          <div class="stat-card"><div class="stat-label">❌ مرات الغياب (من الحصص المفروض حضورها)</div><div class="stat-value danger" id="statAbsentDays">0</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-calendar-check" style="color:var(--info);"></i> سجل الحضور والغياب</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead>
+                <tbody id="attendanceDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="studentTab-payments" class="tab-content">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">💰 إجمالي المدفوع</div><div class="stat-value success" id="statTotalPaid">0 ج.م</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-money-bill-wave" style="color:var(--success);"></i> سجل المدفوعات</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>البند</th><th>المدفوع</th><th>الإجمالي</th><th>الحالة</th></tr></thead>
+                <tbody id="paymentsDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="studentTab-books" class="tab-content">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">📖 عدد المذكرات</div><div class="stat-value primary" id="statBooksCount">0</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-book" style="color:var(--primary);"></i> سجل المذكرات</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>اسم المذكرة</th><th>السعر</th><th>المدفوع</th><th>الحالة</th><th>التاريخ</th><th>الملف</th></tr></thead>
+                <tbody id="booksDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="editModal">
-    <div class="modal-box">
-      <div class="modal-header"><h3><i class="fas fa-edit" style="color:var(--primary);"></i> تعديل بيانات الطالب</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
-      <div class="modal-body">
-        <input type="hidden" id="editId">
-        <div class="form-group" style="margin-bottom:16px;"><label>UID</label><input type="text" id="editUid" readonly style="background:var(--gray-50);"></div>
-        <div class="form-group" style="margin-bottom:16px;"><label>اسم الطالب <span class="required">*</span></label><input type="text" id="editName" placeholder="الاسم الكامل"></div>
-        <div class="form-group" style="margin-bottom:16px;"><label>هاتف الطالب</label><input type="tel" id="editPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr"></div>
-        <div class="form-group" style="margin-bottom:16px;"><label>هاتف ولي الأمر <span class="required">*</span></label><input type="tel" id="editParentPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr"></div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-primary" id="editStudentBtn" onclick="submitEdit()"><i class="fas fa-save"></i> حفظ التعديلات</button></div>
-    </div>
-  </div>
 
-      </div>
+    </div>
   </div>
 
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ✅ عناصر مخفية بس عشان الدوال المشتركة الموروثة من صفحة إدارة الطلاب (تعديل/حذف/نقل/ربط كارت)
+       تفضل تشتغل تقنياً بدون أي كراش، حتى لو مش مستخدمة فعلياً في صفحة العرض دي -->
+  <div style="display:none;">
+    <span id="userRoleDisplay"></span>
+    <div id="addStudentCard"></div>
+    <select id="addGroup"></select>
+    <input id="addName"><input id="addParentPhone"><input id="addPhone">
+    <button id="addStudentBtn"></button>
+    <input id="addUid">
+    <div id="cardLinkIdle"></div>
+    <div id="cardLinkModal" class="modal-overlay"></div>
+    <div id="cardLinkResult"></div>
+    <span id="cardLinkStudentName"></span>
+    <input id="cardLinkStudentUid">
+    <div id="cardLinkWaiting"></div>
+    <input id="editId">
+    <div id="editModal" class="modal-overlay"></div>
+    <input id="editName"><input id="editParentPhone"><input id="editPhone"><input id="editUid">
+    <select id="filterGroup"></select>
+    <div id="filterResultsCount"></div>
+    <div id="groupFilterSummary"></div>
+    <span id="readHint"></span>
+    <div id="resetModalOverlay"></div>
+    <input id="searchInput">
+    <span id="statGroups"></span>
+    <span id="statToday"></span>
+    <span id="statTotal"></span>
+    <tbody id="studentsBody"></tbody>
+    <button id="toggleReadBtn"></button>
+    <div id="transferModal" class="modal-overlay"></div>
+    <select id="transferNewGroup"></select>
+    <span id="transferOldGroup"></span>
+    <span id="transferStudentName"></span>
+    <input id="transferStudentUid">
+  </div>
 
   <script>
     function escapeHtml(str) {
@@ -436,27 +432,6 @@
       if (navR) navR.style.display = 'flex';
       if (navF) navF.style.display = 'flex';
       if (navL) navL.style.display = 'flex';
-    } else {
-      // ✅ Batch 21: القائمة الجانبية للمساعد لازم تعكس صلاحياته الفعلية في كل صفحة يزورها،
-      // مش لوحة التحكم بس — نفس منطق التفعيل المستخدم في assistant-dashboard.html
-      const navSt = document.getElementById('navStudents');
-      const navGr = document.getElementById('navGroups');
-      const navGd = document.getElementById('navGrades');
-      const navPay = document.getElementById('navPayments');
-      const navRep = document.getElementById('navReports');
-      const navMsg = document.getElementById('navMessages');
-      const navF = document.getElementById('navFinancial');
-      const navL = document.getElementById('navActivityLog');
-      const navA = document.getElementById('navManageAssistants');
-      if (navSt) navSt.style.display = assistantPermissions.view_students !== false ? 'flex' : 'none';
-      if (navGr) navGr.style.display = (assistantPermissions.manage_groups === true || assistantPermissions.manage_registration === true) ? 'flex' : 'none';
-      if (navGd) navGd.style.display = assistantPermissions.record_grades === true ? 'flex' : 'none';
-      if (navPay) navPay.style.display = assistantPermissions.record_payments === true ? 'flex' : 'none';
-      if (navRep) navRep.style.display = assistantPermissions.view_reports === true ? 'flex' : 'none';
-      if (navMsg) navMsg.style.display = (assistantPermissions.send_messages === true || assistantPermissions.manage_conversations === true) ? 'flex' : 'none';
-      if (navF) navF.style.display = assistantPermissions.view_financial === true ? 'flex' : 'none';
-      if (navL) navL.style.display = assistantPermissions.view_activity_log === true ? 'flex' : 'none';
-      if (navA) navA.style.display = assistantPermissions.view_staff === true ? 'flex' : 'none';
     }
     const canViewStudents = isAssistant ? (assistantPermissions.view_students !== false) : true;
     const canAddStudents = isAssistant ? (assistantPermissions.add_students === true) : true;
@@ -502,10 +477,6 @@
       setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
     }
 
-    // ✅ (طلب) اسم المجموعة -> بيانات المجموعة (فيها instructorNameId) — تُستخدم لتضييق "المجموعة" في فورم إضافة طالب على مجموعات المدرس المختار
-    let addStudentGroupsCache = [];
-    const isCenterAccountStudents = () => sessionStorage.getItem('isCenter') === 'true';
-
     async function loadGroups() {
       try {
         const headers = getAuthHeaders();
@@ -525,86 +496,20 @@
         const result = await response.json();
         if (result.success) {
           const groups = result.data || [];
-          window.__allGroupsCache = groups;
           const addSelect = document.getElementById('addGroup');
           const filterSelect = document.getElementById('filterGroup');
+          addSelect.innerHTML = '<option value="">-- اختر المجموعة --</option>';
           filterSelect.innerHTML = '<option value="ALL">📚 جميع المجموعات</option>';
           groups.forEach(g => {
+            const opt1 = document.createElement('option');
+            opt1.value = g; opt1.textContent = g;
+            addSelect.appendChild(opt1);
             const opt2 = document.createElement('option');
             opt2.value = g; opt2.textContent = g;
             filterSelect.appendChild(opt2);
           });
-
-          if (isCenterAccountStudents()) {
-            // ✅ لحسابات السنتر، "المجموعة" هنا تتقفل لحد ما يتم اختيار المدرس (loadInstructorsForAddStudent)
-            addSelect.innerHTML = '<option value="">-- اختر المدرس أولاً --</option>';
-            addSelect.disabled = true;
-          } else {
-            addSelect.innerHTML = '<option value="">-- اختر المجموعة --</option>';
-            addSelect.disabled = false;
-            groups.forEach(g => {
-              const opt1 = document.createElement('option');
-              opt1.value = g; opt1.textContent = g;
-              addSelect.appendChild(opt1);
-            });
-          }
         }
       } catch (error) { console.error('❌ خطأ في تحميل المجموعات:', error); }
-
-      if (isCenterAccountStudents()) {
-        await loadInstructorsForAddStudent();
-      }
-    }
-
-    // ✅ (طلب) لحسابات السنتر: تحميل قائمة المدرسين لفورم إضافة طالب، واختيار المدرس يحدد مجموعاته المتاحة
-    async function loadInstructorsForAddStudent() {
-      document.getElementById('addStudentInstructorField').style.display = 'block';
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const [instructorsRes, groupsRes] = await Promise.all([
-          fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', { method: 'POST', headers, body: JSON.stringify({ action: 'list' }) }),
-          fetch(PROJECT_URL + '/functions/v1/manage-group', { method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed' }) }),
-        ]);
-        const instructorsResult = await instructorsRes.json();
-        const groupsResult = await groupsRes.json();
-        addStudentGroupsCache = groupsResult.success ? (groupsResult.data || []) : [];
-
-        const select = document.getElementById('addStudentInstructor');
-        select.innerHTML = '<option value="">-- اختر المدرس --</option>';
-        if (instructorsResult.success) {
-          (instructorsResult.data || []).filter(n => n.is_active).forEach(n => {
-            const opt = document.createElement('option');
-            opt.value = n.id; opt.textContent = n.name;
-            select.appendChild(opt);
-          });
-        }
-      } catch (error) {
-        console.error('❌ خطأ في تحميل المدرسين:', error);
-      }
-    }
-
-    function onAddStudentInstructorChange() {
-      const instructorId = document.getElementById('addStudentInstructor').value;
-      const groupSelect = document.getElementById('addGroup');
-      if (!instructorId) {
-        groupSelect.innerHTML = '<option value="">-- اختر المدرس أولاً --</option>';
-        groupSelect.disabled = true;
-        return;
-      }
-      const matchingGroups = addStudentGroupsCache.filter(g => String(g.instructorNameId) === String(instructorId));
-      groupSelect.innerHTML = '<option value="">-- اختر المجموعة --</option>';
-      matchingGroups.forEach(g => {
-        const opt = document.createElement('option');
-        opt.value = g.name; opt.textContent = g.name;
-        groupSelect.appendChild(opt);
-      });
-      if (matchingGroups.length === 0) {
-        groupSelect.innerHTML = '<option value="">-- لا توجد مجموعات مربوطة بهذا المدرس --</option>';
-        groupSelect.disabled = true;
-      } else {
-        groupSelect.disabled = false;
-      }
     }
 
     // ✅ عدد الطلاب اللي حضروا فعلياً النهاردة (كانت "0" ثابتة قبل كده لأن مفيش كود بيحدّثها)
@@ -622,6 +527,8 @@
           const filtered = (filterGroup && filterGroup !== 'ALL')
             ? records.filter(r => r.group_name === filterGroup)
             : records;
+          document.getElementById('statToday').textContent = filtered.length;
+
           const summaryEl = document.getElementById('groupFilterSummary');
           if (summaryEl) {
             const attendanceLabel = filterGroup === 'ALL'
@@ -637,64 +544,10 @@
 
     let studentsLoadToken = 0; // ✅ حماية من تعارض الطلبات
 
-    // ✅ (طلب) فلترة حسب المدرس (وضع السنتر بس): اسم المجموعة -> instructorNameId
-    let filterGroupInstructorMap = {};
-
-    async function loadFilterInstructors() {
-      if (sessionStorage.getItem('isCenter') !== 'true') return;
-      document.getElementById('filterInstructor').style.display = '';
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const [instructorsRes, groupsRes] = await Promise.all([
-          fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', { method: 'POST', headers, body: JSON.stringify({ action: 'list' }) }),
-          fetch(PROJECT_URL + '/functions/v1/manage-group', { method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed' }) }),
-        ]);
-        const instructorsResult = await instructorsRes.json();
-        const groupsResult = await groupsRes.json();
-        filterGroupInstructorMap = {};
-        if (groupsResult.success) {
-          (groupsResult.data || []).forEach(g => { if (g.instructorNameId) filterGroupInstructorMap[g.name] = String(g.instructorNameId); });
-        }
-        const select = document.getElementById('filterInstructor');
-        select.innerHTML = '<option value="">-- كل المدرسين --</option>';
-        if (instructorsResult.success) {
-          (instructorsResult.data || []).filter(n => n.is_active).forEach(n => {
-            const opt = document.createElement('option');
-            opt.value = n.id; opt.textContent = n.name;
-            select.appendChild(opt);
-          });
-        }
-      } catch (error) { console.error('❌ خطأ في تحميل فلتر المدرسين:', error); }
-    }
-
-    // ✅ اختيار مدرس يضيّق قائمة "المجموعة" على مجموعاته بس (نفس أسلوب messages.html/dashboard.html)
-    function onFilterInstructorChange() {
-      const filterValue = document.getElementById('filterInstructor').value;
-      const groupSelect = document.getElementById('filterGroup');
-      let visibleCount = 0;
-      let firstVisibleValue = '';
-      Array.from(groupSelect.options).forEach(opt => {
-        if (opt.value === 'ALL') { opt.hidden = false; return; } // "كل المجموعات" يفضل ظاهر دايماً
-        const matches = !filterValue || filterGroupInstructorMap[opt.value] === filterValue;
-        opt.hidden = !matches;
-        if (matches) { visibleCount++; if (!firstVisibleValue) firstVisibleValue = opt.value; }
-      });
-      const currentValue = groupSelect.value;
-      if (currentValue !== 'ALL' && filterValue && filterGroupInstructorMap[currentValue] !== filterValue) {
-        groupSelect.value = visibleCount === 1 ? firstVisibleValue : 'ALL';
-      }
-      loadStudents();
-    }
-
     async function loadStudents() {
       const myLoadToken = ++studentsLoadToken;
       const filterGroup = document.getElementById('filterGroup').value;
-      // ✅ (طلب) لو الفلتر لسه على "كل المجموعات" ومحدد مدرس، نقصر القائمة على طلاب مجموعاته بس
-      const filterInstructorEl = document.getElementById('filterInstructor');
-      const filterInstructor = filterInstructorEl ? filterInstructorEl.value : '';
       const tbody = document.getElementById('studentsBody');
-      closeAllActionMenus(); // ✅ نتأكد إن أي قائمة "⋮" مفتوحة (ومنقولة لـ document.body) ترجع مكانها الأصلي قبل استبدال الصفوف
       tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>جاري التحميل...</td></tr>`;
       try {
         const headers = getAuthHeaders();
@@ -716,10 +569,9 @@
 
         const result = await response.json();
         if (result.success) {
-          let students = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
-          if (filterGroup === 'ALL' && filterInstructor) {
-            students = students.filter(s => filterGroupInstructorMap[s.group_name] === filterInstructor);
-          }
+          const students = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+          document.getElementById('statTotal').textContent = students.length;
+          document.getElementById('statGroups').textContent = [...new Set(students.map(s => s.group_name))].length;
           loadTodayAttendanceCount(filterGroup);
 
           const summaryEl = document.getElementById('groupFilterSummary');
@@ -734,28 +586,14 @@
             return;
           }
           let html = '';
-          students.forEach((s, idx) => {
-            // ✅ (طلب) تنظيم الإجراءات: الأساسيين (تفاصيل / تعديل) ظاهرين دايماً، والباقي (كتير عددهم) في قائمة "⋮"
-            const menuId = 'rowMenu_' + idx;
-            let primaryHtml = `<a class="btn btn-outline btn-sm" href="student-details.html?uid=${encodeURIComponent(s.uid)}&name=${encodeURIComponent(s.name)}&group=${encodeURIComponent(s.group_name)}" title="عرض التفاصيل ومخطط النمو"><i class="fas fa-chart-line"></i></a>`;
-            if (canEditStudents) primaryHtml += `<button class="btn btn-warning btn-sm" onclick="openEditModal('${s.id}')" title="تعديل"><i class="fas fa-edit"></i></button>`;
-
-            let menuItems = '';
-            if (canEditStudents) menuItems += `<button onclick="closeAllActionMenus();openTransferModal('${s.uid}', '${escapeHtml(s.name)}', '${escapeHtml(s.group_name)}')"><i class="fas fa-right-left"></i> نقل لمجموعة تانية</button>`;
-            if (canEditStudents && sessionStorage.getItem('isCenter') === 'true') menuItems += `<button onclick="closeAllActionMenus();openGroupLinksModal('${s.uid}', '${escapeAttr(s.name)}', '${escapeAttr(s.group_name)}')"><i class="fas fa-link"></i> مجموعات إضافية</button>`;
-            if (canEditStudents) menuItems += `<button onclick="closeAllActionMenus();openCardLinkModal('${s.uid}', '${escapeAttr(s.name)}')"><i class="fas fa-id-card"></i> ربط كارت RFID</button>`;
-            if (canResetParentPassword) menuItems += `<button onclick="closeAllActionMenus();resetParentPassword('${s.uid}', '${escapeAttr(s.name)}')"><i class="fas fa-key"></i> كلمة مرور ولي الأمر</button>`;
-            if (canResetParentPassword) menuItems += `<button onclick="closeAllActionMenus();resetStudentPassword('${s.uid}', '${escapeAttr(s.name)}')"><i class="fas fa-key"></i> كلمة مرور الطالب</button>`;
-            if (canDeleteStudents) menuItems += `<button class="danger" onclick="closeAllActionMenus();archiveStudent('${s.id}', '${escapeAttr(s.name)}')"><i class="fas fa-box-archive"></i> أرشفة</button>`;
-
-            let actionsHtml = `<div class="row-actions">${primaryHtml}`;
-            if (menuItems) {
-              actionsHtml += `<div class="action-menu">
-                <button class="btn btn-ghost btn-sm" onclick="toggleActionMenu(event, '${menuId}')" title="مزيد من الإجراءات"><i class="fas fa-ellipsis-vertical"></i></button>
-                <div class="action-menu-dropdown" id="${menuId}">${menuItems}</div>
-              </div>`;
-            }
-            actionsHtml += `</div>`;
+          students.forEach(s => {
+            let actionsHtml = '';
+            actionsHtml += `<a class="btn btn-outline btn-sm" href="student-details.html?uid=${encodeURIComponent(s.uid)}&name=${encodeURIComponent(s.name)}&group=${encodeURIComponent(s.group_name)}" title="عرض التفاصيل ومخطط النمو"><i class="fas fa-chart-line"></i></a>`;
+            if (canEditStudents) actionsHtml += `<button class="btn btn-warning btn-sm" onclick="openEditModal('${s.id}')" title="تعديل"><i class="fas fa-edit"></i></button>`;
+            if (canEditStudents) actionsHtml += `<button class="btn btn-info btn-sm" onclick="openTransferModal('${s.uid}', '${escapeHtml(s.name)}', '${escapeHtml(s.group_name)}')" title="نقل لمجموعة تانية"><i class="fas fa-right-left"></i></button>`;
+            if (canEditStudents) actionsHtml += `<button class="btn btn-info btn-sm" onclick="openCardLinkModal('${s.uid}', '${escapeAttr(s.name)}')" title="ربط كارت RFID"><i class="fas fa-id-card"></i></button>`;
+            if (canDeleteStudents) actionsHtml += `<button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}', '${escapeAttr(s.name)}')" title="حذف"><i class="fas fa-trash"></i></button>`;
+            if (canResetParentPassword) actionsHtml += `<button class="btn btn-info btn-sm" onclick="resetParentPassword('${s.uid}', '${escapeAttr(s.name)}')" title="إعادة تعيين كلمة مرور ولي الأمر"><i class="fas fa-key"></i></button>`;
             if (!canEditStudents && !canDeleteStudents && !canResetParentPassword) actionsHtml = `<span style="color:var(--gray-400);font-size:12px;">🔒 عرض فقط</span>`;
             html += `<tr><td><span class="uid-tag">${escapeHtml(s.uid)}</span></td><td><strong>${escapeHtml(s.name)}</strong></td><td>${escapeHtml(s.phone) || '—'}</td><td>${escapeHtml(s.parent_phone) || '—'}</td><td><span style="background:var(--gray-100);padding:2px 12px;border-radius:12px;font-size:12px;">${escapeHtml(s.group_name)}</span></td><td style="text-align:center;">${actionsHtml}</td></tr>`;
           });
@@ -763,65 +601,6 @@
         } else { showToast('❌ ' + result.message, 'error'); }
       } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل تحميل البيانات', 'error'); }
     }
-
-    // ✅ (طلب) قائمة "⋮" لكل صف — بنستخدم position:fixed محسوبة بالـ JS عشان القائمة متتقصّش
-    // جوه .table-wrapper اللي بقى ليه max-height + overflow-y:auto (تحسين سابق على الصفحة)
-    // ✅ (إصلاح) القائمة كانت جوه .card اللي بيعمل transform على :hover، وده بيخلي .card نفسها
-    // هي الـ containing block لأي عنصر position:fixed جواها (تحديد CSS)، فالإحداثيات كانت بتتحسب
-    // غلط. الحل: ننقل القائمة فعلياً لـ document.body وقت الفتح، ونرجعها لمكانها الأصلي وقت القفل
-    // عشان لو الصفوف اتعاد رسمها (tbody.innerHTML) متفضلش نسخة يتيمة معلقة في الـ body.
-    function closeAllActionMenus() {
-      document.querySelectorAll('.action-menu-dropdown.open').forEach(el => {
-        el.classList.remove('open');
-        if (el._originalParent) {
-          el._originalParent.insertBefore(el, el._originalNextSibling || null);
-          el._originalParent = null;
-          el._originalNextSibling = null;
-        }
-      });
-    }
-
-    // ✅ (طلب) تتمركز فعلياً منبثقة من زرار "⋮" نفسه — نفس أسلوب positionNotifPanel المستخدم في جرس
-    // الإشعارات: نحاذي حافة القائمة اليمنى مع حافة الزرار اليمنى (مناسب لصفحة RTL) بدل الحافة الشمال
-    const ACTION_MENU_MARGIN = 10;
-    function toggleActionMenu(event, menuId) {
-      event.stopPropagation();
-      const menu = document.getElementById(menuId);
-      const isOpen = menu.classList.contains('open');
-      closeAllActionMenus();
-      if (isOpen) return;
-      const btnRect = event.currentTarget.getBoundingClientRect();
-      // ✅ ننقل القائمة لـ document.body قبل قياس عرضها وتموضعها، عشان تتحرر من أي ancestor
-      // بيعمل transform (زي .card:hover) ممكن يغيّر containing block بتاعها كعنصر fixed
-      menu._originalParent = menu.parentNode;
-      menu._originalNextSibling = menu.nextSibling;
-      document.body.appendChild(menu);
-      menu.classList.add('open');
-      const menuWidth = menu.offsetWidth || 220;
-      let left = btnRect.right - menuWidth;
-      if (left < ACTION_MENU_MARGIN) left = ACTION_MENU_MARGIN;
-      if (left + menuWidth > window.innerWidth - ACTION_MENU_MARGIN) left = window.innerWidth - ACTION_MENU_MARGIN - menuWidth;
-      menu.style.left = left + 'px';
-      menu.style.right = 'auto';
-      // ✅ (طلب) لو مفيش مساحة كفاية تحت الزرار (قرب آخر الصفحة)، افتح القائمة لفوق بدل ما تتقص/تختفي
-      const menuHeight = menu.offsetHeight || 200;
-      const spaceBelow = window.innerHeight - btnRect.bottom;
-      let top;
-      if (spaceBelow < menuHeight + ACTION_MENU_MARGIN && btnRect.top > menuHeight + ACTION_MENU_MARGIN) {
-        top = btnRect.top - menuHeight - 4;
-      } else {
-        top = btnRect.bottom + 4;
-      }
-      if (top < ACTION_MENU_MARGIN) top = ACTION_MENU_MARGIN;
-      menu.style.top = top + 'px';
-    }
-
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.action-menu')) closeAllActionMenus();
-    });
-    document.querySelector('.table-wrapper')?.addEventListener('scroll', closeAllActionMenus);
-    window.addEventListener('scroll', closeAllActionMenus, true);
-    window.addEventListener('resize', closeAllActionMenus);
 
     async function submitStudent() {
       if (!canAddStudents) { showToast('⛔ ليس لديك صلاحية لإضافة طلاب', 'error'); return; }
@@ -831,10 +610,6 @@
       const phone = document.getElementById('addPhone').value.trim();
       const parentPhone = document.getElementById('addParentPhone').value.trim();
 
-      // ✅ (طلب) لحسابات السنتر: لازم يكون فيه مدرس مختار قبل ما يتقدر يحدد مجموعة الطالب
-      if (isCenterAccountStudents() && !document.getElementById('addStudentInstructor').value) {
-        showToast('⚠️ اختر المدرس أولاً', 'warning'); return;
-      }
       if (!group) { showToast('⚠️ اختر المجموعة', 'warning'); return; }
       if (!uid) { showToast('⚠️ أدخل UID الطالب', 'warning'); return; }
       if (!name) { showToast('⚠️ أدخل اسم الطالب', 'warning'); return; }
@@ -982,93 +757,6 @@
       document.getElementById('transferModal').classList.remove('open');
     }
 
-    // ============================================
-    // ✅ Aug 2026 (Phase I): ربط طالب بمجموعات إضافية (تعدد المواد/المدرسين) — حسابات السنتر بس
-    // ============================================
-    async function openGroupLinksModal(studentUid, studentName, primaryGroup) {
-      document.getElementById('groupLinksStudentUid').value = studentUid;
-      document.getElementById('groupLinksStudentName').textContent = studentName;
-      document.getElementById('groupLinksPrimaryGroup').textContent = primaryGroup;
-      document.getElementById('groupLinksModal').classList.add('open');
-
-      const filterGroupOptions = document.getElementById('filterGroup').innerHTML;
-      const select = document.getElementById('groupLinksNewGroupSelect');
-      select.innerHTML = filterGroupOptions.replace('<option value="ALL">📚 جميع المجموعات</option>', '');
-      Array.from(select.options).forEach(opt => { if (opt.value === primaryGroup) opt.remove(); });
-
-      await loadGroupLinksExisting(studentUid);
-    }
-
-    function closeGroupLinksModal() {
-      document.getElementById('groupLinksModal').classList.remove('open');
-    }
-
-    async function loadGroupLinksExisting(studentUid) {
-      const container = document.getElementById('groupLinksExistingList');
-      container.innerHTML = '<p style="font-size:12.5px;color:var(--gray-400);">جاري التحميل...</p>';
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
-          method: 'POST', headers, body: JSON.stringify({ action: 'listStudentGroupLinks', studentUid })
-        });
-        const result = await response.json();
-        const links = result.success ? (result.data || []) : [];
-        if (links.length === 0) {
-          container.innerHTML = '<p style="font-size:12.5px;color:var(--gray-400);">لا توجد مجموعات إضافية مربوطة حالياً</p>';
-          return;
-        }
-        container.innerHTML = links.map(l => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--gray-50);border-radius:8px;margin-bottom:6px;">
-            <span style="font-size:13px;color:var(--gray-700);">📁 ${escapeHtml(l.group_name)}</span>
-            <button class="btn btn-danger btn-sm" onclick="confirmUnlinkStudentFromGroup(${l.id}, '${escapeAttr(studentUid)}')" title="إلغاء الربط"><i class="fas fa-times"></i></button>
-          </div>
-        `).join('');
-      } catch (error) {
-        console.error('❌ خطأ في تحميل المجموعات الإضافية:', error);
-        container.innerHTML = '<p style="font-size:12.5px;color:var(--danger);">تعذر تحميل القائمة</p>';
-      }
-    }
-
-    async function confirmLinkStudentToGroup() {
-      const studentUid = document.getElementById('groupLinksStudentUid').value;
-      const groupName = document.getElementById('groupLinksNewGroupSelect').value;
-      if (!groupName) { showToast('⚠️ اختر مجموعة أولاً', 'warning'); return; }
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
-          method: 'POST', headers, body: JSON.stringify({ action: 'linkStudentToGroup', studentUid, groupName })
-        });
-        const result = await response.json();
-        if (result.success) {
-          showToast('✅ ' + result.message, 'success');
-          await loadGroupLinksExisting(studentUid);
-        } else { showToast('❌ ' + result.message, 'error'); }
-      } catch (error) {
-        console.error('❌ خطأ:', error);
-        showToast('❌ فشل ربط المجموعة', 'error');
-      }
-    }
-
-    async function confirmUnlinkStudentFromGroup(linkId, studentUid) {
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
-          method: 'POST', headers, body: JSON.stringify({ action: 'unlinkStudentFromGroup', linkId })
-        });
-        const result = await response.json();
-        if (result.success) {
-          showToast('✅ ' + result.message, 'success');
-          await loadGroupLinksExisting(studentUid);
-        } else { showToast('❌ ' + result.message, 'error'); }
-      } catch (error) {
-        console.error('❌ خطأ:', error);
-        showToast('❌ فشل إلغاء الربط', 'error');
-      }
-    }
-
     let cardLinkPollTimer = null;
 
     function openCardLinkModal(studentUid, studentName) {
@@ -1180,12 +868,10 @@
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
-        // ✅ (باج قديم اتصلّح): كانت بتنادي على /reset-parent-password اللي مش موجودة أصلاً كدالة —
-        // نفس نمط الباج اللي اتصلّح قبل كده في admin-teachers.html — الصح هو manage-password-reset بـ action: 'parent'
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-password-reset', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/reset-parent-password', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ action: 'parent', studentUid })
+          body: JSON.stringify({ clientId, studentUid })
         });
         if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
         const result = await response.json();
@@ -1200,35 +886,9 @@
       }
     }
 
-    // ✅ (طلب) إعادة تعيين كلمة مرور الطالب نفسه (مش ولي الأمر) — هيدخل بكود الكارت (UID) كباسورد أول مرة تاني
-    async function resetStudentPassword(studentUid, studentName) {
-      if (!canResetParentPassword) { showToast('⛔ ليس لديك صلاحية لإعادة تعيين كلمة مرور الطالب', 'error'); return; }
-      if (!(await customConfirm(`هل تريد إعادة تعيين كلمة مرور الطالب "${studentName}"؟ هيدخل بكود الكارت (UID) كباسورد أول مرة، وهيتطلب منه يغيّرها بعدها.`, {danger:false}))) return;
-
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-password-reset', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify({ action: 'student', studentUid })
-        });
-        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
-        const result = await response.json();
-        if (result.success) {
-          showToast('✅ ' + result.message, 'success');
-        } else {
-          showToast('❌ ' + result.message, 'error');
-        }
-      } catch (error) {
-        console.error('❌ خطأ في إعادة تعيين كلمة مرور الطالب:', error);
-        showToast('❌ فشل إعادة تعيين كلمة المرور: ' + error.message, 'error');
-      }
-    }
-
-    async function archiveStudent(studentId, studentName) {
-      if (!canDeleteStudents) { showToast('⛔ ليس لديك صلاحية لأرشفة الطلاب', 'error'); return; }
-      if (!(await customConfirm(`📦 هل أنت متأكد من أرشفة الطالب "${studentName}"؟ بياناته (درجاته وحضوره ومدفوعاته) هتفضل محفوظة، وتقدر تسترجعه في أي وقت من "الطلاب المؤرشفون".`))) return;
+    async function deleteStudent(studentId, studentName) {
+      if (!canDeleteStudents) { showToast('⛔ ليس لديك صلاحية لحذف الطلاب', 'error'); return; }
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف الطالب "${studentName}"؟ هذا الإجراء لا يمكن التراجع عنه!`))) return;
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
@@ -1236,7 +896,7 @@
         const response = await fetch(PROJECT_URL + '/functions/v1/manage-student', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ action: 'archive', studentId })
+          body: JSON.stringify({ action: 'delete', studentId, assistantId, assistantName })
         });
 
         if (response.status === 401) {
@@ -1247,80 +907,7 @@
         const result = await response.json();
         if (result.success) { showToast('✅ ' + result.message, 'success'); loadStudents(); }
         else { showToast('❌ ' + result.message, 'error'); }
-      } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشلت الأرشفة', 'error'); }
-    }
-
-    // ============================================
-    // ✅ الطلاب المؤرشفون — استرجاع أو حذف نهائي
-    // ============================================
-    async function toggleArchivedPanel() {
-      const panel = document.getElementById('archivedStudentsPanel');
-      const isHidden = panel.style.display === 'none' || !panel.style.display;
-      panel.style.display = isHidden ? 'block' : 'none';
-      if (isHidden) await loadArchivedStudents();
-    }
-
-    async function loadArchivedStudents() {
-      const container = document.getElementById('archivedStudentsList');
-      container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin"></i></div>';
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-students', {
-          method: 'POST', headers, body: JSON.stringify({ clientId, includeArchived: true })
-        });
-        const result = await response.json();
-        if (!result.success) { container.innerHTML = '<p style="color:var(--danger);">تعذر تحميل الأرشيف</p>'; return; }
-
-        const archived = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
-        if (archived.length === 0) {
-          container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;padding:16px;">مفيش طلاب مؤرشفين حالياً.</p>';
-          return;
-        }
-        container.innerHTML = archived.map(s => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--gray-50);border-radius:10px;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
-            <div>
-              <strong>${escapeHtml(s.name)}</strong>
-              <span style="font-size:12px;color:var(--gray-500);"> — ${escapeHtml(s.group_name)} — UID: ${escapeHtml(s.uid)}</span>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <button class="btn btn-success btn-sm" onclick="unarchiveStudent('${s.id}', '${escapeAttr(s.name)}')"><i class="fas fa-rotate-left"></i> استرجاع</button>
-              <button class="btn btn-danger btn-sm" onclick="permanentlyDeleteStudent('${s.id}', '${escapeAttr(s.name)}')"><i class="fas fa-trash"></i> حذف نهائي</button>
-            </div>
-          </div>
-        `).join('');
-      } catch (error) {
-        console.error('❌ خطأ في تحميل الأرشيف:', error);
-        container.innerHTML = '<p style="color:var(--danger);">تعذر تحميل الأرشيف</p>';
-      }
-    }
-
-    async function unarchiveStudent(studentId, studentName) {
-      if (!(await customConfirm(`هل تريد استرجاع الطالب "${studentName}"؟`))) return;
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-student', {
-          method: 'POST', headers, body: JSON.stringify({ action: 'unarchive', studentId })
-        });
-        const result = await response.json();
-        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
-        if (result.success) { await loadArchivedStudents(); await loadStudents(); }
-      } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل الاسترجاع', 'error'); }
-    }
-
-    async function permanentlyDeleteStudent(studentId, studentName) {
-      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف الطالب "${studentName}" نهائياً؟ ده هيمسح بياناته بالكامل (درجات، حضور، مدفوعات) ومفيش رجوع بعد كده!`))) return;
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-student', {
-          method: 'POST', headers, body: JSON.stringify({ action: 'delete', studentId, assistantId, assistantName })
-        });
-        const result = await response.json();
-        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
-        if (result.success) await loadArchivedStudents();
-      } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل الحذف النهائي', 'error'); }
+      } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل حذف الطالب', 'error'); }
     }
 
     async function logout() {
@@ -1937,12 +1524,559 @@ async function markAllRead() {
       }
     }
 
+    // ✅ studentUid بييجي عن طريق رابط الصفحة، مثلاً: student-details.html?uid=ABC123
+    function getStudentUidFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('uid');
+    }
+
+    // ✅ بيانات آخر تحميل ناجح — تُستخدم في تجهيز التقرير القابل للطباعة من غير إعادة نداء السيرفر
+    let lastLoadedGrades = [];
+    let lastLoadedPayments = [];
+    let lastLoadedAttendance = [];
+    let lastLoadedBooks = [];
+    let currentStudentGroupFilter = null; // ✅ (طلب) فلتر المجموعة المختارة — دايمًا مجموعة محددة، مفيش خيار "الكل"
+    let studentGroupsList = []; // ✅ (طلب) كل المجموعات اللي الطالب فيها، مش بس أول مجموعة دخلها
+    let studentInfoCache = {};
+
+    async function loadStudentDetails() {
+      const uid = getStudentUidFromUrl();
+      if (!uid) {
+        showToast('⚠️ مفيش طالب محدد', 'error');
+        window.location.href = 'students.html';
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        // ✅ نداء واحد بس بدل 3 طلبات منفصلة — نفس البيانات، أسرع للمستخدم
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-full-profile', {
+          method: 'POST', headers, body: JSON.stringify({ studentUid: uid })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة'); return;
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showToast('❌ ' + result.message, 'error');
+          document.getElementById('studentDetailsLoading').innerHTML = '<p style="color:var(--danger);">❌ ' + escapeHtml(result.message) + '</p>';
+          return;
+        }
+
+        const grades = (result.data.grades || []).filter(g => !g.missed);
+        grades.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        lastLoadedGrades = grades;
+        lastLoadedPayments = result.data.payments || [];
+        lastLoadedAttendance = result.data.attendance || [];
+        lastLoadedBooks = result.data.books || [];
+        studentInfoCache = result.data.info || {};
+
+        setupStudentGroupFilter(studentInfoCache);
+        applyStudentGroupFilter();
+        document.getElementById('studentUidHeader').textContent = uid;
+
+        document.getElementById('studentDetailsLoading').style.display = 'none';
+        document.getElementById('studentDetailsContent').style.display = 'block';
+      } catch (error) {
+        console.error('❌ خطأ في تحميل بيانات الطالب:', error);
+        document.getElementById('studentDetailsLoading').innerHTML = '<p style="color:var(--danger);">❌ تعذر تحميل البيانات</p>';
+      }
+    }
+
+    // ✅ (طلب) لو الطالب مربوط بأكتر من مجموعة، بنبني قائمة الفلتر من كل المجموعات اللي هو فيها
+    // (الأساسية + المربوطة من الـbackend، زائد أي مجموعة ظهرت فعلياً في البيانات كاحتياط) وبنظهر
+    // كارت الفلتر بس لو فعلاً فيه أكتر من مجموعة — طالب في مجموعة واحدة مايتغيّرش شكل صفحته خالص.
+    function setupStudentGroupFilter(info) {
+      const fromInfo = Array.isArray(info.groups) ? info.groups : [];
+      const fromData = new Set();
+      [...lastLoadedGrades, ...lastLoadedPayments, ...lastLoadedAttendance, ...lastLoadedBooks].forEach(r => {
+        if (r.group_name) fromData.add(r.group_name);
+      });
+      const allGroups = Array.from(new Set([...fromInfo, ...fromData])).filter(Boolean);
+      studentGroupsList = allGroups.length > 0 ? allGroups : [info.group_name].filter(Boolean);
+
+      // ✅ Batch 24 (بند 3): لو المدرس جاي من صفحة الطلاب وهو فاتح فلتر مجموعة معيّنة (URL فيها
+      // ?group=...، زي ما students.html بتبعتها في رابط "عرض التفاصيل")، لازم الصفحة تفتح على
+      // نفس المجموعة دي مش على أول مجموعة في القايمة عشوائيًا — كانت المدفوعات (وباقي التابات)
+      // بتتعرض حسب أول مجموعة في allGroups بدل المجموعة اللي المدرس كان شايفها فعلاً
+      const urlGroup = new URLSearchParams(window.location.search).get('group');
+
+      const card = document.getElementById('studentGroupFilterCard');
+      const radiosWrap = document.getElementById('studentGroupFilterRadios');
+      if (allGroups.length <= 1) {
+        card.style.display = 'none';
+        currentStudentGroupFilter = allGroups[0] || info.group_name || null;
+        return;
+      }
+      card.style.display = '';
+      // ✅ (طلب) فلتر راديو بدل قائمة منسدلة، وبدون خيار "كل المجموعات" — لازم مجموعة واحدة محددة دايمًا
+      if (!currentStudentGroupFilter && urlGroup && allGroups.includes(urlGroup)) currentStudentGroupFilter = urlGroup;
+      if (!allGroups.includes(currentStudentGroupFilter)) currentStudentGroupFilter = allGroups[0];
+      radiosWrap.innerHTML = allGroups.map(g => `
+        <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;">
+          <input type="radio" name="studentGroupFilter" value="${escapeAttr(g)}" onchange="applyStudentGroupFilter()" ${g === currentStudentGroupFilter ? 'checked' : ''}>
+          ${escapeHtml(g)}
+        </label>
+      `).join('');
+    }
+
+    function applyStudentGroupFilter() {
+      const checked = document.querySelector('input[name="studentGroupFilter"]:checked');
+      if (checked) currentStudentGroupFilter = checked.value;
+      const byGroup = r => r.group_name === currentStudentGroupFilter;
+
+      const grades = lastLoadedGrades.filter(byGroup);
+      renderStudentHeader(grades);
+      renderGrowthChart(grades);
+      renderGradesTable(grades);
+      renderPaymentsTable(lastLoadedPayments.filter(byGroup));
+      renderAttendanceTable(lastLoadedAttendance.filter(byGroup));
+      renderBooksTable(lastLoadedBooks.filter(byGroup));
+    }
+
+    // ✅ (طلب) الطالب ممكن يكون مربوط بأكتر من مجموعة (تعدد المواد/المدرسين) — بدل ما بياناته
+    // تتعرض مخلوطة في جدول واحد، بنفصلها بعنوان فرعي لكل مجموعة عشان تبقى أسهل في القراءة.
+    // لو البيانات كلها من مجموعة واحدة (الحالة الأشيع) بيفضل الشكل زي ما هو من غير أي عنوان إضافي.
+    // (لو المستخدم فلتر على مجموعة معيّنة، الصفوف كلها من نفس المجموعة أصلاً فمش هيظهر أي عنوان)
+    function groupRowsByGroupName(rows) {
+      const groups = [];
+      const indexByName = {};
+      rows.forEach(r => {
+        const name = r.group_name || 'بدون مجموعة';
+        if (!(name in indexByName)) {
+          indexByName[name] = groups.length;
+          groups.push({ name, rows: [] });
+        }
+        groups[indexByName[name]].rows.push(r);
+      });
+      return groups;
+    }
+
+    function renderGroupSectionHeader(groupName, count, colspan) {
+      return `<tr><td colspan="${colspan}" style="background:var(--gray-50);font-weight:700;padding:8px 12px;color:var(--gray-700);">📁 ${escapeHtml(groupName)} <span style="font-weight:500;color:var(--gray-500);">(${count})</span></td></tr>`;
+    }
+
+    function renderPaymentsTable(payments) {
+      const tbody = document.getElementById('paymentsDetailBody');
+      let totalPaid = 0;
+      if (payments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-400);">لا توجد مدفوعات مسجّلة</td></tr>';
+      } else {
+        const rowTpl = p => {
+          totalPaid += Number(p.amount) || 0;
+          const isFull = p.amount >= p.total_amount;
+          const statusText = isFull ? '✅ مدفوع بالكامل' : (p.amount > 0 ? '🟡 دفعة جزئية' : '❌ غير مدفوع');
+          return `<tr><td>${escapeHtml(p.title)}</td><td>${p.amount} ج.م</td><td>${p.total_amount} ج.م</td><td>${statusText}</td></tr>`;
+        };
+        const groups = groupRowsByGroupName(payments);
+        if (groups.length > 1) {
+          tbody.innerHTML = groups.map(g => renderGroupSectionHeader(g.name, g.rows.length, 4) + g.rows.map(rowTpl).join('')).join('');
+        } else {
+          tbody.innerHTML = payments.map(rowTpl).join('');
+        }
+      }
+      document.getElementById('statTotalPaid').textContent = totalPaid.toLocaleString('ar-EG') + ' ج.م';
+    }
+
+    function renderBooksTable(books) {
+      const tbody = document.getElementById('booksDetailBody');
+      if (books.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-400);">لا توجد مذكرات مسجّلة</td></tr>';
+        document.getElementById('statBooksCount').textContent = '0';
+        return;
+      }
+
+      const rowTpl = book => {
+        if (book.missed) {
+          return `<tr><td>${escapeHtml(book.book_name || 'مذكرة')}</td><td>${book.price || 0} ج.م</td><td>0 ج.م</td><td>❌ غير مسدد</td><td>—</td><td>—</td></tr>`;
+        }
+        const date = new Date(book.paid_at || book.created_at);
+        const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+        const isFull = book.amount >= book.price;
+        const statusText = isFull ? '✅ مدفوع بالكامل' : (book.amount > 0 ? '🟡 دفعة جزئية' : '❌ غير مدفوع');
+        const fileLink = book.file_url ? `<a href="${escapeAttr(book.file_url)}" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-download"></i></a>` : '—';
+        return `<tr><td>${escapeHtml(book.book_name || 'مذكرة')}</td><td>${book.price || 0} ج.م</td><td>${book.amount || 0} ج.م</td><td>${statusText}</td><td>${dateStr}</td><td>${fileLink}</td></tr>`;
+      };
+      const groups = groupRowsByGroupName(books);
+      if (groups.length > 1) {
+        tbody.innerHTML = groups.map(g => renderGroupSectionHeader(g.name, g.rows.length, 6) + g.rows.map(rowTpl).join('')).join('');
+      } else {
+        tbody.innerHTML = books.map(rowTpl).join('');
+      }
+
+      document.getElementById('statBooksCount').textContent = books.filter(b => !b.missed).length;
+    }
+
+    function renderAttendanceTable(records) {
+      const tbody = document.getElementById('attendanceDetailBody');
+      if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--gray-400);">لا توجد سجلات حضور</td></tr>';
+        document.getElementById('statAttendancePercentDetail').textContent = '0%';
+        document.getElementById('statPresentDays').textContent = '0';
+        document.getElementById('statAbsentDays').textContent = '0';
+        return;
+      }
+
+      let presentCount = 0, absentCount = 0;
+      const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const rowTpl = r => {
+        const isPresent = r.status === 'present';
+        if (isPresent) presentCount++; else absentCount++;
+        const dateStr = new Date(r.date).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+        let timeStr = '—';
+        if (r.created_at) timeStr = new Date(r.created_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit' });
+        else if (r.time) timeStr = r.time;
+        return `<tr><td>${dateStr}</td><td>${timeStr}</td><td>${isPresent ? '✅ حاضر' : '❌ غائب'}</td></tr>`;
+      };
+      const groups = groupRowsByGroupName(sorted);
+      if (groups.length > 1) {
+        tbody.innerHTML = groups.map(g => renderGroupSectionHeader(g.name, g.rows.length, 3) + g.rows.map(rowTpl).join('')).join('');
+      } else {
+        tbody.innerHTML = sorted.map(rowTpl).join('');
+      }
+
+      const total = presentCount + absentCount;
+      document.getElementById('statAttendancePercentDetail').textContent = total > 0 ? Math.round((presentCount / total) * 100) + '%' : '0%';
+      document.getElementById('statPresentDays').textContent = presentCount;
+      document.getElementById('statAbsentDays').textContent = absentCount;
+    }
+
+    function switchStudentDetailTab(tabName) {
+      document.querySelectorAll('#studentDetailsContent .tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('#studentDetailsContent .tab[data-tab="' + tabName + '"]').classList.add('active');
+      document.querySelectorAll('#studentDetailsContent .tab-content').forEach(tc => tc.classList.remove('active'));
+      document.getElementById('studentTab-' + tabName).classList.add('active');
+    }
+
+    function renderStudentHeader(grades) {
+      const name = studentInfoCache.name || (grades.length > 0 ? grades[0].student_name : (new URLSearchParams(window.location.search).get('name') || 'طالب'));
+      // ✅ (طلب) لازم تتعرض كل المجموعات اللي الطالب فيها، مش بس أول مجموعة دخلها
+      const group = studentGroupsList.length > 1 ? studentGroupsList.join(' ، ') : (studentGroupsList[0] || new URLSearchParams(window.location.search).get('group') || '—');
+      document.getElementById('studentNameHeader').textContent = name;
+      document.getElementById('studentGroupHeader').textContent = group;
+      document.getElementById('studentAvatar').textContent = name.charAt(0) || '؟';
+      document.getElementById('statExamsTaken').textContent = grades.length;
+
+      if (grades.length > 0) {
+        const percents = grades.map(g => (g.max_score > 0 ? (g.score / g.max_score) * 100 : 0));
+        const totalScoreSum = grades.reduce((sum, g) => sum + Number(g.score), 0);
+        const totalMaxSum = grades.reduce((sum, g) => sum + Number(g.max_score || 0), 0);
+        const avg = totalMaxSum > 0 ? (totalScoreSum / totalMaxSum) * 100 : 0;
+        document.getElementById('statCurrentAvg').textContent = Math.round(avg) + '%';
+
+        const trendEl = document.getElementById('statTrend');
+        if (percents.length >= 2) {
+          const mid = Math.floor(percents.length / 2);
+          const firstHalfAvg = percents.slice(0, mid || 1).reduce((a, b) => a + b, 0) / (mid || 1);
+          const secondHalfAvg = percents.slice(mid).reduce((a, b) => a + b, 0) / (percents.length - mid);
+          const diff = secondHalfAvg - firstHalfAvg;
+          if (diff > 3) { trendEl.textContent = '📈 في ارتفاع'; trendEl.className = 'stat-value success'; }
+          else if (diff < -3) { trendEl.textContent = '📉 في انخفاض'; trendEl.className = 'stat-value danger'; }
+          else { trendEl.textContent = '➡️ مستقر'; trendEl.className = 'stat-value warning'; }
+        } else {
+          trendEl.textContent = '— محتاج امتحانين على الأقل';
+          trendEl.className = 'stat-value';
+        }
+      } else {
+        // ✅ (طلب) لازم متوسط المستوى واتجاهه يكونوا مرتبطين بالمجموعة المحددة فعلاً — لو
+        // المجموعة المختارة مفيهاش أي درجات، لازم يرجعوا للقيم الافتراضية بدل ما يفضلوا
+        // واقفين على أرقام آخر مجموعة كانت متحددة قبلها
+        document.getElementById('statCurrentAvg').textContent = '0%';
+        const trendEl = document.getElementById('statTrend');
+        trendEl.textContent = '—';
+        trendEl.className = 'stat-value';
+      }
+    }
+
+    function renderGrowthChart(grades) {
+      const container = document.getElementById('growthChartContainer');
+      if (grades.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;padding:30px;">مفيش درجات مسجّلة لسه لرسم المخطط.</p>';
+        return;
+      }
+
+      const percents = grades.map(g => g.max_score > 0 ? Math.round((g.score / g.max_score) * 100) : 0);
+      const width = Math.max(500, grades.length * 90);
+      const height = 220;
+      const padding = 40;
+      const chartW = width - padding * 2;
+      const chartH = height - padding * 2;
+
+      const points = percents.map((p, i) => {
+        const x = padding + (grades.length > 1 ? (i / (grades.length - 1)) * chartW : chartW / 2);
+        const y = padding + chartH - (p / 100) * chartH;
+        return { x, y, p, examName: grades[i].exam_name };
+      });
+
+      const pathD = points.map((pt, i) => (i === 0 ? 'M' : 'L') + pt.x + ',' + pt.y).join(' ');
+      const areaD = pathD + ` L${points[points.length - 1].x},${padding + chartH} L${points[0].x},${padding + chartH} Z`;
+
+      const gridLines = [0, 25, 50, 75, 100].map(v => {
+        const y = padding + chartH - (v / 100) * chartH;
+        return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="var(--gray-200)" stroke-width="1" />
+                <text x="${padding - 8}" y="${y + 4}" font-size="11" fill="var(--gray-400)" text-anchor="end">${v}%</text>`;
+      }).join('');
+
+      const pointCircles = points.map(pt => `
+        <circle cx="${pt.x}" cy="${pt.y}" r="5" fill="var(--primary)" stroke="#fff" stroke-width="2">
+          <title>${escapeHtml(pt.examName)}: ${pt.p}%</title>
+        </circle>
+        <text x="${pt.x}" y="${padding + chartH + 22}" font-size="10.5" fill="var(--gray-500)" text-anchor="middle">${escapeHtml(pt.examName.length > 10 ? pt.examName.slice(0, 9) + '…' : pt.examName)}</text>
+        <text x="${pt.x}" y="${pt.y - 12}" font-size="11" font-weight="700" fill="var(--gray-800)" text-anchor="middle">${pt.p}%</text>
+      `).join('');
+
+      container.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" style="width:100%;min-width:${width}px;height:${height}px;">
+          <defs>
+            <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="var(--primary)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          ${gridLines}
+          <path d="${areaD}" fill="url(#growthGradient)" />
+          <path d="${pathD}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+          ${pointCircles}
+        </svg>
+      `;
+    }
+
+    function renderGradesTable(grades) {
+      const tbody = document.getElementById('gradesDetailBody');
+      if (grades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-400);">لا توجد درجات مسجّلة</td></tr>';
+        return;
+      }
+      const sorted = [...grades].reverse();
+      const rowTpl = g => {
+        const percent = g.max_score > 0 ? Math.round((g.score / g.max_score) * 100) : 0;
+        const date = g.created_at ? new Date(g.created_at).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' }) : '—';
+        return `
+          <tr>
+            <td>${escapeHtml(g.exam_name)}</td>
+            <td>${g.score} / ${g.max_score}</td>
+            <td><strong>${percent}%</strong></td>
+            <td>${date}</td>
+          </tr>
+        `;
+      };
+      const groups = groupRowsByGroupName(sorted);
+      if (groups.length > 1) {
+        tbody.innerHTML = groups.map(g => renderGroupSectionHeader(g.name, g.rows.length, 4) + g.rows.map(rowTpl).join('')).join('');
+      } else {
+        tbody.innerHTML = sorted.map(rowTpl).join('');
+      }
+    }
+
+    // ✅ نسخة من مخطط النمو بألوان ثابتة (hex) بدل var(--...) — عشان الـiframe المستقل بتاع
+    // الطباعة مش محمّل فيه style.css فمتغيرات الـCSS هتفشل ويطلع المخطط فاضي/بلا لون
+    function buildGrowthChartSVGForPrint(grades) {
+      if (!grades || grades.length === 0) {
+        return '<p style="color:#9AA1AC;font-size:13px;text-align:center;padding:20px;">مفيش درجات مسجّلة لسه لرسم المخطط.</p>';
+      }
+      // ✅ بنقرأ اللون الأساسي المخصص من الصفحة الحالية (اللي محمّل فيها style.css وbranding.js)
+      // ونحطه كقيمة hex ثابتة جوه الـSVG، عشان يشتغل مع الـiframe المستقل بتاع الطباعة
+      const brandPrimary = (getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()) || '#F2B705';
+
+      const percents = grades.map(g => g.max_score > 0 ? Math.round((g.score / g.max_score) * 100) : 0);
+      const width = Math.max(500, grades.length * 90);
+      const height = 220;
+      const padding = 40;
+      const chartW = width - padding * 2;
+      const chartH = height - padding * 2;
+
+      const points = percents.map((p, i) => {
+        const x = padding + (grades.length > 1 ? (i / (grades.length - 1)) * chartW : chartW / 2);
+        const y = padding + chartH - (p / 100) * chartH;
+        return { x, y, p, examName: grades[i].exam_name };
+      });
+
+      const pathD = points.map((pt, i) => (i === 0 ? 'M' : 'L') + pt.x + ',' + pt.y).join(' ');
+      const areaD = pathD + ` L${points[points.length - 1].x},${padding + chartH} L${points[0].x},${padding + chartH} Z`;
+
+      const gridLines = [0, 25, 50, 75, 100].map(v => {
+        const y = padding + chartH - (v / 100) * chartH;
+        return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="#E1E4E9" stroke-width="1" />
+                <text x="${padding - 8}" y="${y + 4}" font-size="11" fill="#9AA1AC" text-anchor="end">${v}%</text>`;
+      }).join('');
+
+      const pointCircles = points.map(pt => `
+        <circle cx="${pt.x}" cy="${pt.y}" r="5" fill="${brandPrimary}" stroke="#fff" stroke-width="2" />
+        <text x="${pt.x}" y="${padding + chartH + 22}" font-size="10.5" fill="#6B7280" text-anchor="middle">${escapeHtml(pt.examName.length > 10 ? pt.examName.slice(0, 9) + '…' : pt.examName)}</text>
+        <text x="${pt.x}" y="${pt.y - 12}" font-size="11" font-weight="700" fill="#122544" text-anchor="middle">${pt.p}%</text>
+      `).join('');
+
+      return `
+        <svg viewBox="0 0 ${width} ${height}" style="width:100%;min-width:${width}px;height:${height}px;">
+          <defs>
+            <linearGradient id="growthGradientPrint" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${brandPrimary}" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="${brandPrimary}" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          ${gridLines}
+          <path d="${areaD}" fill="url(#growthGradientPrint)" />
+          <path d="${pathD}" fill="none" stroke="${brandPrimary}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+          ${pointCircles}
+        </svg>
+      `;
+    }
+
+    // ✅ نفس نمط downloadReport() في reports.html: إطار مخفي (iframe) + contentWindow.print()،
+    // مع نفس fallback المشاركة على Capacitor للموبايل
+    function printStudentReport() {
+      if (document.getElementById('studentDetailsContent').style.display === 'none') {
+        showToast('⚠️ استنى تحميل بيانات الطالب الأول', 'warning');
+        return;
+      }
+
+      try {
+        const name = document.getElementById('studentNameHeader').textContent || 'طالب';
+        const group = document.getElementById('studentGroupHeader').textContent || '—';
+        const uid = document.getElementById('studentUidHeader').textContent || '—';
+        const examsTaken = document.getElementById('statExamsTaken').textContent;
+        const currentAvg = document.getElementById('statCurrentAvg').textContent;
+        const trend = document.getElementById('statTrend').textContent;
+        const totalPaid = document.getElementById('statTotalPaid').textContent;
+        const attendancePercent = document.getElementById('statAttendancePercentDetail').textContent;
+        const presentDays = document.getElementById('statPresentDays').textContent;
+        const absentDays = document.getElementById('statAbsentDays').textContent;
+
+        const gradesRowsHtml = document.getElementById('gradesDetailBody').innerHTML;
+        const paymentsRowsHtml = document.getElementById('paymentsDetailBody').innerHTML;
+        const attendanceRowsHtml = document.getElementById('attendanceDetailBody').innerHTML;
+        const chartSvg = buildGrowthChartSVGForPrint(lastLoadedGrades);
+        const brandPrimaryForPrint = (getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()) || '#F2B705';
+
+        const printDate = new Date().toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo', year: 'numeric', month: 'long', day: 'numeric' });
+
+        var htmlContent = '<html dir="rtl">';
+        htmlContent += '<head><meta charset="UTF-8"><title>تقرير الطالب - ' + escapeHtml(name) + '</title>';
+        htmlContent += '<meta name="color-scheme" content="light">';
+        htmlContent += '<style>';
+        htmlContent += '@page { margin: 0.5cm; }';
+        htmlContent += 'html{color-scheme:light;}';
+        htmlContent += 'body{font-family:"IBM Plex Sans Arabic",sans-serif;padding:30px;direction:rtl;background:#ffffff;color:#1f2937;}';
+        htmlContent += 'h1{text-align:center;color:#122544;margin-bottom:4px;}';
+        htmlContent += '.sub{text-align:center;color:#6B7280;font-size:13px;margin-bottom:20px;}';
+        htmlContent += 'h3{color:#122544;border-bottom:2px solid ' + brandPrimaryForPrint + ';padding-bottom:6px;margin-top:28px;}';
+        htmlContent += '.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0;}';
+        htmlContent += '.stat-box{flex:1;min-width:140px;border:1px solid #E1E4E9;border-radius:8px;padding:12px;text-align:center;}';
+        htmlContent += '.stat-box .lbl{font-size:12px;color:#6B7280;margin-bottom:4px;}';
+        htmlContent += '.stat-box .val{font-size:18px;font-weight:700;color:#122544;}';
+        htmlContent += 'table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;background:#ffffff;}';
+        htmlContent += 'th{background:#f8fafc;border:1px solid #e2e8f0;padding:8px;text-align:right;font-weight:600;color:#1f2937;}';
+        htmlContent += 'td{border:1px solid #e2e8f0;padding:7px;color:#1f2937;}';
+        htmlContent += '.footer{text-align:center;font-size:11px;color:#94a3b8;margin-top:24px;}';
+        // ✅ Batch 20 (بند 4): نفس هيدر شعار المركز المستخدم في باقي أوراق الطباعة (reports.html
+        // وgrades.html وgroups.html) — توحيد شكل كل الأوراق القابلة للطباعة
+        htmlContent += '.rpt-print-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e2e8f0;}';
+        htmlContent += '.rpt-print-header img{height:46px;width:46px;object-fit:contain;border-radius:8px;}';
+        htmlContent += '.rpt-print-header h2{margin:0;font-size:19px;color:#1f2937;}';
+        htmlContent += '<\/style><\/head>';
+        htmlContent += '<body>';
+        var brandLogoUrlForPrint = sessionStorage.getItem('brandLogoUrl') || 'assets/logo-icon.svg';
+        htmlContent += '<div class="rpt-print-header"><img src="' + brandLogoUrlForPrint + '" alt="شعار" onerror="this.src=\'assets/logo-icon.svg\';"><h2>' + escapeHtml(teacherName) + '<\/h2><\/div>';
+        htmlContent += '<h1>تقرير الطالب — ' + escapeHtml(name) + '</h1>';
+        htmlContent += '<div class="sub">' + escapeHtml(group) + ' · UID: ' + escapeHtml(uid) + ' · مُعلم: ' + escapeHtml(teacherName) + ' · بتاريخ ' + printDate + '</div>';
+        htmlContent += '<div class="stats-row">';
+        htmlContent += '<div class="stat-box"><div class="lbl">امتحانات اتقدّم لها</div><div class="val">' + escapeHtml(examsTaken) + '</div></div>';
+        htmlContent += '<div class="stat-box"><div class="lbl">متوسط المستوى الحالي</div><div class="val">' + escapeHtml(currentAvg) + '</div></div>';
+        htmlContent += '<div class="stat-box"><div class="lbl">اتجاه المستوى</div><div class="val">' + escapeHtml(trend) + '</div></div>';
+        htmlContent += '</div>';
+        htmlContent += '<div class="stats-row">';
+        htmlContent += '<div class="stat-box"><div class="lbl">إجمالي المدفوع</div><div class="val">' + escapeHtml(totalPaid) + '</div></div>';
+        htmlContent += '<div class="stat-box"><div class="lbl">نسبة الحضور</div><div class="val">' + escapeHtml(attendancePercent) + '</div></div>';
+        htmlContent += '<div class="stat-box"><div class="lbl">أيام الحضور</div><div class="val">' + escapeHtml(presentDays) + '</div></div>';
+        htmlContent += '<div class="stat-box"><div class="lbl">مرات الغياب</div><div class="val">' + escapeHtml(absentDays) + '</div></div>';
+        htmlContent += '</div>';
+        htmlContent += '<h3>مخطط نمو المستوى</h3>';
+        htmlContent += chartSvg;
+        htmlContent += '<h3>تفاصيل الدرجات</h3>';
+        htmlContent += '<table><thead><tr><th>الامتحان</th><th>الدرجة</th><th>النسبة</th><th>التاريخ</th></tr></thead><tbody>' + gradesRowsHtml + '<\/tbody><\/table>';
+        htmlContent += '<h3>سجل المدفوعات</h3>';
+        htmlContent += '<table><thead><tr><th>البند</th><th>المدفوع</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody>' + paymentsRowsHtml + '<\/tbody><\/table>';
+        htmlContent += '<h3>سجل الحضور والغياب</h3>';
+        htmlContent += '<table><thead><tr><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody>' + attendanceRowsHtml + '<\/tbody><\/table>';
+        htmlContent += '<div class="footer">تم إنشاء هذا التقرير بواسطة نظام فَصلي بتاريخ ' + printDate + '</div>';
+        htmlContent += '<\/body><\/html>';
+
+        // ✅ في تطبيق الموبايل، الطباعة المباشرة مش مدعومة جوه الـWebView أصلاً،
+        // فبدل الطباعة بنحفظ التقرير كملف ونفتح قائمة المشاركة الأصلية للموبايل
+        const CapShare = window.Capacitor?.Plugins?.Share;
+        const CapFilesystem = window.Capacitor?.Plugins?.Filesystem;
+        if (window.Capacitor?.isNativePlatform?.() && CapShare && CapFilesystem) {
+          const fileName = 'تقرير-طالب-' + Date.now() + '.html';
+          CapFilesystem.writeFile({
+            path: fileName,
+            data: htmlContent,
+            directory: 'CACHE',
+            encoding: 'utf8',
+          }).then(function(result) {
+            return CapShare.share({
+              title: 'تقرير الطالب ' + name,
+              url: result.uri,
+              dialogTitle: 'مشاركة أو طباعة تقرير الطالب',
+            });
+          }).then(function() {
+            showToast('✅ افتح التقرير من قائمة المشاركة للطباعة أو الحفظ', 'success');
+          }).catch(function(e) {
+            console.error('❌ خطأ في مشاركة تقرير الطالب:', e);
+            showToast('❌ تعذرت مشاركة التقرير', 'error');
+          });
+          return;
+        }
+
+        // ✅ إطار مخفي (iframe) جوه نفس الصفحة ونطبع منه مباشرة — بتشتغل في كل مكان: متصفح، موبايل، سطح مكتب
+        const oldFrame = document.getElementById('studentPrintFrame');
+        if (oldFrame) oldFrame.remove();
+
+        const printFrame = document.createElement('iframe');
+        printFrame.id = 'studentPrintFrame';
+        printFrame.style.cssText = 'position:fixed;left:-9999px;top:0;width:0;height:0;border:0;';
+        document.body.appendChild(printFrame);
+
+        const frameDoc = printFrame.contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(htmlContent);
+        frameDoc.close();
+
+        printFrame.onload = function() {
+          setTimeout(function() {
+            try {
+              printFrame.contentWindow.focus();
+              printFrame.contentWindow.print();
+            } catch (e) {
+              console.error('❌ خطأ في الطباعة:', e);
+              showToast('❌ حدث خطأ في الطباعة', 'error');
+            }
+          }, 200);
+        };
+
+        showToast('✅ جاري فتح نافذة الطباعة', 'success');
+      } catch (error) {
+        console.error('❌ خطأ في تجهيز تقرير الطالب:', error);
+        showToast('❌ حدث خطأ في تجهيز التقرير', 'error');
+      }
+    }
+
+    // ✅ Batch 24 (بند 6): الضغط على إشعار (حضور/درجة/دفعة) من عند المدرس كان بيوصّل لصفحة
+    // الطالب على أول تبويب بس (الدرجات)، من غير ما يوجّه لتبويب الإشعار نفسه
+    function activateStudentDetailTabFromUrl() {
+      const tabName = new URLSearchParams(window.location.search).get('tab');
+      if (!tabName) return;
+      const tabBtn = document.querySelector('#studentDetailsContent .tab[data-tab="' + tabName + '"]');
+      if (tabBtn) switchStudentDetailTab(tabName);
+    }
+
     window.onload = function() {
-      applyPermissions();
-      loadGroups();
-      loadFilterInstructors();
-      loadStudents();
-      updateReaderStatus('idle');
+      loadStudentDetails().then(activateStudentDetailTabFromUrl);
     };
   </script>
   <script>

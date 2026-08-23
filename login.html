@@ -39,30 +39,28 @@
     overflow:hidden;
   }
 
-  /* ===================== الثلثين: صورة واحدة مائلة متغيّرة ===================== */
+  /* ===================== خلفية ملء الشاشة (صورة/فيديو) ===================== */
+  /* ✅ Batch 24 (بند 2): كانت الصورة/الفيديو بتتعرض كإطار مصغّر (78% من الشاشة) مايل ومقصوص
+     بحواف مدوّرة وظل وبردر — "كومة صور مكدّسة". اتشالت خاصية التصغير والميلان والحواف بالكامل،
+     وبقت الصورة/الفيديو بيغطّوا الشاشة بالكامل طولاً وعرضاً (100% × 100%، من غير أي تدوير أو
+     تصغير) مع الحفاظ على نسبة العرض إلى الارتفاع الأصلية بمنطق object-fit:cover */
+  /* ✅ (طلب): اتشال "الإطار" اللي كان حوالين الصورة/الفيديو بالكامل (الحد/المسافة الثابتة،
+     البردر الذهبي، الظل، والحواف المدوّرة) — الصورة/الفيديو دلوقتي بيغطّوا الشاشة بالكامل من
+     غير أي إطار حواليهم. اتحافظ على object-fit:contain عشان المحتوى يفضل ظاهر بالكامل ومتغيّر
+     حجمه تلقائي حسب حجم الشاشة (لابتوب / تابلت / موبايل) من غير أي قص أو خروج بره الشاشة. */
   #imageShowcase{
     position:fixed; inset:0; z-index:0; overflow:hidden;
-    background:transparent;
+    background:var(--indigo-deep);
   }
-  /* ✅ طبقتين وهميتين ثابتتين ورا الصورة الحقيقية، عشان يدّوا إحساس "كومة صور مكدّسة" زي المرجع */
-  #imageShowcase::before{
-    content:""; position:absolute; top:50%; left:50%;
-    width:70%; height:70%;
-    background:rgba(255,255,255,0.03);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:18px;
-    transform:translate(-58%,-42%) rotate(-13deg);
-    z-index:0;
-  }
-  #imageShowcase img{
-    position:absolute; top:50%; left:50%; z-index:1;
-    width:78%; height:78%;
-    border-radius:18px; box-shadow:0 40px 90px -20px rgba(0,0,0,0.7);
-    transform:translate(-50%,-50%) rotate(-6deg) scale(1);
+  #imageShowcase img,
+  #imageShowcase video{
+    position:absolute; inset:0; z-index:1;
+    width:100%; height:100%;
+    object-fit:contain;
     opacity:0; transition:opacity 1.4s ease;
-    border:1px solid rgba(255,255,255,0.1);
   }
-  #imageShowcase img.active{ opacity:1; }
+  #imageShowcase img.active,
+  #imageShowcase video.active{ opacity:1; }
   #imageShowcase::after{
     content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
     background:radial-gradient(circle at 30% 30%, rgba(242,183,5,0.08), transparent 60%);
@@ -216,7 +214,7 @@
     flex:0 0 auto; width:min(260px, 68%); aspect-ratio:4/3; scroll-snap-align:start;
     border-radius:12px; overflow:hidden; background:rgba(255,255,255,0.04); display:block;
   }
-  .login-ad-slide img{ width:100%; height:100%; display:block; }
+  .login-ad-slide img{ width:100%; height:100%; object-fit:cover; display:block; }
   .login-ads-arrow{
     position:absolute; top:50%; transform:translateY(-50%); z-index:3;
     width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.25);
@@ -264,14 +262,21 @@
   </div>
 
   <div class="hero-card extra-content">
-    <div class="tagline">إدارة دقيقة لفصلك، بلا فوضى</div>
+    <div class="tagline">إدارة دقيقة لسنترك، بلا فوضى</div>
     <div class="brand-copy">
       <h1>وداعاً لدفاتر الحضور والدرجات الورقية.</h1>
-      <p>فَصلي بيجمّعلك كل حاجة عن فصلك في مكان واحد — وبتوفّر وقتك عشان تركّز في التدريس، مش في الأوراق.</p>
+      <p>فَصلي بيجمّعلك كل حاجة عن سنترك في مكان واحد — وبتوفّر وقتك عشان تركّز في التدريس، مش في الأوراق.</p>
+      <!-- ✅ Batch 23 (بند 11): قائمة المميزات كانت 3 بنود بس (حضور/درجات/متابعة أولياء الأمور)
+           من أيام أول إصدار، ومكانتش بتعكس أي حاجة اتضافت بعد كده (كروت NFC، الاختبارات
+           الإلكترونية، فريق العمل بصلاحيات مفصّلة، المحادثات المباشرة مع أولياء الأمور، إدارة
+           سنتر بمدرسين متعددين). بقت 6 بنود بتغطي أهم المميزات الفعلية للنظام دلوقتي -->
       <ul class="features">
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> تسجيل الحضور والغياب في ثوانٍ</li>
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> درجات وتقارير تتحسب أوتوماتيك</li>
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> أولياء الأمور يتابعوا أولادهم لحظياً</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> تسجيل الحضور بكارت NFC في ثانية واحدة</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> اختبارات إلكترونية وتصحيح ودرجات أوتوماتيك</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> إدارة سنتر بمدرسين ومجموعات متعددة من حساب واحد</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> فريق عمل بصلاحيات مفصّلة تتحكم فيها إنت</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> محادثة مباشرة مع أولياء الأمور من غير واتساب</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> أولياء الأمور يتابعوا الدرجات والحضور والمدفوعات لحظياً</li>
       </ul>
     </div>
   </div>
@@ -294,9 +299,8 @@
     <p class="lede">ادخل بياناتك للمتابعة إلى حسابك</p>
 
     <div class="tabs" role="tablist" aria-label="نوع الحساب">
-      <button type="button" class="tab active" data-role="teacher" onclick="selectRole('teacher')" role="tab" aria-selected="true"><span class="tab-emoji">👨‍🏫</span> مدرس</button>
-      <button type="button" class="tab" data-role="assistant" onclick="selectRole('assistant')" role="tab" aria-selected="false"><span class="tab-emoji">👤</span> مساعد</button>
-      <button type="button" class="tab" data-role="parent" onclick="selectRole('parent')" role="tab" aria-selected="false"><span class="tab-emoji">👨‍👩‍👦</span> ولي أمر</button>
+      <button type="button" class="tab active" data-group="staff" onclick="selectGroup('staff')" role="tab" aria-selected="true"><span class="tab-emoji">👥</span> الطاقم (سنتر / مدرس / مساعد)</button>
+      <button type="button" class="tab" data-group="family" onclick="selectGroup('family')" role="tab" aria-selected="false"><span class="tab-emoji">👨‍👩‍👧</span> الأسرة (ولي أمر / طالب)</button>
     </div>
 
     <form id="loginForm" onsubmit="handleLogin(event)">
@@ -360,7 +364,7 @@
   // ============================================
   const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
 
-  let selectedRole = 'teacher';
+  let selectedGroup = 'staff';
   let systemContactInfo = {};
 
   async function loadContactInfo() {
@@ -399,26 +403,39 @@
       el.innerHTML = html;
 
       // ✅ تذييل "تم تصميم هذه المنصة بكل حب من..." بيتبني ديناميكياً من اسم ورقم واتساب المشرف الحقيقي
+      // ✅ (طلب) الماستر بقى يقدر يخفي النص ده بالكامل (login_credit_show)، أو يستبدله بنص
+      // مخصص كامل (login_credit_text) بدل الشكل الافتراضي — لو مفيش نص مخصص، يفضل السلوك
+      // الأصلي (مبني من admin_name/admin_whatsapp) زي ما هو
       const creditEl = document.getElementById('creditNote');
-      if (creditEl && systemContactInfo.admin_name) {
-        const adminLink = systemContactInfo.admin_whatsapp
-          ? `<a href="https://wa.me/${systemContactInfo.admin_whatsapp}" target="_blank" rel="noopener">${systemContactInfo.admin_name}</a>`
-          : systemContactInfo.admin_name;
-        creditEl.innerHTML = `تم تصميم هذه المنصة بكل حب من ${adminLink}`;
+      if (creditEl) {
+        if (systemContactInfo.login_credit_show === false) {
+          creditEl.style.display = 'none';
+        } else if (systemContactInfo.login_credit_text) {
+          // نص مخصص من الماستر — بيتحط كنص خام (مش HTML) تفاديًا لأي خطر حقن كود
+          creditEl.textContent = systemContactInfo.login_credit_text;
+        } else if (systemContactInfo.admin_name) {
+          const adminLink = systemContactInfo.admin_whatsapp
+            ? `<a href="https://wa.me/${systemContactInfo.admin_whatsapp}" target="_blank" rel="noopener">${systemContactInfo.admin_name}</a>`
+            : systemContactInfo.admin_name;
+          creditEl.innerHTML = `تم تصميم هذه المنصة بكل حب من ${adminLink}`;
+        }
       }
 
+      // ✅ (طلب) تحكم مستقل للماستر في إظهار/إخفاء القسم بالكامل، مش بس الاعتماد على وجود الروابط
       let anyCard = false;
-      if (systemContactInfo.desktop_download_url) {
-        const card = document.getElementById('desktopDownloadCard');
-        card.href = systemContactInfo.desktop_download_url;
-        card.style.display = 'flex';
-        anyCard = true;
-      }
-      if (systemContactInfo.mobile_app_url) {
-        const card = document.getElementById('mobileDownloadCard');
-        card.href = systemContactInfo.mobile_app_url;
-        card.style.display = 'flex';
-        anyCard = true;
+      if (systemContactInfo.show_download_section !== false) {
+        if (systemContactInfo.desktop_download_url) {
+          const card = document.getElementById('desktopDownloadCard');
+          card.href = systemContactInfo.desktop_download_url;
+          card.style.display = 'flex';
+          anyCard = true;
+        }
+        if (systemContactInfo.mobile_app_url) {
+          const card = document.getElementById('mobileDownloadCard');
+          card.href = systemContactInfo.mobile_app_url;
+          card.style.display = 'flex';
+          anyCard = true;
+        }
       }
       if (anyCard) document.getElementById('downloadCards').style.display = 'flex';
     } catch (e) { /* تجاهل - العناصر مش أساسية لتسجيل الدخول */ }
@@ -466,19 +483,33 @@
   }
   loadLoginAds();
 
-  // ✅ خلفية اللوحة المتحركة — لو الأدمن رفع صور فعلية للوحة التحكم من قسم الألبومات (كـ"خلفية")
+  // ✅ خلفية اللوحة المتحركة — لو الأدمن رفع صور أو فيديوهات فعلية من قسم الألبومات (كـ"خلفية")
   // لو مفيش صور خالص، الخلفية بتفضل تدرّج غامق عادي (الشكل الافتراضي) من غير أي مشكلة
+  function isVideoUrl(url) {
+    return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+  }
+
   function renderBgCollage(images) {
     if (!images.length) return;
     const container = document.getElementById('imageShowcase');
     let current = 0;
 
     const imgEls = images.map((src) => {
-      const img = document.createElement('img');
-      img.src = src;
-      img.alt = '';
-      container.appendChild(img);
-      return img;
+      let el;
+      if (isVideoUrl(src)) {
+        el = document.createElement('video');
+        el.src = src;
+        el.autoplay = true;
+        el.muted = true;
+        el.loop = true;
+        el.playsInline = true;
+      } else {
+        el = document.createElement('img');
+        el.src = src;
+        el.alt = '';
+      }
+      container.appendChild(el);
+      return el;
     });
 
     imgEls[0].classList.add('active');
@@ -488,7 +519,7 @@
       imgEls[current].classList.remove('active');
       current = (current + 1) % imgEls.length;
       imgEls[current].classList.add('active');
-    }, 3000);
+    }, 8000);
   }
 
   let loginAdsIndex = 0;
@@ -545,10 +576,10 @@
   // ============================================
   // اختيار الدور
   // ============================================
-  function selectRole(role) {
-    selectedRole = role;
+  function selectGroup(group) {
+    selectedGroup = group;
     document.querySelectorAll('.tab').forEach(btn => {
-      const active = btn.dataset.role === role;
+      const active = btn.dataset.group === group;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
@@ -558,21 +589,20 @@
     const usernameHint = document.getElementById('usernameHint');
     const passwordHint = document.getElementById('passwordHint');
 
-    if (role === 'teacher') {
-      usernameLabel.textContent = 'كود المدرس (Client ID)';
-      usernameInput.placeholder = 'مثال: teacher_001';
-      usernameHint.textContent = 'أدخل الكود الخاص بك من الإدارة';
-      passwordHint.innerHTML = 'لأول مرة، استخدم <strong>نفس الكود</strong> ككلمة مرور';
-    } else if (role === 'assistant') {
-      usernameLabel.textContent = 'اسم المستخدم';
-      usernameInput.placeholder = 'مثال: ahmed_assistant';
-      usernameHint.textContent = 'أدخل اسم المستخدم الذي أعطاك إياه المدرس';
-      passwordHint.innerHTML = 'استخدم كلمة المرور المؤقتة التي أعطاك إياها المدرس';
+    // ✅ النظام بيكتشف نوع الحساب بالظبط (سنتر/مدرس/مساعد أو ولي أمر/طالب) تلقائياً بعد إدخال البيانات،
+    // مش لازم تحددي بنفسك
+    if (group === 'staff') {
+      usernameLabel.textContent = 'كود الدخول';
+      usernameInput.placeholder = 'كود السنتر أو كود المدرس أو اسم مستخدم المساعد';
+      usernameInput.removeAttribute('dir');
+      usernameHint.textContent = 'أدخل الكود أو اسم المستخدم اللي معاكِ، والنظام هيتعرّف على نوع حسابك تلقائياً';
+      passwordHint.innerHTML = 'لأول مرة، استخدمي <strong>نفس الكود</strong> ككلمة مرور (أو الكلمة المؤقتة لو إنتِ مساعدة)';
     } else {
-      usernameLabel.textContent = 'رقم الهاتف';
-      usernameInput.placeholder = 'مثال: 01012345678';
-      usernameHint.textContent = 'أدخل رقم هاتفك المسجل لدى المدرس';
-      passwordHint.innerHTML = 'لأول مرة، استخدم <strong>نفس رقم الهاتف</strong> ككلمة مرور';
+      usernameLabel.textContent = 'رقم الهاتف أو كود الكارت';
+      usernameInput.placeholder = 'رقم هاتفك (ولي أمر) أو كود كارت ابنك (طالب)';
+      usernameInput.setAttribute('dir', 'ltr');
+      usernameHint.textContent = 'ولي الأمر: رقم الهاتف المسجّل. الطالب: كود الكارت — والنظام هيتعرّف على نوع حسابك تلقائياً';
+      passwordHint.innerHTML = 'لأول مرة، استخدمي <strong>نفس القيمة اللي كتبتيها فوق</strong> ككلمة مرور';
     }
 
     hideMessage();
@@ -595,11 +625,11 @@
   // رسالة المستخدم غير المسجل
   // ============================================
   function showUnregisteredMessage(role, username) {
-    let roleName = role === 'teacher' ? 'المدرس' : role === 'assistant' ? 'المساعد' : 'ولي الأمر';
-    let idName = role === 'teacher' ? 'كود' : role === 'assistant' ? 'اسم المستخدم' : 'رقم الهاتف';
+    let roleName = role === 'teacher' ? 'المدرس' : role === 'assistant' ? 'المساعد' : role === 'student' ? 'الطالب' : 'ولي الأمر';
+    let idName = role === 'teacher' ? 'كود' : role === 'assistant' ? 'اسم المستخدم' : role === 'student' ? 'كود الكارت' : 'رقم الهاتف';
     const contactLine = systemContactInfo.phone_number
-      ? `يرجى التواصل مع الإدارة على الرقم: <strong>${systemContactInfo.phone_number}</strong> لتسجيل بياناتك`
-      : `يرجى التواصل مع الإدارة لتسجيل بياناتك`;
+      ? `يرجى التواصل مع ${role === 'student' ? 'مدرستك' : 'الإدارة'} على الرقم: <strong>${systemContactInfo.phone_number}</strong> لتسجيل بياناتك`
+      : `يرجى التواصل مع ${role === 'student' ? 'مدرستك' : 'الإدارة'} لتسجيل بياناتك`;
     showMessage(
       `عذراً، ${roleName} غير مسجل في المنظومة (${idName}: ${username})<br><br>` + contactLine,
       'warning'
@@ -703,10 +733,10 @@
           const Preferences = window.Capacitor?.Plugins?.Preferences;
           if (Preferences) Preferences.set({ key: 'fasliPushToken', value: token.value }).catch(() => {});
 
-          await fetch(PROJECT_URL + '/functions/v1/register-push-token', {
+          await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ token: token.value, platform: 'android' })
+            body: JSON.stringify({ action: 'register', token: token.value, platform: 'android' })
           });
         } catch (e) { /* تجاهل - مش أساسي لتسجيل الدخول */ }
       });
@@ -724,9 +754,12 @@
       } else if (role === 'assistant') {
         redirectUrl += 'username=' + username + '&role=assistant';
         sessionStorage.setItem('tempAssistantId', username);
-      } else {
+      } else if (role === 'parent') {
         redirectUrl += 'phone=' + username + '&role=parent';
         sessionStorage.setItem('tempParentPhone', username);
+      } else {
+        redirectUrl += 'studentUid=' + username + '&role=student';
+        sessionStorage.setItem('tempStudentUid', username);
       }
       window.location.href = redirectUrl;
       return;
@@ -756,6 +789,9 @@
       await saveAuth('teacherName', data?.name || 'مدرس');
       await saveAuth('isAdmin', 'false');
       await saveAuth('userRole', 'teacher');
+      await saveAuth('brandLogoUrl', data?.brandLogoUrl || '');
+      await saveAuth('brandColor', data?.brandColor || '');
+      await saveAuth('isCenter', data?.isCenter ? 'true' : 'false');
       window.location.href = 'dashboard.html';
       return;
     }
@@ -766,6 +802,12 @@
       await saveAuth('teacherClientId', data?.teacherId || '');
       await saveAuth('teacherName', data?.teacherName || 'مدرس');
       await saveAuth('userRole', 'assistant');
+      await saveAuth('brandLogoUrl', data?.brandLogoUrl || '');
+      await saveAuth('brandColor', data?.brandColor || '');
+      // ✅ Batch 22: كانت isCenter بتتحفظ للمدرس بس — المساعد كان بيدخل staff.html وتبويب
+      // "مدرّسو السنتر" يفضل مختفي دايماً حتى لو معاه صلاحية كاملة، لأن isCenterAccount في
+      // كل الصفحات بتقرأ sessionStorage.isCenter اللي مكانش بيتحط للمساعد خالص
+      await saveAuth('isCenter', data?.isCenter ? 'true' : 'false');
       window.location.href = 'assistant-dashboard.html';
       return;
     }
@@ -774,6 +816,15 @@
       await saveAuth('parentName', data?.name || 'ولي أمر');
       await saveAuth('userRole', 'parent');
       window.location.href = 'parent-dashboard.html';
+      return;
+    }
+    if (role === 'student') {
+      await saveAuth('studentUid', username);
+      await saveAuth('studentName', data?.name || 'طالب');
+      await saveAuth('studentGroup', data?.groupName || '');
+      await saveAuth('studentTeacherId', data?.teacherId || '');
+      await saveAuth('userRole', 'student');
+      window.location.href = 'student-portal.html';
       return;
     }
   }
@@ -792,36 +843,24 @@
       showMessage('الرجاء إدخال اسم المستخدم وكلمة المرور', 'error');
       return;
     }
-    if (selectedRole === 'parent') {
-      if (username.length !== 11 || !username.startsWith('01')) {
-        showMessage('رقم الهاتف يجب أن يكون 11 رقماً ويبدأ بـ 01', 'error');
-        return;
-      }
-    }
-    if (selectedRole === 'assistant') {
-      if (username.length < 3 || username.includes(' ')) {
-        showMessage('اسم المستخدم يجب أن يكون 3 أحرف على الأقل ولا يحتوي على مسافات', 'error');
-        return;
-      }
-    }
 
     setLoading(true);
     try {
       const response = await fetch(PROJECT_URL + '/functions/v1/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role: selectedRole })
+        body: JSON.stringify({ username, password, group: selectedGroup })
       });
       const data = await response.json();
 
       if (data.success) {
         if (data.token) saveAuth('jwtToken', data.token);
         showMessage(data.message, 'success');
-        setTimeout(() => redirectUser(selectedRole, username, data.data, data.forceChange, data.licenseExpired, data.licenseReason, data.contactWhatsapp, data.contactPhone, data.contactAudience), 900);
+        setTimeout(() => redirectUser(data.role, username, data.data, data.forceChange, data.licenseExpired, data.licenseReason, data.contactWhatsapp, data.contactPhone, data.contactAudience), 900);
       } else {
         const errorMsg = data.message || '';
-        if (errorMsg.includes('غير موجود') || errorMsg.includes('لا يوجد') || errorMsg.includes('not found')) {
-          showUnregisteredMessage(selectedRole, username);
+        if (errorMsg.includes('غير موجود') || errorMsg.includes('لا يوجد') || errorMsg.includes('not found') || errorMsg.includes('غير مسجّل')) {
+          showUnregisteredMessage(selectedGroup === 'staff' ? 'teacher' : 'parent', username);
         } else if (errorMsg.includes('غير مفعل') && (data.contactWhatsapp || data.contactPhone)) {
           const who = data.contactAudience === 'teacher' ? 'المدرس الخاص بك' : 'الإدارة';
           let contactHtml = `${errorMsg}<br><br>تواصل مع ${who}: `;

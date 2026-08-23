@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>رصد الدرجات - فَصلي</title>
-  <meta name="description" content="تسجيل ومتابعة درجات الطلاب في نظام فَصلي">
+  <title>الاختبارات - فَصلي</title>
+  <meta name="description" content="إدارة الاختبارات اليدوية والإلكترونية ودرجات الطلاب في نظام فَصلي">
   <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -24,19 +24,24 @@
 
       <nav class="sidebar-nav">
         <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="students.html" class="sidebar-item "><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item active"><i class="fas fa-pen-to-square"></i> الدرجات</a>
-        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات</a>
-        <a href="books.html" class="sidebar-item "><i class="fas fa-book"></i> المذكرات</a>
-        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="messages.html" class="sidebar-item " id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+
+        <div class="sidebar-section-label">🎓 الأكاديمية</div>
+        <a href="students.html" class="sidebar-item " id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item " id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item active" id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
+
+        <div class="sidebar-section-label">💰 المالية</div>
+        <a href="payments.html" class="sidebar-item " id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
         <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
 
-        <div class="sidebar-section-label">إدارة</div>
-        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <div class="sidebar-section-label">📊 التقارير</div>
+        <a href="reports.html" class="sidebar-item " id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
+
+        <div class="sidebar-section-label">⚙️ الإعدادات</div>
         <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
-        <a href="assistants-management.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
-        <a href="wifi-config.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-headset"></i> التواصل والنُسخ</a>
+        <a href="staff.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
+        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
       </nav>
 
       <div class="sidebar-footer">
@@ -52,6 +57,21 @@
           <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
         </button>
         <div class="sidebar-footer-actions">
+          <div class="notif-wrap" id="notifWrap" style="display:none;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-panel-header">
+                <span>الإشعارات</span>
+                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
           <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
           <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
         </div>
@@ -61,39 +81,38 @@
     <div class="main-area">
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-        <h2>الدرجات</h2>
-        <div class="notif-wrap" id="notifWrap" style="display:none;">
-          <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
-            <i class="fas fa-bell"></i>
-            <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-          </button>
-          <div class="notif-panel" id="notifPanel">
-            <div class="notif-panel-header">
-              <span>الإشعارات</span>
-              <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
-            </div>
-            <div class="notif-list" id="notifList">
-              <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
-            </div>
-          </div>
-        </div>
+        <h2>الاختبارات</h2>
         <div style="width:24px;"></div>
       </div>
   <div class="container">
     <div class="breadcrumb">
       <a onclick="goBackToDashboard()">الرئيسية</a>
       <span class="separator">›</span>
-      <span>رصد الدرجات</span>
+      <span>الاختبارات</span>
     </div>
 
     <div class="page-header">
       <div>
-        <h2>📝 رصد الدرجات</h2>
+        <h2>📝 الاختبارات</h2>
       </div>
       <span id="roleIndicator" style="font-size:13px;color:var(--gray-500);">
         <i class="fas fa-user-tag"></i> دور: <strong id="userRoleDisplay">مدرس</strong>
       </span>
     </div>
+
+    <!-- ✅ Aug 2026: تبويبان — الدرجات اليدوية (زي ما كانت) والاختبارات الإلكترونية (جديد، بيجمع
+         نتائج online_exams/exam_attempts في نفس صفحة الدرجات بدل ما تكون مبعثرة في exam-builder.html بس) -->
+    <div class="tabs" id="gradesTabs">
+      <button class="tab active" data-tab="manual" onclick="switchGradesTab('manual')">
+        <i class="fas fa-pen-to-square"></i> الدرجات اليدوية
+      </button>
+      <button class="tab" data-tab="online" onclick="switchGradesTab('online')">
+        <i class="fas fa-display"></i> الاختبارات الإلكترونية
+      </button>
+    </div>
+
+    <div id="gradesTabsWrap">
+    <div class="tab-content active" id="tab-manual">
 
     <div class="stats-row" id="statsRow">
       <div class="stat-card">
@@ -121,7 +140,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label>المجموعة <span class="required">*</span></label>
-            <select id="gradeGroup" onchange="loadStudents()">
+            <select id="gradeGroup" onchange="loadStudents(); loadExamNames();">
               <option value="">-- اختر المجموعة --</option>
             </select>
           </div>
@@ -157,6 +176,29 @@
             <i class="fas fa-undo"></i> تفريغ
           </button>
         </div>
+        <!-- ✅ Aug 2026: كرت "إدارة الامتحانات" المنفصل اتدمج هنا — نفس الإمكانية (إنشاء اسم
+             امتحان ودرجته النهائية من غير رصد درجة فعلية لأي طالب دلوقتي) لكن كصندوق قابل للطي
+             بدل كرت مستقل، عشان الصفحة تتنظم بكرتين بس زي المجموعات/الطلاب -->
+        <div style="margin-top:18px;border-top:1px solid var(--gray-100);padding-top:14px;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="toggleStandaloneExamBox()" id="standaloneExamToggleBtn">
+            <i class="fas fa-list-check"></i> إنشاء امتحان جديد بدرجته النهائية بس (من غير رصد درجة لحد دلوقتي)
+          </button>
+          <div id="standaloneExamBox" style="display:none;margin-top:12px;padding:14px;background:var(--gray-50);border-radius:8px;">
+            <div class="field-row">
+              <div class="field">
+                <label>اسم الامتحان</label>
+                <input type="text" id="standaloneExamName" placeholder="مثال: امتحان شهر أكتوبر">
+              </div>
+              <div class="field">
+                <label>الدرجة النهائية</label>
+                <input type="number" id="standaloneExamMaxScore" placeholder="مثال: 100">
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="createStandaloneExam()">➕ إنشاء الامتحان</button>
+            <!-- ✅ Aug 2026: قائمة أسماء الامتحانات الحالية + إمكانية حذف كل واحد (deleteExamTitle) -->
+            <div id="examTitlesList"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -164,7 +206,7 @@
       <div class="card-header">
         <h3><i class="fas fa-list" style="color:var(--primary);"></i> الدرجات المسجلة</h3>
         <div class="search-bar">
-          <select id="filterGroup" onchange="localStorage.setItem('gradesFilterGroup_' + clientId, this.value); loadGrades();">
+          <select id="filterGroup" onchange="localStorage.setItem('gradesFilterGroup_' + clientId, this.value); loadGrades(); loadFilterExamNames();">
             <option value="ALL">📚 جميع المجموعات</option>
           </select>
           <select id="filterExam" onchange="localStorage.setItem('gradesFilterExam_' + clientId, this.value); filterTable();">
@@ -197,6 +239,199 @@
           </table>
         </div>
       </div>
+    </div>
+
+    </div>
+
+    <!-- ✅ Aug 2026 (دمج exam-builder.html بالكامل هنا): تبويب الاختبارات الإلكترونية —
+         إنشاء/تعديل/نشر/حذف الاختبار وأسئلته منقولين هنا حرفياً من exam-builder.html (نفس الأكشنز
+         على manage-exam)، والجدول التلخيصي + مودال التفاصيل (get-exam-report) زي ما كانوا. جديد:
+         طباعة تقرير النتائج، وطباعة ورقة الأسئلة (بدون الإجابات) — الاتنين بمودال داخل الصفحة
+         بنفس أسلوب groups.html (body class + @media print)، من غير فتح نافذة/تاب جديد. -->
+    <div class="tab-content" id="tab-online">
+
+      <div class="card" id="examsListCard">
+        <div class="card-header">
+          <h3><i class="fas fa-display" style="color:var(--info);"></i> اختباراتك الإلكترونية</h3>
+          <button class="btn btn-primary btn-sm" onclick="openNewExamForm()"><i class="fas fa-plus"></i> اختبار جديد</button>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>الامتحان</th>
+                  <th>المجموعة</th>
+                  <th>الحالة</th>
+                  <th>امتحنوا</th>
+                  <th>متوسط الدرجة</th>
+                  <th>تاريخ الإنشاء</th>
+                  <th style="text-align:center;">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="onlineExamsBody">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">
+                  <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                  جاري تحميل البيانات...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ منقول من exam-builder.html — نموذج إنشاء اختبار جديد -->
+      <div class="card" id="newExamCard" style="display:none;">
+        <div class="card-header">
+          <h3><i class="fas fa-plus-circle" style="color:var(--success);"></i> اختبار جديد</h3>
+        </div>
+        <div class="card-body">
+          <div class="field-row">
+            <div class="field">
+              <label>عنوان الاختبار</label>
+              <input type="text" id="newExamTitle" placeholder="مثال: اختبار الوحدة الأولى">
+            </div>
+            <div class="field">
+              <label>المجموعة</label>
+              <select id="newExamGroup"><option value="">-- اختر المجموعة --</option></select>
+            </div>
+            <div class="field">
+              <label>مدة الاختبار (بالدقايق)</label>
+              <input type="number" id="newExamDuration" placeholder="مثال: 30">
+            </div>
+          </div>
+          <div class="field">
+            <label>جدولة النشر لوقت معيّن (اختياري)</label>
+            <input type="datetime-local" id="newExamScheduledAt">
+            <p style="font-size:12px;color:var(--gray-500);margin-top:4px;">لو سيبته فاضي، الاختبار هيبدأ فور ما تدوس "نشر" بنفسك يدوياً. لو حددت وقت، الاختبار هيفضل مسودة لحد ما يوصل الوقت ده، وهيتنشر تلقائياً.</p>
+          </div>
+          <!-- ✅ (طلب) وقت غلق الاختبار — بعده مايقدرش أي طالب يبدأ أو يكمّل الاختبار، حتى لو
+               لسه مستني يبدأ. اختياري تماماً؛ لو فاضي الاختبار يفضل متاح من غير نهاية محددة
+               (غير مدة المحاولة الفردية لكل طالب). ممكن تتعدّل حتى بعد النشر من صفحة الاختبارات. -->
+          <div class="field">
+            <label>وقت غلق الاختبار (اختياري)</label>
+            <input type="datetime-local" id="newExamClosesAt">
+            <p style="font-size:12px;color:var(--gray-500);margin-top:4px;">لو حددته، محدش هيقدر يبدأ أو يكمّل الاختبار بعد الوقت ده، حتى لو مدة المحاولة نفسها لسه ماخلصتش. ممكن تعدّليه أو تلغيه في أي وقت من قايمة الاختبارات تحت.</p>
+          </div>
+          <!-- ✅ (طلب) تحديد إذا كان الاختبار ده هيتحسب في درجات الطالب ومستواه، أو مجرد تدريب حر -->
+          <div class="field" style="background:var(--gray-50);border-radius:8px;padding:10px 12px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
+              <input type="checkbox" id="newExamCountsTowardGrade">
+              يتم تسجيل درجة الطالب في هذا الاختبار ضمن درجاته الرسمية
+            </label>
+            <p style="font-size:12px;color:var(--gray-500);margin-top:4px;">لو فعّلت الخيار ده، أول محاولة رسمية للطالب (مش التدريب الحر) هتتسجّل تلقائياً في جدول درجاته وتدخل في متوسطه ومخطط نمو مستواه. لو سايبه، الاختبار هيفضل تدريب حر بس مايتحسبش في درجاته.</p>
+          </div>
+          <button class="btn btn-primary" onclick="createExam()">➕ إنشاء الاختبار وإضافة الأسئلة</button>
+          <button class="btn btn-outline" onclick="closeNewExamForm()">إلغاء</button>
+        </div>
+      </div>
+
+      <!-- ✅ منقول من exam-builder.html — تحرير اختبار (تحديد الطلاب، الأسئلة، النشر، الحذف) —
+           زودنا عليه بس زرار "طباعة ورقة الأسئلة" الجديد -->
+      <div class="card" id="editExamCard" style="display:none;">
+        <div class="card-header">
+          <h3><i class="fas fa-edit" style="color:var(--warning);"></i> <span id="editExamTitle">—</span></h3>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="openExamPaperPrint()"><i class="fas fa-print"></i> طباعة ورقة الأسئلة</button>
+            <button class="btn btn-outline btn-sm" onclick="closeEditExam()">✖ رجوع للقائمة</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="editExamMeta" style="margin-bottom:16px;font-size:13px;color:var(--gray-500);"></div>
+
+          <div style="border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200);padding:14px 0;margin-bottom:16px;">
+            <h4 style="font-size:14px;margin-bottom:8px;"><i class="fas fa-users" style="color:var(--info);"></i> إرسال الاختبار لـ</h4>
+            <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;">
+              <input type="radio" name="targetMode" value="all" checked onchange="onTargetModeChange()"> كل طلاب المجموعة
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;">
+              <input type="radio" name="targetMode" value="specific" onchange="onTargetModeChange()"> طلاب محددين بس
+            </label>
+            <div id="specificStudentsContainer" style="display:none;margin-top:10px;max-height:200px;overflow-y:auto;padding:10px;background:var(--gray-50);border-radius:8px;"></div>
+            <button class="btn btn-outline btn-sm" id="saveTargetsBtn" onclick="saveExamTargets()" style="margin-top:10px;display:none;">💾 حفظ التحديد</button>
+          </div>
+
+          <!-- ✅ (طلب) وقت غلق الاختبار — يتغيّر في أي وقت حتى بعد النشر (عكس تعديل الأسئلة) -->
+          <div style="border-bottom:1px solid var(--gray-200);padding-bottom:14px;margin-bottom:16px;">
+            <h4 style="font-size:14px;margin-bottom:8px;"><i class="fas fa-lock" style="color:var(--warning);"></i> وقت غلق الاختبار</h4>
+            <div id="examClosureStatus" style="font-size:13px;margin-bottom:10px;"></div>
+
+            <!-- ✅ (طلب) قفل فوري أو إعادة فتح لمدة محددة — منفصل عن تعديل تاريخ الغلق اليدوي تحت،
+                 عشان يكون في متناول اليد بضغطة واحدة لحظة الحاجة (زي "خلاص، اقفلي الاختبار دلوقتي") -->
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:var(--gray-50);border-radius:8px;">
+              <button class="btn btn-danger btn-sm" onclick="closeExamNow()"><i class="fas fa-lock"></i> قفل الاختبار الآن</button>
+              <span style="color:var(--gray-400);font-size:12px;">أو إعادة فتحه لمدة</span>
+              <input type="number" id="reopenExamMinutes" min="1" max="10080" placeholder="بالدقايق" style="width:90px;padding:8px 10px;border-radius:8px;border:1px solid var(--gray-200);font-family:inherit;">
+              <button class="btn btn-outline btn-sm" onclick="reopenExam()"><i class="fas fa-lock-open"></i> إعادة الفتح</button>
+            </div>
+
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+              <div class="field" style="margin:0;">
+                <label style="font-size:12px;">أو حدّد وقت غلق دقيق بنفسك</label>
+                <input type="datetime-local" id="editExamClosesAt">
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="saveExamClosesAt()">💾 حفظ</button>
+              <button class="btn btn-outline btn-sm" onclick="clearExamClosesAt()">✖ إلغاء وقت الغلق</button>
+            </div>
+            <p style="font-size:12px;color:var(--gray-500);margin-top:6px;">بعد وقت الغلق محدش هيقدر يبدأ أو يكمّل الاختبار، حتى لو مدة المحاولة نفسها لسه ماخلصتش.</p>
+          </div>
+
+          <div id="questionsListContainer" style="margin-bottom:20px;"></div>
+
+          <!-- ✅ Aug 2026: صندوق إضافة سؤال — بيتقفل تلقائياً لو الاختبار منشور بالفعل، عشان
+               الطلاب ممكن يكونوا شايفين الاختبار أو امتحنوه فعلاً بنفس الأسئلة دي -->
+          <div id="addQuestionSection" style="border-top:1px solid var(--gray-200);padding-top:16px;">
+            <h4 id="questionFormTitle" style="font-size:14px;margin-bottom:10px;">➕ إضافة سؤال جديد</h4>
+            <div class="field">
+              <label>نص السؤال</label>
+              <textarea id="newQuestionText" rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-200);font-family:inherit;" placeholder="اكتب السؤال هنا"></textarea>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>نوع السؤال</label>
+                <select id="newQuestionType" onchange="onQuestionTypeChange()">
+                  <option value="mcq">اختياري (Multiple Choice)</option>
+                  <option value="true_false">صح / خطأ</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>درجة السؤال</label>
+                <input type="number" id="newQuestionPoints" placeholder="مثال: 5">
+              </div>
+            </div>
+
+            <div id="mcqOptionsContainer">
+              <label>الاختيارات (اكتب كل اختيار في خانة، وحدد الصحيح)</label>
+              <div id="mcqOptionsList"></div>
+              <button class="btn btn-outline btn-sm" onclick="addMcqOptionField()">➕ إضافة اختيار</button>
+            </div>
+
+            <div id="trueFalseContainer" style="display:none;">
+              <label>الإجابة الصحيحة</label>
+              <select id="trueFalseAnswer">
+                <option value="true">صح</option>
+                <option value="false">خطأ</option>
+              </select>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:14px;">
+              <button class="btn btn-primary" id="saveQuestionBtn" onclick="saveQuestion()">➕ إضافة السؤال</button>
+              <button class="btn btn-outline" id="cancelEditQuestionBtn" style="display:none;" onclick="cancelEditQuestion()">إلغاء التعديل</button>
+            </div>
+          </div>
+          <div id="questionsLockedNotice" style="display:none;border-top:1px solid var(--gray-200);padding-top:16px;color:var(--gray-500);font-size:13px;">
+            <i class="fas fa-lock"></i> الاختبار ده منشور بالفعل — مينفعش تعدّل أسئلته دلوقتي عشان الطلاب ممكن يكونوا شايفينه أو امتحنوه بالفعل.
+          </div>
+
+          <div style="margin-top:20px;border-top:1px solid var(--gray-200);padding-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-success" id="publishExamBtn" style="flex:1;justify-content:center;min-width:220px;" onclick="publishExam()"><i class="fas fa-paper-plane"></i> نشر الاختبار وإرسال إشعار للمجموعة</button>
+            <span id="publishedBadge" style="display:none;flex:1;min-width:220px;align-items:center;justify-content:center;gap:8px;color:var(--success);font-weight:600;font-size:14px;"><i class="fas fa-circle-check"></i> الاختبار منشور بالفعل</span>
+            <button class="btn btn-danger" style="justify-content:center;" onclick="deleteExam(currentEditExamId)"><i class="fas fa-trash"></i> حذف الاختبار نهائياً</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
     </div>
   </div>
 
@@ -233,6 +468,102 @@
       </div>
     </div>
   </div>
+
+  <!-- ✅ Aug 2026: تفاصيل اختبار إلكتروني معيّن — نفس بيانات get-exam-report، وزرار طباعة جديد
+       (بيطبع محتوى المودال نفسه بس، مش الصفحة كلها — راجع #printModalStyles تحت) -->
+  <div class="modal-overlay" id="onlineExamReportModal">
+    <div class="modal-box" style="max-width:720px;">
+      <div class="modal-header no-print">
+        <h3><i class="fas fa-chart-bar" style="color:var(--info);"></i> <span id="onlineReportExamTitle">—</span></h3>
+        <button class="modal-close" onclick="closeOnlineExamReport()">&times;</button>
+      </div>
+      <!-- ✅ Aug 2026: هيدر شعار المركز — بيظهر وقت الطباعة بس، بنفس أسلوب سجل الحضور في groups.html -->
+      <div class="print-only exam-print-header" style="display:none;">
+        <img id="onlineReportPrintLogo" src="" alt="شعار" onerror="this.src='assets/logo-icon.svg';">
+        <div class="exam-print-titles">
+          <h3 id="onlineReportCenterNamePrint">—</h3>
+          <span id="onlineReportExamTitlePrint">—</span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="stats-row" id="onlineReportSummaryStats"></div>
+        <div class="table-wrapper" style="margin-top:16px;max-height:360px;overflow-y:auto;">
+          <table>
+            <thead><tr><th>الطالب</th><th>الحالة</th><th>الدرجة</th><th>وقت البدء</th><th>وقت التسليم</th></tr></thead>
+            <tbody id="onlineReportTableBody"></tbody>
+          </table>
+        </div>
+        <div class="modal-actions no-print" style="margin-top:18px;">
+          <button class="btn btn-outline" onclick="closeOnlineExamReport()"><i class="fas fa-times"></i> إغلاق</button>
+          <button class="btn btn-confirm-reset" style="background:var(--primary);" onclick="printGradesModal()"><i class="fas fa-print"></i> طباعة التقرير</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Aug 2026: طباعة ورقة أسئلة الاختبار (من غير الإجابات الصحيحة) — نفس أسلوب طباعة المودالات -->
+  <div class="modal-overlay" id="examPaperPrintModal">
+    <div class="modal-box" style="max-width:720px;">
+      <div class="modal-header no-print">
+        <h3><i class="fas fa-file-lines" style="color:var(--primary);"></i> معاينة ورقة الأسئلة</h3>
+        <button class="modal-close" onclick="closeExamPaperPrint()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="print-only exam-print-header" style="display:none;">
+          <img id="examPaperPrintLogo" src="" alt="شعار" onerror="this.src='assets/logo-icon.svg';">
+          <div class="exam-print-titles">
+            <h3 id="examPaperCenterNamePrint">—</h3>
+          </div>
+        </div>
+        <div id="examPaperHeader" style="margin-bottom:14px;"></div>
+        <div id="examPaperQuestions"></div>
+        <div class="modal-actions no-print" style="margin-top:18px;">
+          <button class="btn btn-outline" onclick="closeExamPaperPrint()"><i class="fas fa-times"></i> إغلاق</button>
+          <button class="btn btn-confirm-reset" style="background:var(--primary);" onclick="printGradesModal()"><i class="fas fa-print"></i> طباعة الورقة</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Aug 2026: طباعة أي مودال مفتوح جوه الصفحة (تقرير النتائج أو ورقة الأسئلة) — بدون فتح
+       نافذة/تاب جديد، بنفس المبدأ اللي اتطبق في groups.html لطباعة سجل الحصة -->
+  <style id="printModalStyles">
+    .print-only { display: none; }
+    /* ✅ Aug 2026: هيدر شعار المركز اللي بيظهر في أعلى ورق الطباعة (تقرير النتائج/ورقة الأسئلة) —
+       نفس تصميم .roster-header في groups.html */
+    .exam-print-header { align-items: center; gap: 12px; margin-bottom: 14px; }
+    .exam-print-header img { height: 46px; width: 46px; object-fit: contain; border-radius: 8px; }
+    .exam-print-header .exam-print-titles h3 { margin: 0; font-size: 19px; }
+    .exam-print-header .exam-print-titles span { font-size: 13px; color: var(--gray-600); }
+    @media print {
+      /* ✅ Aug 2026 (فيكس): المودالات في الصفحة دي متعشّشة جوه .app-shell/.main-area مش
+         أبناء مباشرين لـ body زي ما كان مفروض — يعني "إخفاء كل حاجة عدا المودال المفتوح"
+         باستخدام display:none على العناصر المباشرة لـ body كان بيخفي .app-shell كله
+         (اللي المودال نفسه متعشّش جواه)، وdisplay:none على عنصر أب بيلغي أي display
+         تاني على أي عنصر جواه مهما كان — فالمودال كان بيتخفي برضه رغم كل الـ override بتاعته.
+         الحل الصح: استخدام visibility (مش display) عشان نخفي كل حاجة، وبعدين نرجّع
+         visibility:visible بس على المودال المفتوح ومحتوياته، ونطلّعه فوق كل حاجة بـ
+         position:fixed يغطي الصفحة بالكامل بدل ما يعتمد على ترتيبه في تدفق المستند. */
+      body.grades-printing * { visibility: hidden !important; }
+      body.grades-printing .modal-overlay.open,
+      body.grades-printing .modal-overlay.open * { visibility: visible !important; }
+      body.grades-printing .modal-overlay.open {
+        position: fixed !important; inset: 0 !important; z-index: 999999 !important;
+        background: none !important; backdrop-filter: none !important;
+        padding: 0 !important; display: block !important;
+      }
+      body.grades-printing .modal-overlay.open .modal-box {
+        box-shadow: none !important; max-width: 100% !important; margin: 0 !important; animation: none !important;
+        max-height: none !important; overflow: visible !important; position: static !important;
+      }
+      body.grades-printing .modal-overlay.open .table-wrapper {
+        max-height: none !important; overflow: visible !important;
+      }
+      body.grades-printing .no-print { display: none !important; }
+      body.grades-printing .print-only { display: block !important; }
+      body.grades-printing .print-only.exam-print-header { display: flex !important; }
+    }
+  </style>
 
       </div>
   </div>
@@ -287,7 +618,11 @@
           const clone = res.clone();
           const data = await clone.json();
           if (data && data.code === 'LICENSE_EXPIRED') {
-            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+            // ✅ بنحط الرسالة الحقيقية + اسم الدالة اللي رجّعت الخطأ في sessionStorage
+            // (مش URL parameter) عشان صفحة القفل تقدر تقراها وتعرضها صح للتشخيص
+            sessionStorage.setItem('lockReason', data.message || 'انتهت صلاحية الترخيص');
+            sessionStorage.setItem('lockSourceFunction', urlStr);
+            window.location.href = 'license-locked.html';
           }
         }
       } catch (e) { /* تجاهل */ }
@@ -379,7 +714,8 @@
 
     const assistantPermissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
     const isAssistant = userRole === 'assistant';
-    if (isAssistant) {
+    // ✅ الجرس ده بيشتغل للمدرس والمساعد الاتنين (Aug 2026) — كان قبل كده مقصور على المساعد بس
+    {
       const notifWrap = document.getElementById('notifWrap');
       if (notifWrap) {
         notifWrap.style.display = 'block';
@@ -398,6 +734,27 @@
       if (navR) navR.style.display = 'flex';
       if (navF) navF.style.display = 'flex';
       if (navL) navL.style.display = 'flex';
+    } else {
+      // ✅ Batch 21: القائمة الجانبية للمساعد لازم تعكس صلاحياته الفعلية في كل صفحة يزورها،
+      // مش لوحة التحكم بس — نفس منطق التفعيل المستخدم في assistant-dashboard.html
+      const navSt = document.getElementById('navStudents');
+      const navGr = document.getElementById('navGroups');
+      const navGd = document.getElementById('navGrades');
+      const navPay = document.getElementById('navPayments');
+      const navRep = document.getElementById('navReports');
+      const navMsg = document.getElementById('navMessages');
+      const navF = document.getElementById('navFinancial');
+      const navL = document.getElementById('navActivityLog');
+      const navA = document.getElementById('navManageAssistants');
+      if (navSt) navSt.style.display = assistantPermissions.view_students !== false ? 'flex' : 'none';
+      if (navGr) navGr.style.display = (assistantPermissions.manage_groups === true || assistantPermissions.manage_registration === true) ? 'flex' : 'none';
+      if (navGd) navGd.style.display = assistantPermissions.record_grades === true ? 'flex' : 'none';
+      if (navPay) navPay.style.display = assistantPermissions.record_payments === true ? 'flex' : 'none';
+      if (navRep) navRep.style.display = assistantPermissions.view_reports === true ? 'flex' : 'none';
+      if (navMsg) navMsg.style.display = (assistantPermissions.send_messages === true || assistantPermissions.manage_conversations === true) ? 'flex' : 'none';
+      if (navF) navF.style.display = assistantPermissions.view_financial === true ? 'flex' : 'none';
+      if (navL) navL.style.display = assistantPermissions.view_activity_log === true ? 'flex' : 'none';
+      if (navA) navA.style.display = assistantPermissions.view_staff === true ? 'flex' : 'none';
     }
     const canViewGrades = isAssistant ? (assistantPermissions.view_students !== false) : true;
     const canRecordGrades = isAssistant ? (assistantPermissions.record_grades === true) : true;
@@ -490,6 +847,7 @@
     }
 
     let allStudents = [];
+    let gradesLoadToken = 0; // ✅ حماية من تعارض الطلبات — لو غيّرتِ الفلتر بسرعة، بنضمن إن بس آخر طلب هو اللي بيتعرض
 
     async function loadStudents() {
       const group = document.getElementById('gradeGroup').value;
@@ -583,17 +941,19 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/add-grade', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-grade', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'add',
             clientId,
             studentUids: selectedStudents.map(s => s.uid),
             examName,
             maxScore: Number(maxScore),
             score: Number(score),
             assistantId,
-            assistantName
+            assistantName,
+            groupName: group
           })
         });
 
@@ -643,16 +1003,737 @@
       }
     }
 
-    async function loadExamNames() {
+    // ✅ Aug 2026: تبويبات الصفحة (الدرجات اليدوية / الاختبارات الإلكترونية)
+    let onlineExamsLoadedOnce = false;
+    function switchGradesTab(name) {
+      document.querySelectorAll('#gradesTabs .tab').forEach(t => t.classList.remove('active'));
+      const tabBtn = document.querySelector('#gradesTabs .tab[data-tab="' + name + '"]');
+      if (tabBtn) tabBtn.classList.add('active');
+      document.querySelectorAll('#gradesTabsWrap .tab-content').forEach(tc => tc.classList.remove('active'));
+      const content = document.getElementById('tab-' + name);
+      if (content) content.classList.add('active');
+      if (name === 'online' && !onlineExamsLoadedOnce) {
+        onlineExamsLoadedOnce = true;
+        loadOnlineExams();
+        loadGroupsForExamForm();
+      }
+    }
+
+    // ✅ Aug 2026: صندوق "إنشاء امتحان بس من غير رصد درجة" — اتدمج هنا جوه كرت "رصد درجة جديدة"
+    // بدل ما يكون كرت "إدارة الامتحانات" منفصل
+    function toggleStandaloneExamBox() {
+      const box = document.getElementById('standaloneExamBox');
+      const isOpen = box.style.display !== 'none';
+      box.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) document.getElementById('standaloneExamName').focus();
+    }
+
+    // ✅ Aug 2026: تبويب الاختبارات الإلكترونية — جدول تلخيصي لكل اختبار
+    async function loadOnlineExams() {
+      const tbody = document.getElementById('onlineExamsBody');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">' +
+        '<i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i> جاري التحميل...</td></tr>';
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-exams', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'listWithStats' })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (!result.success) { showToast('❌ ' + result.message, 'error'); return; }
+        const exams = result.data || [];
+        if (exams.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">' +
+            '<i class="fas fa-file-circle-question" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i> ' +
+            'لا توجد اختبارات إلكترونية بعد — تقدر تنشئها من صفحة "الاختبارات"</td></tr>';
+          return;
+        }
+        tbody.innerHTML = exams.map(e => {
+          const dateStr = new Date(e.createdAt).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+          const statusBadge = e.isPublished ? '<span class="score-badge high">منشور</span>' : '<span class="score-badge low">مسودة</span>';
+          // ✅ (طلب) توضيح إذا كانت درجة الاختبار ده بتتحسب في درجات الطالب الرسمية، أو تدريب حر بس
+          const gradeBadge = e.countsTowardGrade
+            ? '<span title="درجة الطالب في الاختبار ده بتتسجّل تلقائياً في درجاته الرسمية" style="font-size:11px;color:var(--success);"><i class="fas fa-chart-line"></i> رسمي</span>'
+            : '<span title="مجرد تدريب حر — مابيتحسبش في درجات الطالب" style="font-size:11px;color:var(--gray-500);"><i class="fas fa-dumbbell"></i> تدريب</span>';
+          // ✅ (طلب) توضيح وقت غلق الاختبار في القائمة لو محدد — لون مختلف لو اتقفل بالفعل
+          const isClosedNow = e.closesAt && new Date(e.closesAt).getTime() <= Date.now();
+          const closesBadge = e.closesAt
+            ? `<div style="font-size:11px;color:${isClosedNow ? 'var(--danger)' : 'var(--warning)'};margin-top:2px;"><i class="fas fa-lock"></i> ${isClosedNow ? 'مقفول من' : 'يُغلق'} ${new Date(e.closesAt).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}</div>`
+            : '';
+          return `<tr>
+            <td><strong>${escapeHtml(e.title)}</strong><div style="margin-top:2px;">${gradeBadge}</div>${closesBadge}</td>
+            <td><span style="background:var(--gray-100);padding:2px 12px;border-radius:12px;font-size:12px;">${escapeHtml(e.groupName)}</span></td>
+            <td>${statusBadge}</td>
+            <td>${e.took} / ${e.totalStudents}</td>
+            <td>${e.avgScore}</td>
+            <td>${dateStr}</td>
+            <td style="text-align:center;white-space:nowrap;">
+              <button class="btn btn-outline btn-sm" onclick="openEditExam(${e.id})" title="تعديل"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-outline btn-sm" onclick="openOnlineExamReport(${e.id}, '${escapeAttr(e.title)}')" title="التفاصيل"><i class="fas fa-eye"></i></button>
+              <button class="btn btn-danger btn-sm" onclick="deleteExam(${e.id})" title="حذف"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>`;
+        }).join('');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الاختبارات الإلكترونية:', error);
+        showToast('❌ فشل تحميل الاختبارات الإلكترونية', 'error');
+      }
+    }
+
+    // ✅ Aug 2026: تفاصيل اختبار إلكتروني معيّن — نفس منطق exam-builder.html's openExamReport، بس في مودال هنا
+    async function openOnlineExamReport(examId, examTitle) {
+      document.getElementById('onlineReportExamTitle').textContent = examTitle;
+      document.getElementById('onlineReportExamTitlePrint').textContent = examTitle;
+      // ✅ Aug 2026: شعار المركز في هيدر الطباعة — نفس منطق groups.html (شعار مخصّص من
+      // teacher-settings.html لو موجود، وإلا شعار فَصلي الافتراضي)
+      document.getElementById('onlineReportPrintLogo').src = sessionStorage.getItem('brandLogoUrl') || 'assets/logo-icon.svg';
+      document.getElementById('onlineReportCenterNamePrint').textContent = teacherName || 'فَصلي';
+      document.getElementById('onlineReportSummaryStats').innerHTML = '';
+      document.getElementById('onlineReportTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</td></tr>';
+      document.getElementById('onlineExamReportModal').classList.add('open');
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-exam-report', {
+          method: 'POST', headers, body: JSON.stringify({ examId })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (!result.success) { showToast('❌ ' + result.message, 'error'); closeOnlineExamReport(); return; }
+
+        const { report, summary } = result.data;
+        document.getElementById('onlineReportSummaryStats').innerHTML = `
+          <div class="stat-card"><div class="stat-label">👥 إجمالي الطلاب</div><div class="stat-value primary">${summary.totalStudents}</div></div>
+          <div class="stat-card"><div class="stat-label">✅ امتحنوا</div><div class="stat-value success">${summary.took}</div></div>
+          <div class="stat-card"><div class="stat-label">❌ لسه ما امتحنوش</div><div class="stat-value danger">${summary.didNotTake}</div></div>
+          <div class="stat-card"><div class="stat-label">⏰ انتهى وقتهم</div><div class="stat-value warning">${summary.timedOut}</div></div>
+          <div class="stat-card"><div class="stat-label">📊 متوسط الدرجات</div><div class="stat-value primary">${summary.avgScore}</div></div>
+        `;
+        document.getElementById('onlineReportTableBody').innerHTML = report.map(r => {
+          const startedStr = r.startedAt ? new Date(r.startedAt).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }) : '—';
+          const finishedStr = r.finishedAt ? new Date(r.finishedAt).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }) : '—';
+          const scoreStr = r.score !== null ? `${r.score} / ${r.totalPossible}` : '—';
+          return `<tr><td>${escapeHtml(r.studentName)}</td><td>${escapeHtml(r.status)}</td><td>${scoreStr}</td><td>${startedStr}</td><td>${finishedStr}</td></tr>`;
+        }).join('');
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل تحميل تفاصيل الاختبار', 'error');
+      }
+    }
+
+    function closeOnlineExamReport() {
+      document.getElementById('onlineExamReportModal').classList.remove('open');
+    }
+
+    // ============================================
+    // ✅ Aug 2026 (دمج exam-builder.html): إنشاء/تعديل/نشر/حذف الاختبار الإلكتروني وأسئلته —
+    // منقول حرفياً من exam-builder.html (نفس أسماء الدوال ونفس الأكشنز على manage-exam)
+    // ============================================
+    let currentEditExamId = null;
+    let currentEditExamPublished = false;
+    let mcqOptionCount = 0;
+    let currentExamQuestions = []; // ✅ Aug 2026: آخر نسخة من أسئلة الاختبار المفتوح، لازمة لتعبئة فورم التعديل
+    let currentEditingQuestionId = null; // ✅ Aug 2026: null = فورم إضافة سؤال جديد، غير null = بنعدّل سؤال موجود
+
+    async function loadGroupsForExamForm() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
           method: 'POST', headers, body: JSON.stringify({ clientId })
+        });
+        const result = await response.json();
+        if (result.success) {
+          const select = document.getElementById('newExamGroup');
+          select.innerHTML = '<option value="">-- اختر المجموعة --</option>' +
+            (result.data || []).map(g => `<option value="${g}">${g}</option>`).join('');
+        }
+      } catch (error) { console.error('❌ خطأ في تحميل المجموعات:', error); }
+    }
+
+    function openNewExamForm() {
+      document.getElementById('examsListCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('newExamCard').style.display = 'block';
+      document.getElementById('editExamCard').style.display = 'none';
+    }
+
+    function closeNewExamForm() {
+      document.getElementById('newExamCard').style.display = 'none';
+      document.getElementById('newExamTitle').value = '';
+      document.getElementById('newExamDuration').value = '';
+      document.getElementById('newExamScheduledAt').value = '';
+      document.getElementById('newExamClosesAt').value = '';
+      document.getElementById('newExamCountsTowardGrade').checked = false;
+    }
+
+    async function createExam() {
+      const title = document.getElementById('newExamTitle').value.trim();
+      const groupName = document.getElementById('newExamGroup').value;
+      const durationMinutes = document.getElementById('newExamDuration').value;
+      const scheduledAtInput = document.getElementById('newExamScheduledAt').value;
+      const scheduledAt = scheduledAtInput ? new Date(scheduledAtInput).toISOString() : null;
+      const closesAtInput = document.getElementById('newExamClosesAt').value;
+      const closesAt = closesAtInput ? new Date(closesAtInput).toISOString() : null;
+      const countsTowardGrade = document.getElementById('newExamCountsTowardGrade').checked;
+      if (!title || !groupName || !durationMinutes) { showToast('⚠️ املأ كل الحقول', 'warning'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'create', title, groupName, durationMinutes, scheduledAt, closesAt, countsTowardGrade })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          closeNewExamForm();
+          await loadOnlineExams();
+          openEditExam(result.data.id);
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل إنشاء الاختبار', 'error');
+      }
+    }
+
+    async function openEditExam(examId) {
+      currentEditExamId = examId;
+      document.getElementById('newExamCard').style.display = 'none';
+      document.getElementById('editExamCard').style.display = 'block';
+      document.getElementById('editExamCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'getOne', examId })
+        });
+        const result = await response.json();
+        if (!result.success) { showToast('❌ ' + result.message, 'error'); return; }
+
+        const exam = result.data;
+        currentEditExamPublished = !!exam.is_published;
+        document.getElementById('editExamTitle').textContent = exam.title;
+        const totalPoints = exam.questions.reduce((sum, q) => sum + Number(q.points), 0);
+        let statusLabel = exam.is_published ? 'منشور ✅' : (exam.scheduled_at ? `مجدول للنشر في ${new Date(exam.scheduled_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })} ⏰` : 'مسودة 📝');
+        document.getElementById('editExamMeta').textContent =
+          `المجموعة: ${exam.group_name} — المدة: ${exam.duration_minutes} دقيقة — الدرجة الإجمالية: ${totalPoints} — ${statusLabel}`;
+
+        // ✅ Aug 2026: مجرد فتح/عرض اختبار مبيكتبش حاجة في الباك إند خالص دلوقتي — renderTargetStudents
+        // بس بتظبط شكل الراديو/القائمة من غير ما تنادي setTargets (كانت السبب في 403 غير متوقع
+        // عند فتح أي اختبار — كل فتحة كانت بتبعت نداء clearExamTargets تلقائي)
+        renderTargetStudents(exam.groupStudents, exam.targetStudentUids);
+        // ✅ (طلب) تعبئة حقل وقت الغلق بالقيمة الحالية (لو موجودة) — لازم نحوّل من UTC (المخزّن
+        // في القاعدة) لتوقيت الجهاز المحلي، مش مجرد قطع الـ ISO string (ده كان هيعرض وقت UTC
+        // غلط بدل الوقت المحلي فعلياً)
+        document.getElementById('editExamClosesAt').value = isoToDatetimeLocalValue(exam.closes_at);
+        renderExamClosureStatus(exam);
+        currentExamQuestions = exam.questions || [];
+        renderQuestionsList(exam.questions, currentEditExamPublished);
+
+        // ✅ قفل إضافة/حذف الأسئلة ونشر الاختبار تاني لو منشور بالفعل
+        document.getElementById('addQuestionSection').style.display = currentEditExamPublished ? 'none' : 'block';
+        document.getElementById('questionsLockedNotice').style.display = currentEditExamPublished ? 'block' : 'none';
+        document.getElementById('publishExamBtn').style.display = currentEditExamPublished ? 'none' : 'flex';
+        document.getElementById('publishedBadge').style.display = currentEditExamPublished ? 'flex' : 'none';
+
+        resetQuestionForm();
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+      }
+    }
+
+    // ✅ بس بتظبط شكل الراديو/القائمة على الشاشة — من غير أي نداء للباك إند
+    function syncTargetModeUI() {
+      const mode = document.querySelector('input[name="targetMode"]:checked').value;
+      document.getElementById('specificStudentsContainer').style.display = mode === 'specific' ? 'block' : 'none';
+      document.getElementById('saveTargetsBtn').style.display = mode === 'specific' ? 'inline-flex' : 'none';
+    }
+
+    function renderTargetStudents(groupStudents, targetUids) {
+      const hasTargets = targetUids && targetUids.length > 0;
+      document.querySelector(`input[name="targetMode"][value="${hasTargets ? 'specific' : 'all'}"]`).checked = true;
+
+      const container = document.getElementById('specificStudentsContainer');
+      container.innerHTML = (groupStudents || []).map(s => `
+        <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;">
+          <input type="checkbox" class="targetStudentCb" value="${s.uid}" ${targetUids?.includes(s.uid) ? 'checked' : ''}>
+          <span>${escapeHtml(s.name)}</span>
+        </label>
+      `).join('');
+
+      syncTargetModeUI();
+    }
+
+    // ✅ ده بس بينادى لما المستخدم فعلياً يغيّر اختيار الراديو (onchange) — مش وقت مجرد عرض
+    // الاختبار، فمفيش نداء باك إند غير مقصود بعد كده
+    function onTargetModeChange() {
+      syncTargetModeUI();
+      const mode = document.querySelector('input[name="targetMode"]:checked').value;
+      // ✅ لو رجع لـ"كل المجموعة"، نمسح أي تحديد سابق فوراً (بدون ما يحتاج يدوس زرار حفظ إضافي)
+      if (mode === 'all') clearExamTargets();
+    }
+
+    async function clearExamTargets() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'setTargets', examId: currentEditExamId, studentUids: [] })
+        });
+      } catch (error) { console.error('❌ خطأ:', error); }
+    }
+
+    async function saveExamTargets() {
+      const checkedBoxes = document.querySelectorAll('.targetStudentCb:checked');
+      const studentUids = Array.from(checkedBoxes).map(cb => cb.value);
+      if (studentUids.length === 0) { showToast('⚠️ حدد طالب واحد على الأقل', 'warning'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'setTargets', examId: currentEditExamId, studentUids })
+        });
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل الحفظ', 'error');
+      }
+    }
+
+    function closeEditExam() {
+      document.getElementById('editExamCard').style.display = 'none';
+      currentEditExamId = null;
+      loadOnlineExams();
+    }
+
+    // ✅ (طلب) تحويل وقت UTC مخزّن (ISO string من القاعدة) لصيغة datetime-local بتوقيت الجهاز
+    // المحلي — من غير كده حقل التاريخ هيعرض وقت غلط (UTC بدل الوقت الفعلي اللي المدرس حدده)
+    function isoToDatetimeLocalValue(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 16);
+    }
+
+    async function saveExamClosesAt() {
+      const input = document.getElementById('editExamClosesAt').value;
+      const closesAt = input ? new Date(input).toISOString() : null;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'setClosesAt', examId: currentEditExamId, closesAt })
+        });
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) openEditExam(currentEditExamId);
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل الحفظ', 'error');
+      }
+    }
+
+    function clearExamClosesAt() {
+      document.getElementById('editExamClosesAt').value = '';
+      saveExamClosesAt();
+    }
+
+    // ✅ (طلب) عرض حالة الغلق الحالية بوضوح — مفتوح دلوقتي، أو مقفول من امتى، أو هيتقفل امتى
+    function renderExamClosureStatus(exam) {
+      const el = document.getElementById('examClosureStatus');
+      if (!exam.closes_at) {
+        el.innerHTML = '<span style="color:var(--success);"><i class="fas fa-lock-open"></i> الاختبار مفتوح، من غير وقت غلق محدد</span>';
+        return;
+      }
+      const closesAtMs = new Date(exam.closes_at).getTime();
+      const closesAtStr = new Date(exam.closes_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' });
+      if (closesAtMs <= Date.now()) {
+        el.innerHTML = `<span style="color:var(--danger);"><i class="fas fa-lock"></i> الاختبار مقفول حالياً (اتقفل في ${closesAtStr})</span>`;
+      } else {
+        el.innerHTML = `<span style="color:var(--warning);"><i class="fas fa-lock-open"></i> الاختبار مفتوح، وهيتقفل في ${closesAtStr}</span>`;
+      }
+    }
+
+    async function closeExamNow() {
+      if (!(await customConfirm('هل أنت متأكد من قفل الاختبار فوراً؟ محدش هيقدر يبدأ أو يكمّل الاختبار بعد كده لحد ما تفتحيه تاني.'))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'closeNow', examId: currentEditExamId })
+        });
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) openEditExam(currentEditExamId);
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل قفل الاختبار', 'error');
+      }
+    }
+
+    async function reopenExam() {
+      const minutes = document.getElementById('reopenExamMinutes').value;
+      if (!minutes || Number(minutes) <= 0) { showToast('⚠️ حدد مدة إعادة الفتح بالدقايق الأول', 'warning'); return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'reopen', examId: currentEditExamId, minutes: Number(minutes) })
+        });
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) { document.getElementById('reopenExamMinutes').value = ''; openEditExam(currentEditExamId); }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل إعادة الفتح', 'error');
+      }
+    }
+
+    function renderQuestionsList(questions, isPublished) {
+      const container = document.getElementById('questionsListContainer');
+      if (questions.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;">مفيش أسئلة مضافة لسه.</p>';
+        return;
+      }
+      // ✅ Aug 2026: زراري تعديل/حذف السؤال بيختفوا لو الاختبار منشور بالفعل (الباك إند برضه بيرفض
+      // التعديل/الحذف في الحالة دي — الاختفاء هنا تحسين تجربة استخدام بس، مش الحارس الحقيقي)
+      container.innerHTML = questions.map((q, i) => `
+        <div style="padding:12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;">
+            <strong>${i + 1}. ${escapeHtml(q.question_text)}</strong>
+            ${isPublished ? '' : `
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline btn-sm" onclick="startEditQuestion(${q.id})" title="تعديل السؤال"><i class="fas fa-pen"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${q.id})" title="حذف السؤال"><i class="fas fa-trash"></i></button>
+              </div>`}
+          </div>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:6px;">
+            ${q.question_type === 'mcq' ? 'اختياري' : 'صح/خطأ'} — الدرجة: ${q.points} — الإجابة الصحيحة: ${escapeHtml(q.correct_answer === 'true' ? 'صح' : q.correct_answer === 'false' ? 'خطأ' : q.correct_answer)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function onQuestionTypeChange() {
+      const type = document.getElementById('newQuestionType').value;
+      document.getElementById('mcqOptionsContainer').style.display = type === 'mcq' ? 'block' : 'none';
+      document.getElementById('trueFalseContainer').style.display = type === 'true_false' ? 'block' : 'none';
+    }
+
+    function resetQuestionForm() {
+      document.getElementById('newQuestionText').value = '';
+      document.getElementById('newQuestionPoints').value = '';
+      document.getElementById('newQuestionType').value = 'mcq';
+      document.getElementById('trueFalseAnswer').value = 'true';
+      document.getElementById('mcqOptionsList').innerHTML = '';
+      mcqOptionCount = 0;
+      addMcqOptionField();
+      addMcqOptionField();
+      onQuestionTypeChange();
+
+      // ✅ Aug 2026: يرجّع الفورم لوضع "إضافة سؤال جديد" (مش تعديل)
+      currentEditingQuestionId = null;
+      document.getElementById('questionFormTitle').textContent = '➕ إضافة سؤال جديد';
+      document.getElementById('saveQuestionBtn').textContent = '➕ إضافة السؤال';
+      document.getElementById('cancelEditQuestionBtn').style.display = 'none';
+    }
+
+    // ✅ Aug 2026: تعديل سؤال موجود لاختبار لسه مسودة — بيعبّي نفس فورم "إضافة سؤال" ببيانات
+    // السؤال المطلوب تعديله، وبيحوّل زرار الحفظ لنداء updateQuestion بدل addQuestion
+    function startEditQuestion(questionId) {
+      const q = currentExamQuestions.find(x => x.id === questionId);
+      if (!q) { showToast('❌ السؤال مش موجود', 'error'); return; }
+
+      currentEditingQuestionId = questionId;
+      document.getElementById('questionFormTitle').textContent = '✏️ تعديل السؤال';
+      document.getElementById('saveQuestionBtn').textContent = '💾 حفظ التعديل';
+      document.getElementById('cancelEditQuestionBtn').style.display = 'inline-flex';
+
+      document.getElementById('newQuestionText').value = q.question_text;
+      document.getElementById('newQuestionPoints').value = q.points;
+      document.getElementById('newQuestionType').value = q.question_type;
+      onQuestionTypeChange();
+
+      document.getElementById('mcqOptionsList').innerHTML = '';
+      mcqOptionCount = 0;
+      if (q.question_type === 'mcq') {
+        const options = Array.isArray(q.options) ? q.options : [];
+        options.forEach(opt => addMcqOptionField());
+        const optionInputs = document.querySelectorAll('#mcqOptionsList input[type="text"]');
+        options.forEach((opt, i) => { if (optionInputs[i]) optionInputs[i].value = opt; });
+        const correctIndex = options.findIndex(opt => opt === q.correct_answer);
+        const radios = document.querySelectorAll('input[name="mcqCorrect"]');
+        if (correctIndex >= 0 && radios[correctIndex]) radios[correctIndex].checked = true;
+      } else {
+        addMcqOptionField();
+        addMcqOptionField();
+        document.getElementById('trueFalseAnswer').value = q.correct_answer === 'false' ? 'false' : 'true';
+      }
+
+      document.getElementById('addQuestionSection').scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function cancelEditQuestion() {
+      resetQuestionForm();
+    }
+
+    function addMcqOptionField() {
+      mcqOptionCount++;
+      const id = 'mcqOpt_' + mcqOptionCount;
+      const container = document.getElementById('mcqOptionsList');
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+      row.innerHTML = `
+        <input type="radio" name="mcqCorrect" value="${id}" style="width:18px;height:18px;">
+        <input type="text" id="${id}" placeholder="نص الاختيار" style="flex:1;">
+      `;
+      container.appendChild(row);
+    }
+
+    // ✅ Aug 2026: زرار واحد لفورم واحد — بيضيف سؤال جديد أو يعدّل سؤال موجود على حسب
+    // currentEditingQuestionId (متظبطة من startEditQuestion/resetQuestionForm)
+    async function saveQuestion() {
+      const questionText = document.getElementById('newQuestionText').value.trim();
+      const questionType = document.getElementById('newQuestionType').value;
+      const points = document.getElementById('newQuestionPoints').value;
+
+      if (!questionText || !points) { showToast('⚠️ اكتب السؤال والدرجة', 'warning'); return; }
+
+      let correctAnswer, options;
+      if (questionType === 'mcq') {
+        const optionInputs = document.querySelectorAll('#mcqOptionsList input[type="text"]');
+        options = Array.from(optionInputs).map(inp => inp.value.trim()).filter(Boolean);
+        if (options.length < 2) { showToast('⚠️ محتاج اختيارين على الأقل', 'warning'); return; }
+        const selectedRadio = document.querySelector('input[name="mcqCorrect"]:checked');
+        if (!selectedRadio) { showToast('⚠️ حدد الإجابة الصحيحة', 'warning'); return; }
+        correctAnswer = document.getElementById(selectedRadio.value).value.trim();
+        if (!correctAnswer) { showToast('⚠️ الاختيار الصحيح فاضي، اكتبه', 'warning'); return; }
+      } else {
+        correctAnswer = document.getElementById('trueFalseAnswer').value;
+      }
+
+      const isEditing = currentEditingQuestionId !== null;
+      const payload = isEditing
+        ? { action: 'updateQuestion', questionId: currentEditingQuestionId, questionText, questionType, options, correctAnswer, points }
+        : { action: 'addQuestion', examId: currentEditExamId, questionText, questionType, options, correctAnswer, points };
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          openEditExam(currentEditExamId);
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast(isEditing ? '❌ فشل تعديل السؤال' : '❌ فشل إضافة السؤال', 'error');
+      }
+    }
+
+    async function deleteQuestion(questionId) {
+      if (!(await customConfirm('هل أنت متأكد من حذف السؤال ده؟'))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'deleteQuestion', questionId })
+        });
+        const result = await response.json();
+        if (result.success) { showToast('✅ اتحذف', 'success'); openEditExam(currentEditExamId); }
+        else showToast('❌ ' + result.message, 'error');
+      } catch (error) { console.error('❌ خطأ:', error); }
+    }
+
+    async function publishExam() {
+      if (!(await customConfirm('هل أنت متأكد من نشر الاختبار؟ هيتبعت إشعار فوري لكل أولياء أمور المجموعة.'))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'publish', examId: currentEditExamId })
+        });
+        const result = await response.json();
+        if (result.success) { showToast('✅ ' + result.message, 'success'); openEditExam(currentEditExamId); }
+        else showToast('❌ ' + result.message, 'error');
+      } catch (error) { console.error('❌ خطأ:', error); }
+    }
+
+    async function deleteExam(examId) {
+      if (!(await customConfirm('هل أنت متأكد من حذف الاختبار ده بالكامل؟ ده هيحذف كل النتائج المسجّلة كمان.'))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'delete', examId })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ اتحذف', 'success');
+          if (String(currentEditExamId) === String(examId)) closeEditExam(); else loadOnlineExams();
+        }
+        else showToast('❌ ' + result.message, 'error');
+      } catch (error) { console.error('❌ خطأ:', error); }
+    }
+
+    // ============================================
+    // ✅ Aug 2026: طباعة ورقة أسئلة الاختبار (من غير الإجابات الصحيحة) — بتفتح من داخل شاشة
+    // تحرير الاختبار (بتستخدم آخر بيانات محمّلة لنفس الاختبار عن طريق نداء getOne تاني)
+    // ============================================
+    async function openExamPaperPrint() {
+      if (!currentEditExamId) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'getOne', examId: currentEditExamId })
+        });
+        const result = await response.json();
+        if (!result.success) { showToast('❌ ' + result.message, 'error'); return; }
+        const exam = result.data;
+        const questions = exam.questions || [];
+        if (questions.length === 0) { showToast('⚠️ لسه معملتيش أي أسئلة للاختبار ده', 'warning'); return; }
+
+        // ✅ Aug 2026: شعار المركز في هيدر الطباعة — نفس منطق تقرير النتائج فوق
+        document.getElementById('examPaperPrintLogo').src = sessionStorage.getItem('brandLogoUrl') || 'assets/logo-icon.svg';
+        document.getElementById('examPaperCenterNamePrint').textContent = teacherName || 'فَصلي';
+
+        document.getElementById('examPaperHeader').innerHTML = `
+          <h2 style="margin:0 0 6px;">${escapeHtml(exam.title)}</h2>
+          <p style="margin:0;color:var(--gray-600);font-size:13px;">المجموعة: ${escapeHtml(exam.group_name)} — المدة: ${exam.duration_minutes} دقيقة — الدرجة الإجمالية: ${questions.reduce((s, q) => s + Number(q.points), 0)}</p>
+          <p style="margin:6px 0 0;font-size:12.5px;color:var(--gray-500);">الاسم: __________________________</p>
+        `;
+        document.getElementById('examPaperQuestions').innerHTML = questions.map((q, i) => {
+          let answerArea = '';
+          if (q.question_type === 'mcq') {
+            answerArea = '<div style="margin-top:6px;">' + (q.options || []).map((opt) => `
+              <label style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+                <span style="display:inline-block;width:14px;height:14px;border:1.5px solid var(--gray-400);border-radius:50%;"></span>
+                <span>${escapeHtml(opt)}</span>
+              </label>
+            `).join('') + '</div>';
+          } else {
+            answerArea = `
+              <div style="margin-top:6px;display:flex;gap:20px;">
+                <label style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:14px;height:14px;border:1.5px solid var(--gray-400);border-radius:50%;"></span> صح</label>
+                <label style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:14px;height:14px;border:1.5px solid var(--gray-400);border-radius:50%;"></span> خطأ</label>
+              </div>
+            `;
+          }
+          return `
+            <div style="padding:12px 0;border-bottom:1px solid var(--gray-100);">
+              <strong>${i + 1}. ${escapeHtml(q.question_text)}</strong>
+              <span style="color:var(--gray-500);font-size:12px;"> (${q.points} درجة)</span>
+              ${answerArea}
+            </div>
+          `;
+        }).join('');
+
+        document.getElementById('examPaperPrintModal').classList.add('open');
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل تجهيز ورقة الأسئلة', 'error');
+      }
+    }
+
+    function closeExamPaperPrint() {
+      document.getElementById('examPaperPrintModal').classList.remove('open');
+    }
+
+    // ✅ بتطبع أي مودال حالياً فاتح (تقرير النتائج أو ورقة الأسئلة) — نفس أسلوب groups.html
+    function printGradesModal() {
+      document.body.classList.add('grades-printing');
+      const cleanup = () => document.body.classList.remove('grades-printing');
+      window.addEventListener('afterprint', cleanup, { once: true });
+      setTimeout(() => { window.print(); setTimeout(cleanup, 500); }, 50);
+    }
+
+    // ============================================
+    // ✅ Aug 2026: حذف اسم امتحان يدوي بالكامل من القائمة — الباك إند بيرفض العملية لو فيه درجات
+    // مسجّلة تحته فعلاً (خطأ 409 برسالة واضحة)، فمفيش داعي لتأكيد إضافي غير التأكيد المعتاد
+    // ============================================
+    async function deleteExamTitle(title) {
+      if (!(await customConfirm(`هل أنت متأكد من حذف "${title}" نهائياً من قائمة أسماء الامتحانات؟`))) return;
+      const group = document.getElementById('gradeGroup').value;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-grade', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'deleteTitle', title, groupName: group })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          await loadExamNames();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل حذف اسم الامتحان', 'error');
+      }
+    }
+
+    async function createStandaloneExam() {
+      const group = document.getElementById('gradeGroup').value;
+      const name = document.getElementById('standaloneExamName').value.trim();
+      const maxScore = document.getElementById('standaloneExamMaxScore').value.trim();
+      if (!group) { showToast('⚠️ اختر المجموعة فوق الأول', 'warning'); return; }
+      if (!name) { showToast('⚠️ أدخل اسم الامتحان', 'warning'); return; }
+      if (maxScore === '' || isNaN(maxScore) || Number(maxScore) <= 0) { showToast('⚠️ أدخل درجة نهائية صحيحة', 'warning'); return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/create-exam-title', {
+          method: 'POST', headers, body: JSON.stringify({ title: name, maxScore: Number(maxScore), groupName: group })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          document.getElementById('standaloneExamName').value = '';
+          document.getElementById('standaloneExamMaxScore').value = '';
+          await loadExamNames();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل إنشاء الامتحان', 'error');
+      }
+    }
+
+    // ✅ (طلب) أسماء الامتحانات بقت مرتبطة بمجموعة معيّنة (زي درجاتها بالظبط) — عشان لو المدرس
+    // بيدرّس أكتر من مجموعة (مواد مختلفة)، قائمة الامتحانات اللي بيختار منها لما يرصد درجة لمجموعة
+    // معيّنة تبقى بس امتحانات المجموعة دي، مش كل امتحانات كل مجموعاته مخلوطة مع بعض
+    async function loadExamNames() {
+      const group = document.getElementById('gradeGroup').value;
+      const select = document.getElementById('examName');
+      const titlesList = document.getElementById('examTitlesList');
+      if (!group) {
+        select.innerHTML = '<option value="">-- اختر مجموعة أولاً --</option>';
+        if (titlesList) titlesList.innerHTML = '<p style="color:var(--gray-400);font-size:12.5px;margin-top:10px;">اختر مجموعة فوق الأول عشان تشوف/تضيف امتحاناتها.</p>';
+        return;
+      }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-titles', {
+          method: 'POST', headers, body: JSON.stringify({ clientId, type: 'exam', groupName: group })
         });
         if (response.status === 401) { handleUnauthorized(); return; }
         const result = await response.json();
-        const select = document.getElementById('examName');
         const currentValue = select.value;
         select.innerHTML = '<option value="">-- اختر الامتحان --</option><option value="__new__">➕ إضافة امتحان جديد...</option>';
         if (result.success) {
@@ -665,8 +1746,40 @@
         }
         if ([...select.options].some(o => o.value === currentValue)) select.value = currentValue;
 
-        // نعبّي قائمة الفلترة كمان بنفس أسماء الامتحانات
-        const filterSelect = document.getElementById('filterExam');
+        // ✅ Aug 2026: قائمة أسماء الامتحانات المسجّلة (بتاعة نفس المجموعة المختارة) جوه صندوق
+        // "إنشاء امتحان جديد" — كل واحد معاه زرار حذف (deleteExamTitle، الباك إند بيرفض الحذف لو
+        // فيه درجات مسجّلة تحت الاسم ده في نفس المجموعة)
+        if (titlesList) {
+          const titles = result.success ? (result.data || []) : [];
+          titlesList.innerHTML = titles.length === 0
+            ? '<p style="color:var(--gray-400);font-size:12.5px;margin-top:10px;">مفيش أسماء امتحانات محفوظة لهذه المجموعة لسه.</p>'
+            : '<div style="margin-top:12px;border-top:1px solid var(--gray-200);padding-top:10px;">' +
+              titles.map(t => `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:13px;">
+                  <span>${escapeHtml(t.title)}${t.defaultMaxScore ? ' <span style="color:var(--gray-400);">(من ' + t.defaultMaxScore + ')</span>' : ''}</span>
+                  <button class="btn btn-danger btn-sm" onclick="deleteExamTitle('${escapeAttr(t.title)}')" title="حذف اسم الامتحان"><i class="fas fa-trash"></i></button>
+                </div>
+              `).join('') + '</div>';
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل أسماء الامتحانات:', error);
+      }
+    }
+
+    // ✅ (طلب) قائمة فلتر "عرض الدرجات المسجّلة" منفصلة عن قائمة إضافة الدرجة — مرتبطة بفلتر
+    // المجموعة (filterGroup) لوحده، مش gradeGroup. لو الفلتر "كل المجموعات" بنرجّع كل الامتحانات
+    // (من كل المجموعات) عشان يقدر يفلتر بيها بغض النظر عن مجموعتها؛ ولو مجموعة محددة بنقصر القائمة عليها بس
+    async function loadFilterExamNames() {
+      const filterGroup = document.getElementById('filterGroup').value;
+      const filterSelect = document.getElementById('filterExam');
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-titles', {
+          method: 'POST', headers, body: JSON.stringify({ clientId, type: 'exam', groupName: (filterGroup && filterGroup !== 'ALL') ? filterGroup : undefined })
+        });
+        if (response.status === 401) { handleUnauthorized(); return; }
+        const result = await response.json();
         const currentFilterValue = filterSelect.value;
         filterSelect.innerHTML = '<option value="">📝 كل الامتحانات</option>';
         if (result.success) {
@@ -684,11 +1797,12 @@
           filterSelect.value = savedExam;
         }
       } catch (error) {
-        console.error('❌ خطأ في تحميل أسماء الامتحانات:', error);
+        console.error('❌ خطأ في تحميل أسماء الامتحانات للفلتر:', error);
       }
     }
 
     async function loadGrades() {
+      const myLoadToken = ++gradesLoadToken;
       const filterGroup = document.getElementById('filterGroup').value;
       const tbody = document.getElementById('gradesBody');
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
@@ -715,6 +1829,9 @@
           return;
         }
 
+        // ✅ لو حد غيّر الفلتر تاني قبل ما الطلب ده يخلص، نتجاهل النتيجة دي تماماً — مش أحدث حاجة
+        if (myLoadToken !== gradesLoadToken) return;
+
         const studentsResultForGrades = await studentsResponse.json();
         const allStudentsForGrades = studentsResultForGrades.success ? (studentsResultForGrades.data || []) : [];
 
@@ -723,7 +1840,9 @@
           const grades = result.data || [];
           const examNames = [...new Set(grades.map(g => g.exam_name))];
           const studentNames = [...new Set(grades.map(g => g.student_name))];
-          const avgScore = grades.length > 0 ? Math.round(grades.reduce((sum, g) => sum + Number(g.score), 0) / grades.length) : 0;
+          const totalScoreSum = grades.reduce((sum, g) => sum + Number(g.score), 0);
+          const totalMaxSum = grades.reduce((sum, g) => sum + Number(g.max_score || 0), 0);
+          const avgScore = totalMaxSum > 0 ? Math.round((totalScoreSum / totalMaxSum) * 100) : 0;
           document.getElementById('statExams').textContent = examNames.length;
           document.getElementById('statStudents').textContent = studentNames.length;
           document.getElementById('statAvg').textContent = avgScore + '%';
@@ -892,10 +2011,11 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/update-grade', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-grade', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'update',
             gradeId,
             score: Number(score),
             assistantId,
@@ -936,10 +2056,11 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/delete-grade', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-grade', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'delete',
             gradeId: gradeId,
             assistantId: assistantId,
             assistantName: assistantName
@@ -978,10 +2099,10 @@
         }
         if (jwt && pushToken) {
           // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
-          fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ token: pushToken })
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
           }).catch(() => {});
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
@@ -1021,10 +2142,10 @@
   try {
     const headers = getAuthHeaders();
     if (!headers) return;
-    const response = await fetch(PROJECT_URL + '/functions/v1/export-backup', {
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-backup', {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify({ clientId })
+      body: JSON.stringify({ action: 'export', clientId })
     });
     if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
     const result = await response.json();
@@ -1070,17 +2191,54 @@ function openResetConfirm() {
   overlay.innerHTML = `
     <div class="reset-modal-box">
       <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
-      <h3>⚠️ تحذير خطير!</h3>
-      <p>أنت على وشك حذف <strong>جميع بيانات النظام</strong> بما في ذلك:</p>
-      <ul style="text-align:right;list-style:none;padding:8px 0;color:var(--gray-600);font-size:14px;">
-        <li>📋 <strong>جميع الطلاب</strong> المسجلين</li>
-        <li>📝 <strong>جميع الدرجات</strong> والامتحانات</li>
-        <li>💰 <strong>جميع المدفوعات</strong> (شهرية ومذكرات)</li>
-        <li>📖 <strong>جميع المذكرات</strong> وسجلاتها</li>
-        <li>✅ <strong>جميع سجلات الحضور</strong></li>
-      </ul>
+      <h3>⚠️ إعادة تهيئة النظام</h3>
+      <p>حدّد البيانات اللي عايز تحذفها بس — مش لازم تحذف كل حاجة (مثلاً لو العام الدراسي انتهى بس الطلاب مكملين سنة جديدة، سيب "الطلاب أنفسهم" من غير تحديد).</p>
+      <div class="reset-opts-list" style="text-align:right;padding:4px 12px;font-size:13.5px;margin:10px 0;">
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="attendance" checked> ✅ سجلات الحضور
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="payments" checked> 💰 المدفوعات الشهرية
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="grades" checked> 📝 الدرجات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="bookPayments" checked> 📖 سداد المذكرات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-top:1px solid var(--gray-200);margin-top:6px;padding-top:12px;">
+          <input type="checkbox" class="reset-opt" value="students"> 📋 الطلاب أنفسهم (بيانتهم وأرقامهم وكروتهم)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="groups"> 🏫 المجموعات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="books"> 📚 المذكرات نفسها (كبند، مش سداداتها بس)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="paymentTitles"> 🏷️ بنود السداد المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="examTitles"> 🏷️ أسماء الامتحانات المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="onlineExams"> 🖥️ الامتحانات الإلكترونية (أسئلتها ومحاولات الطلاب فيها)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="notifications"> 🔔 الإشعارات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="activityLogs"> 📜 سجل النشاطات القديم
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="registrationRequests"> 📋 طلبات التسجيل
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="conversations"> 💬 المحادثات مع أولياء الأمور
+        </label>
+      </div>
       <div class="warning-text">
-        <i class="fas fa-skull"></i> هذا الإجراء لا يمكن التراجع عنه!
+        <i class="fas fa-skull"></i> اللي هتحدده هيتحذف نهائياً، مفيش رجوع بعد كده!
       </div>
       <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
         <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
@@ -1148,7 +2306,9 @@ async function confirmReset() {
     }
 
     // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
-    const requestBody = JSON.stringify({ clientId: clientId, password: password });
+    const selectedOptions = {};
+    document.querySelectorAll('.reset-opt').forEach(cb => { selectedOptions[cb.value] = cb.checked; });
+    const requestBody = JSON.stringify({ clientId: clientId, password: password, options: selectedOptions });
 
     const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
       method: 'POST',
@@ -1201,7 +2361,7 @@ function timeAgo(dateStr) {
       return `منذ ${days} يوم`;
     }
 
-const NOTIF_ICONS = { bulk_message: '📨' };
+const NOTIF_ICONS = { bulk_message: '📨', center_teacher_message: '🏢', parent_message: '💬', teacher_message: '💬' };
 
     function playNotificationSound() {
       try {
@@ -1294,8 +2454,18 @@ function toggleNotifPanel() {
       panel.style.position = 'fixed';
       panel.style.left = left + 'px';
       panel.style.right = 'auto';
-      panel.style.top = (btnRect.bottom + 10) + 'px';
       panel.style.width = panelWidth + 'px';
+      // ✅ Batch 24 (بند 4): بعد نقل الجرس لذيل القائمة الجانبية (تحت خالص)، فتح البانل تحت
+      // الزرار عادي هيطلعه خارج حدود الشاشة — لو مفيش مساحة كافية تحت، نفتحه لفوق بدل كده
+      const estimatedHeight = Math.min(420, window.innerHeight - margin * 2);
+      const spaceBelow = window.innerHeight - btnRect.bottom - margin;
+      if (spaceBelow < estimatedHeight && btnRect.top > estimatedHeight) {
+        panel.style.bottom = (window.innerHeight - btnRect.top + 10) + 'px';
+        panel.style.top = 'auto';
+      } else {
+        panel.style.top = (btnRect.bottom + 10) + 'px';
+        panel.style.bottom = 'auto';
+      }
     }
 
 document.addEventListener('click', function(e) {
@@ -1307,19 +2477,35 @@ document.addEventListener('click', function(e) {
 
 async function markOneRead(id) {
       const item = notifData.find(n => n.id === id);
-      if (item && item.is_read) return;
+      const wasUnread = item && !item.is_read;
       try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
-          method: 'POST', headers, body: JSON.stringify({ notificationId: id })
-        });
-        if (item) item.is_read = true;
-        const badge = document.getElementById('notifBadge');
-        const unread = notifData.filter(n => !n.is_read).length;
-        if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
-        else badge.style.display = 'none';
-        renderNotifList();
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل كان مش بيعمل أي حاجة خالص (return مبكر) —
+        // دلوقتي بيوديك لمكان الإشعار برضه حتى لو كان مقروء من قبل، وبس اللي بيتعلَّم كمقروء
+        // فعلياً (نداء الـ API) هو اللي بيتخطّى لو كان مقروء أصلاً
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه المستخدم لمكان الإشعار نفسه بدل
+        // ما يفضل واقف في نفس الصفحة من غير ما يعرف يوصل للمحادثة/الطالب الخاص بالإشعار
+        if (item) {
+          if (item.type === 'parent_message' && item.student_uid) {
+            const nm = (item.details && item.details.student_name) || '';
+            window.location.href = 'messages.html?openConversation=' + encodeURIComponent(item.student_uid) + (nm ? '&name=' + encodeURIComponent(nm) : '');
+          } else if (item.type === 'center_teacher_message') {
+            window.location.href = 'messages.html';
+          }
+        }
       } catch (error) {
         console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
       }
@@ -1377,7 +2563,10 @@ async function markAllRead() {
     window.onload = async function() {
       applyPermissions();
       await loadGroups();
+      // ✅ examName/examTitlesList دلوقتي مرتبطين بـ gradeGroup (فاضية لحد ما يتم اختيار مجموعة)،
+      // وfilterExam مرتبط بـ filterGroup (اللي ممكن يكون له قيمة محفوظة بالفعل بعد loadGroups)
       await loadExamNames();
+      await loadFilterExamNames();
       await loadGrades();
       filterTable();
     };
@@ -1389,6 +2578,7 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="branding.js?v=2"></script>
 <script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

@@ -36,7 +36,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=52">
   <style>
     .target-options{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:20px; }
     .target-card{
@@ -79,19 +79,24 @@
 
       <nav class="sidebar-nav">
         <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="students.html" class="sidebar-item "><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item "><i class="fas fa-pen-to-square"></i> الدرجات</a>
-        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات</a>
-        <a href="books.html" class="sidebar-item "><i class="fas fa-book"></i> المذكرات</a>
-        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="messages.html" class="sidebar-item active" id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+
+        <div class="sidebar-section-label">🎓 الأكاديمية</div>
+        <a href="students.html" class="sidebar-item " id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item " id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item " id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
+
+        <div class="sidebar-section-label">💰 المالية</div>
+        <a href="payments.html" class="sidebar-item " id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
         <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
 
-        <div class="sidebar-section-label">إدارة</div>
-        <a href="messages.html" class="sidebar-item active"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <div class="sidebar-section-label">📊 التقارير</div>
+        <a href="reports.html" class="sidebar-item " id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
+
+        <div class="sidebar-section-label">⚙️ الإعدادات</div>
         <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
-        <a href="assistants-management.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
-        <a href="wifi-config.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-headset"></i> التواصل والنُسخ</a>
+        <a href="staff.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
+        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
       </nav>
 
       <div class="sidebar-footer">
@@ -107,6 +112,21 @@
           <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
         </button>
         <div class="sidebar-footer-actions">
+          <div class="notif-wrap" id="notifWrap" style="display:none;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-panel-header">
+                <span>الإشعارات</span>
+                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
           <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
           <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
         </div>
@@ -117,21 +137,6 @@
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
         <h2>رسائل جماعية</h2>
-        <div class="notif-wrap" id="notifWrap" style="display:none;">
-          <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
-            <i class="fas fa-bell"></i>
-            <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-          </button>
-          <div class="notif-panel" id="notifPanel">
-            <div class="notif-panel-header">
-              <span>الإشعارات</span>
-              <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
-            </div>
-            <div class="notif-list" id="notifList">
-              <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
-            </div>
-          </div>
-        </div>
         <div style="width:24px;"></div>
       </div>
   <div class="container">
@@ -149,6 +154,13 @@
       <span id="roleIndicator" style="font-size:13px;color:var(--gray-500);"><i class="fas fa-user-tag"></i> دور: <strong id="userRoleDisplay">مدرس</strong></span>
     </div>
 
+    <div class="tabs" id="messagesTabs">
+      <button class="tab active" data-tab="bulk" id="bulkTabBtn" onclick="switchMessagesTab('bulk')">📨 رسائل جماعية</button>
+      <button class="tab" data-tab="conversations" id="conversationsTabBtn" onclick="switchMessagesTab('conversations')">💬 محادثات أولياء الأمور</button>
+    </div>
+
+    <div id="messagesTabsWrap">
+    <div class="tab-content active" id="tab-bulk">
     <div class="card">
       <div class="card-header">
         <h3><i class="fas fa-users" style="color:var(--primary);"></i> اختر المستلمين</h3>
@@ -172,6 +184,14 @@
         </div>
 
         <div id="parentsSection">
+          <!-- ✅ Aug 2026 (Phase I follow-up): فلتر اختياري حسب المدرس لحسابات السنتر — بيضيّق قائمة
+               المجموعات تحت على مجموعات المدرس المختار بس، عشان تقدر تبعت لطلاب مدرس معيّن بسهولة -->
+          <div class="field" id="messageInstructorFilterField" style="display:none;">
+            <label>فلتر حسب المدرس (اختياري)</label>
+            <select id="messageInstructorFilter" onchange="onMessageInstructorFilterChange()">
+              <option value="">-- كل المدرسين --</option>
+            </select>
+          </div>
           <div class="field">
             <label>المجموعة</label>
             <select id="groupSelect" onchange="onGroupChange()">
@@ -259,9 +279,81 @@
         </button>
       </div>
     </div>
+    </div>
+
+    <div class="tab-content" id="tab-conversations">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-comments" style="color:var(--info);"></i> المحادثات مع أولياء الأمور</h3>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--gray-500);font-size:13px;margin-bottom:14px;">
+          رد مباشر داخل التطبيق على رسائل أولياء الأمور بخصوص أولادهم — بديل عن التواصل الخارجي.
+        </p>
+        <div id="conversationInboxControls" style="margin-bottom:12px;">
+          <button class="btn btn-primary btn-sm" onclick="openNewConversationModal()">
+            <i class="fas fa-plus"></i> بدء محادثة جديدة
+          </button>
+        </div>
+        <div id="conversationInboxList">
+          <div style="text-align:center;padding:20px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</div>
+        </div>
+        <div id="conversationThreadView" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="closeConversationThread()"><i class="fas fa-arrow-right"></i> رجوع للقائمة</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteCurrentConversation()">
+              <i class="fas fa-trash-alt"></i> حذف المحادثة
+            </button>
+          </div>
+          <h4 style="margin:12px 0 8px;color:var(--gray-900);" id="conversationThreadTitle"></h4>
+          <div id="conversationThreadMessages" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;padding:4px;"></div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="conversationReplyInput" placeholder="اكتب ردك هنا..." style="flex:1;" onkeydown="if(event.key==='Enter'){sendConversationReply();}">
+            <button class="btn btn-primary" onclick="sendConversationReply()"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    </div>
   </div>
 
       </div>
+  </div>
+
+  <!-- ✅ (طلب) بدء محادثة جديدة مع ولي أمر طالب لسه معملش رسالة — بدل ما المدرس يستنى ولي الأمر يبدأ -->
+  <div class="modal-overlay" id="newConversationModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fas fa-comment-medical" style="color:var(--primary);"></i> بدء محادثة جديدة</h3>
+        <button class="modal-close" onclick="closeNewConversationModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>المجموعة <span class="required">*</span></label>
+          <select id="newConvGroupSelect" onchange="onNewConvGroupChange()">
+            <option value="">-- اختر المجموعة --</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>الطالب <span class="required">*</span></label>
+          <select id="newConvStudentSelect" disabled>
+            <option value="">-- اختر المجموعة أولاً --</option>
+          </select>
+          <span class="hint" id="newConvStudentHint"></span>
+        </div>
+        <div class="form-group">
+          <label>الرسالة <span class="required">*</span></label>
+          <input type="text" id="newConvMessageInput" placeholder="اكتب أول رسالة...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeNewConversationModal()">إلغاء</button>
+        <button class="btn btn-primary" onclick="submitNewConversation()">
+          <i class="fas fa-paper-plane"></i> إرسال وبدء المحادثة
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="toast-container" id="toastContainer"></div>
@@ -316,7 +408,11 @@
           const clone = res.clone();
           const data = await clone.json();
           if (data && data.code === 'LICENSE_EXPIRED') {
-            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+            // ✅ بنحط الرسالة الحقيقية + اسم الدالة اللي رجّعت الخطأ في sessionStorage
+            // (مش URL parameter) عشان صفحة القفل تقدر تقراها وتعرضها صح للتشخيص
+            sessionStorage.setItem('lockReason', data.message || 'انتهت صلاحية الترخيص');
+            sessionStorage.setItem('lockSourceFunction', urlStr);
+            window.location.href = 'license-locked.html';
           }
         }
       } catch (e) { /* تجاهل */ }
@@ -371,7 +467,19 @@
     if (!clientId) { sessionStorage.clear(); window.location.href = LOGIN_URL; }
 
     const isAssistant = userRole === 'assistant';
-    if (isAssistant) {
+    const assistantPermissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
+    // ✅ Batch 21: الصفحة دي محتاجة صلاحية "الرسائل الجماعية" — كانت متاحة لأي مساعد من غير
+    // أي تحقق فرونت إند (رابطها في القائمة الجانبية كان ظاهر دايماً من غير id أو تحكم أصلاً)
+    // ✅ Batch 23 (بند 8): الصفحة بقت تتفتح لو معاه send_messages أو manage_conversations —
+    // أي واحدة من الاتنين كافية، وتبويبات الصفحة نفسها بتتحكم بالصلاحية المناسبة لكل واحد تحت
+    const canSendMessages = !isAssistant || assistantPermissions.send_messages === true;
+    const canManageConversations = !isAssistant || assistantPermissions.manage_conversations === true;
+    if (isAssistant && !canSendMessages && !canManageConversations) {
+      showToast('⛔ ليس لديك صلاحية الرسائل أو المحادثات، تواصل مع المدرس', 'error');
+      setTimeout(() => { window.location.href = 'assistant-dashboard.html'; }, 1500);
+    }
+    // ✅ الجرس ده بيشتغل للمدرس والمساعد الاتنين (Aug 2026) — كان قبل كده مقصور على المساعد بس
+    {
       const notifWrap = document.getElementById('notifWrap');
       if (notifWrap) {
         notifWrap.style.display = 'block';
@@ -391,6 +499,27 @@
       if (navR) navR.style.display = 'flex';
       if (navF) navF.style.display = 'flex';
       if (navL) navL.style.display = 'flex';
+    } else {
+      // ✅ Batch 21: القائمة الجانبية للمساعد لازم تعكس صلاحياته الفعلية في كل صفحة يزورها،
+      // مش لوحة التحكم بس — نفس منطق التفعيل المستخدم في assistant-dashboard.html
+      const navSt = document.getElementById('navStudents');
+      const navGr = document.getElementById('navGroups');
+      const navGd = document.getElementById('navGrades');
+      const navPay = document.getElementById('navPayments');
+      const navRep = document.getElementById('navReports');
+      const navMsg = document.getElementById('navMessages');
+      const navF = document.getElementById('navFinancial');
+      const navL = document.getElementById('navActivityLog');
+      const navA = document.getElementById('navManageAssistants');
+      if (navSt) navSt.style.display = assistantPermissions.view_students !== false ? 'flex' : 'none';
+      if (navGr) navGr.style.display = (assistantPermissions.manage_groups === true || assistantPermissions.manage_registration === true) ? 'flex' : 'none';
+      if (navGd) navGd.style.display = assistantPermissions.record_grades === true ? 'flex' : 'none';
+      if (navPay) navPay.style.display = assistantPermissions.record_payments === true ? 'flex' : 'none';
+      if (navRep) navRep.style.display = assistantPermissions.view_reports === true ? 'flex' : 'none';
+      if (navMsg) navMsg.style.display = (assistantPermissions.send_messages === true || assistantPermissions.manage_conversations === true) ? 'flex' : 'none';
+      if (navF) navF.style.display = assistantPermissions.view_financial === true ? 'flex' : 'none';
+      if (navL) navL.style.display = assistantPermissions.view_activity_log === true ? 'flex' : 'none';
+      if (navA) navA.style.display = assistantPermissions.view_staff === true ? 'flex' : 'none';
     }
     const displayName = isAssistant && assistantName ? assistantName : teacherName;
     document.getElementById('userDisplayName').textContent = 'مرحباً، ' + displayName;
@@ -415,10 +544,10 @@
         }
         if (jwt && pushToken) {
           // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
-          fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ token: pushToken })
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
           }).catch(() => {});
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
@@ -464,10 +593,10 @@ async function downloadBackup() {
   try {
     const headers = getAuthHeaders();
     if (!headers) return;
-    const response = await fetch(PROJECT_URL + '/functions/v1/export-backup', {
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-backup', {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify({ clientId })
+      body: JSON.stringify({ action: 'export', clientId })
     });
     if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
     const result = await response.json();
@@ -513,17 +642,54 @@ function openResetConfirm() {
   overlay.innerHTML = `
     <div class="reset-modal-box">
       <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
-      <h3>⚠️ تحذير خطير!</h3>
-      <p>أنت على وشك حذف <strong>جميع بيانات النظام</strong> بما في ذلك:</p>
-      <ul style="text-align:right;list-style:none;padding:8px 0;color:var(--gray-600);font-size:14px;">
-        <li>📋 <strong>جميع الطلاب</strong> المسجلين</li>
-        <li>📝 <strong>جميع الدرجات</strong> والامتحانات</li>
-        <li>💰 <strong>جميع المدفوعات</strong> (شهرية ومذكرات)</li>
-        <li>📖 <strong>جميع المذكرات</strong> وسجلاتها</li>
-        <li>✅ <strong>جميع سجلات الحضور</strong></li>
-      </ul>
+      <h3>⚠️ إعادة تهيئة النظام</h3>
+      <p>حدّد البيانات اللي عايز تحذفها بس — مش لازم تحذف كل حاجة (مثلاً لو العام الدراسي انتهى بس الطلاب مكملين سنة جديدة، سيب "الطلاب أنفسهم" من غير تحديد).</p>
+      <div class="reset-opts-list" style="text-align:right;padding:4px 12px;font-size:13.5px;margin:10px 0;">
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="attendance" checked> ✅ سجلات الحضور
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="payments" checked> 💰 المدفوعات الشهرية
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="grades" checked> 📝 الدرجات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="bookPayments" checked> 📖 سداد المذكرات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-top:1px solid var(--gray-200);margin-top:6px;padding-top:12px;">
+          <input type="checkbox" class="reset-opt" value="students"> 📋 الطلاب أنفسهم (بيانتهم وأرقامهم وكروتهم)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="groups"> 🏫 المجموعات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="books"> 📚 المذكرات نفسها (كبند، مش سداداتها بس)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="paymentTitles"> 🏷️ بنود السداد المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="examTitles"> 🏷️ أسماء الامتحانات المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="onlineExams"> 🖥️ الامتحانات الإلكترونية (أسئلتها ومحاولات الطلاب فيها)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="notifications"> 🔔 الإشعارات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="activityLogs"> 📜 سجل النشاطات القديم
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="registrationRequests"> 📋 طلبات التسجيل
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="conversations"> 💬 المحادثات مع أولياء الأمور
+        </label>
+      </div>
       <div class="warning-text">
-        <i class="fas fa-skull"></i> هذا الإجراء لا يمكن التراجع عنه!
+        <i class="fas fa-skull"></i> اللي هتحدده هيتحذف نهائياً، مفيش رجوع بعد كده!
       </div>
       <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
         <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
@@ -591,7 +757,9 @@ async function confirmReset() {
     }
 
     // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
-    const requestBody = JSON.stringify({ clientId: clientId, password: password });
+    const selectedOptions = {};
+    document.querySelectorAll('.reset-opt').forEach(cb => { selectedOptions[cb.value] = cb.checked; });
+    const requestBody = JSON.stringify({ clientId: clientId, password: password, options: selectedOptions });
 
     const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
       method: 'POST',
@@ -644,7 +812,7 @@ function timeAgo(dateStr) {
       return `منذ ${days} يوم`;
     }
 
-const NOTIF_ICONS = { bulk_message: '📨' };
+const NOTIF_ICONS = { bulk_message: '📨', center_teacher_message: '🏢', parent_message: '💬', teacher_message: '💬' };
 
     function playNotificationSound() {
       try {
@@ -737,8 +905,18 @@ function toggleNotifPanel() {
       panel.style.position = 'fixed';
       panel.style.left = left + 'px';
       panel.style.right = 'auto';
-      panel.style.top = (btnRect.bottom + 10) + 'px';
       panel.style.width = panelWidth + 'px';
+      // ✅ Batch 24 (بند 4): بعد نقل الجرس لذيل القائمة الجانبية (تحت خالص)، فتح البانل تحت
+      // الزرار عادي هيطلعه خارج حدود الشاشة — لو مفيش مساحة كافية تحت، نفتحه لفوق بدل كده
+      const estimatedHeight = Math.min(420, window.innerHeight - margin * 2);
+      const spaceBelow = window.innerHeight - btnRect.bottom - margin;
+      if (spaceBelow < estimatedHeight && btnRect.top > estimatedHeight) {
+        panel.style.bottom = (window.innerHeight - btnRect.top + 10) + 'px';
+        panel.style.top = 'auto';
+      } else {
+        panel.style.top = (btnRect.bottom + 10) + 'px';
+        panel.style.bottom = 'auto';
+      }
     }
 
 document.addEventListener('click', function(e) {
@@ -750,19 +928,35 @@ document.addEventListener('click', function(e) {
 
 async function markOneRead(id) {
       const item = notifData.find(n => n.id === id);
-      if (item && item.is_read) return;
+      const wasUnread = item && !item.is_read;
       try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
-          method: 'POST', headers, body: JSON.stringify({ notificationId: id })
-        });
-        if (item) item.is_read = true;
-        const badge = document.getElementById('notifBadge');
-        const unread = notifData.filter(n => !n.is_read).length;
-        if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
-        else badge.style.display = 'none';
-        renderNotifList();
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل كان مش بيعمل أي حاجة خالص (return مبكر) —
+        // دلوقتي بيوديك لمكان الإشعار برضه حتى لو كان مقروء من قبل، وبس اللي بيتعلَّم كمقروء
+        // فعلياً (نداء الـ API) هو اللي بيتخطّى لو كان مقروء أصلاً
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه المستخدم لمكان الإشعار نفسه بدل
+        // ما يفضل واقف في نفس الصفحة من غير ما يعرف يوصل للمحادثة/الطالب الخاص بالإشعار
+        if (item) {
+          if (item.type === 'parent_message' && item.student_uid) {
+            const nm = (item.details && item.details.student_name) || '';
+            window.location.href = 'messages.html?openConversation=' + encodeURIComponent(item.student_uid) + (nm ? '&name=' + encodeURIComponent(nm) : '');
+          } else if (item.type === 'center_teacher_message') {
+            window.location.href = 'messages.html';
+          }
+        }
       } catch (error) {
         console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
       }
@@ -856,6 +1050,9 @@ async function markAllRead() {
       `).join('');
     }
 
+    // ✅ Aug 2026 (Phase I follow-up): اسم المجموعة -> instructorNameId (لو موجود)، لدعم فلتر "حسب المدرس"
+    let groupInstructorMap = {};
+
     async function loadGroups() {
       try {
         const headers = getAuthHeaders();
@@ -876,6 +1073,60 @@ async function markAllRead() {
       } catch (error) {
         console.error('❌ خطأ في تحميل المجموعات:', error);
         showToast('❌ فشل تحميل المجموعات', 'error');
+      }
+
+      if (sessionStorage.getItem('isCenter') === 'true') {
+        await loadMessageInstructorFilter();
+      }
+    }
+
+    async function loadMessageInstructorFilter() {
+      document.getElementById('messageInstructorFilterField').style.display = 'block';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const [instructorsRes, groupsRes] = await Promise.all([
+          fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', { method: 'POST', headers, body: JSON.stringify({ action: 'list' }) }),
+          fetch(PROJECT_URL + '/functions/v1/manage-group', { method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed' }) }),
+        ]);
+        const instructorsResult = await instructorsRes.json();
+        const groupsResult = await groupsRes.json();
+
+        groupInstructorMap = {};
+        if (groupsResult.success) {
+          (groupsResult.data || []).forEach(g => { if (g.instructorNameId) groupInstructorMap[g.name] = String(g.instructorNameId); });
+        }
+
+        const filterSelect = document.getElementById('messageInstructorFilter');
+        filterSelect.innerHTML = '<option value="">-- كل المدرسين --</option>';
+        if (instructorsResult.success) {
+          (instructorsResult.data || []).filter(n => n.is_active).forEach(n => {
+            const opt = document.createElement('option');
+            opt.value = n.id; opt.textContent = n.name;
+            filterSelect.appendChild(opt);
+          });
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل فلتر المدرسين:', error);
+      }
+    }
+
+    function onMessageInstructorFilterChange() {
+      const filterValue = document.getElementById('messageInstructorFilter').value;
+      const groupSelect = document.getElementById('groupSelect');
+      let visibleCount = 0;
+      let firstVisibleValue = '';
+      Array.from(groupSelect.options).forEach(opt => {
+        if (!opt.value) { opt.hidden = false; return; } // خيار "اختر مجموعة..." يفضل ظاهر دايماً
+        const matches = !filterValue || groupInstructorMap[opt.value] === filterValue;
+        opt.hidden = !matches;
+        if (matches) { visibleCount++; if (!firstVisibleValue) firstVisibleValue = opt.value; }
+      });
+      // ✅ لو المجموعة المختارة حالياً بقت مخفية بعد الفلترة، أو فيه مجموعة واحدة بس مطابقة، نظبط الاختيار تلقائياً
+      const currentValue = groupSelect.value;
+      if (currentValue && groupInstructorMap[currentValue] !== filterValue && filterValue) {
+        groupSelect.value = visibleCount === 1 ? firstVisibleValue : '';
+        onGroupChange();
       }
     }
 
@@ -921,8 +1172,8 @@ async function markAllRead() {
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-payment-titles', {
-          method: 'POST', headers, body: JSON.stringify({ clientId })
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-titles', {
+          method: 'POST', headers, body: JSON.stringify({ clientId , type: 'payment' })
         });
         const result = await response.json();
         const select = document.getElementById('unpaidPaymentTitleSelect');
@@ -1091,8 +1342,313 @@ async function markAllRead() {
       }
     }
 
+    // ============================================
+    // محادثات ثنائية الاتجاه مع أولياء الأمور
+    // ============================================
+    let currentConversationStudentUid = null;
+    let currentConversationStudentName = '';
+
+    async function loadConversationInbox() {
+      const container = document.getElementById('conversationInboxList');
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-notifications', {
+          method: 'POST', headers, body: JSON.stringify({ mode: 'conversationInbox' })
+        });
+        if (response.status === 401) return;
+        const result = await response.json();
+        if (!result.success) { container.innerHTML = '<p style="color:var(--danger);font-size:13px;">تعذر تحميل المحادثات</p>'; return; }
+
+        const threads = result.data || [];
+        if (threads.length === 0) {
+          container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;padding:16px;">مفيش رسائل من أولياء الأمور لسه.</p>';
+          return;
+        }
+
+        threads.sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+        container.innerHTML = threads.map(t => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;cursor:pointer;background:var(--gray-50);margin-bottom:6px;" onclick="openConversationThread('${escapeAttr(t.studentUid)}', '${escapeAttr(t.studentName)}')">
+            <div style="flex:1;min-width:0;">
+              <strong style="color:var(--gray-900);">${escapeHtml(t.studentName)}</strong>
+              <div style="font-size:12px;color:var(--gray-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.lastSenderRole === 'parent' ? '👤 ولي الأمر: ' : '👨‍🏫 أنت: '}${escapeHtml(t.lastMessage)}</div>
+            </div>
+            ${t.unreadCount > 0 ? `<span style="background:var(--danger);color:#fff;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;">${t.unreadCount}</span>` : ''}
+            <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;" title="حذف المحادثة" onclick="event.stopPropagation();deleteConversationFromInbox('${escapeAttr(t.studentUid)}', '${escapeAttr(t.studentName)}')">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المحادثات:', error);
+        container.innerHTML = '<p style="color:var(--danger);font-size:13px;">تعذر تحميل المحادثات</p>';
+      }
+    }
+
+    // ✅ (طلب) حذف محادثة كاملة مع ولي أمر — متاح في أي وقت من داخل الصفحة، مش بس عن طريق
+    // إعادة تهيئة النظام. زرار حذف مصغّر جوه كل صف في القائمة + زرار حذف داخل الثريد نفسه.
+    async function deleteConversation(studentUid, studentName) {
+      if (!confirm(`هل أنت متأكد من حذف كل رسائل المحادثة مع "${studentName}"؟ لا يمكن التراجع عن هذا الإجراء.`)) return false;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return false;
+        const response = await fetch(PROJECT_URL + '/functions/v1/send-bulk-message', {
+          method: 'POST', headers, body: JSON.stringify({ mode: 'conversation_delete', studentUid })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ تم حذف المحادثة', 'success');
+          return true;
+        }
+        showToast('❌ ' + result.message, 'error');
+        return false;
+      } catch (error) {
+        console.error('❌ خطأ في حذف المحادثة:', error);
+        showToast('❌ فشل حذف المحادثة', 'error');
+        return false;
+      }
+    }
+
+    async function deleteConversationFromInbox(studentUid, studentName) {
+      const deleted = await deleteConversation(studentUid, studentName);
+      if (deleted) await loadConversationInbox();
+    }
+
+    async function deleteCurrentConversation() {
+      if (!currentConversationStudentUid) return;
+      const deleted = await deleteConversation(currentConversationStudentUid, currentConversationStudentName);
+      if (deleted) {
+        closeConversationThread();
+        await loadConversationInbox();
+      }
+    }
+
+    async function openConversationThread(studentUid, studentName) {
+      currentConversationStudentUid = studentUid;
+      currentConversationStudentName = studentName;
+      document.getElementById('conversationInboxList').style.display = 'none';
+      document.getElementById('conversationThreadView').style.display = 'block';
+      document.getElementById('conversationThreadTitle').textContent = '💬 ' + studentName;
+      await loadConversationThread();
+    }
+
+    async function loadConversationThread() {
+      const container = document.getElementById('conversationThreadMessages');
+      container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin"></i></div>';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-notifications', {
+          method: 'POST', headers, body: JSON.stringify({ mode: 'conversation', studentUid: currentConversationStudentUid })
+        });
+        const result = await response.json();
+        if (!result.success) { container.innerHTML = '<p style="color:var(--danger);">تعذر تحميل الرسائل</p>'; return; }
+
+        const messages = result.data || [];
+        if (messages.length === 0) {
+          container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;">لسه مفيش رسائل في المحادثة دي.</p>';
+          return;
+        }
+        container.innerHTML = messages.map(m => {
+          const isParent = m.sender_role === 'parent';
+          const time = new Date(m.created_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+          return `
+            <div style="align-self:${isParent ? 'flex-start' : 'flex-end'};max-width:80%;background:${isParent ? 'var(--gray-100)' : '#FDF1CC'};border-radius:12px;padding:8px 12px;">
+              <div style="font-size:13px;color:${isParent ? 'var(--gray-900)' : '#3B2E0A'};">${escapeHtml(m.message)}</div>
+              <div style="font-size:10.5px;color:var(--gray-500);margin-top:3px;">${escapeHtml(m.sender_name)} — ${time}</div>
+            </div>
+          `;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المحادثة:', error);
+        container.innerHTML = '<p style="color:var(--danger);">تعذر تحميل الرسائل</p>';
+      }
+    }
+
+    async function sendConversationReply() {
+      const input = document.getElementById('conversationReplyInput');
+      const message = input.value.trim();
+      if (!message || !currentConversationStudentUid) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/send-bulk-message', {
+          method: 'POST', headers, body: JSON.stringify({ mode: 'conversation', studentUid: currentConversationStudentUid, message })
+        });
+        const result = await response.json();
+        if (result.success) {
+          input.value = '';
+          await loadConversationThread();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إرسال الرد:', error);
+        showToast('❌ فشل إرسال الرد', 'error');
+      }
+    }
+
+    // ============================================
+    // ✅ (طلب) بدء محادثة جديدة من المدرس/المساعد — بدل ما ولي الأمر بس هو اللي يقدر يبدأ
+    // ============================================
+    let newConvGroupsLoaded = false;
+    async function openNewConversationModal() {
+      document.getElementById('newConvMessageInput').value = '';
+      document.getElementById('newConvGroupSelect').value = '';
+      document.getElementById('newConvStudentSelect').innerHTML = '<option value="">-- اختر المجموعة أولاً --</option>';
+      document.getElementById('newConvStudentSelect').disabled = true;
+      document.getElementById('newConvStudentHint').textContent = '';
+      if (!newConvGroupsLoaded) {
+        try {
+          const headers = getAuthHeaders();
+          if (!headers) return;
+          const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+            method: 'POST', headers, body: JSON.stringify({ clientId })
+          });
+          const result = await response.json();
+          if (result.success) {
+            const select = document.getElementById('newConvGroupSelect');
+            (result.data || []).forEach(g => {
+              const opt = document.createElement('option');
+              opt.value = g; opt.textContent = g;
+              select.appendChild(opt);
+            });
+            newConvGroupsLoaded = true;
+          }
+        } catch (error) { console.error('❌ خطأ في تحميل المجموعات:', error); }
+      }
+      document.getElementById('newConversationModal').classList.add('open');
+    }
+
+    function closeNewConversationModal() {
+      document.getElementById('newConversationModal').classList.remove('open');
+    }
+
+    async function onNewConvGroupChange() {
+      const group = document.getElementById('newConvGroupSelect').value;
+      const select = document.getElementById('newConvStudentSelect');
+      const hint = document.getElementById('newConvStudentHint');
+      select.innerHTML = '<option value="">-- جاري التحميل... --</option>';
+      select.disabled = true;
+      hint.textContent = '';
+      if (!group) { select.innerHTML = '<option value="">-- اختر المجموعة أولاً --</option>'; return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-students', {
+          method: 'POST', headers, body: JSON.stringify({ clientId, groupName: group })
+        });
+        const result = await response.json();
+        const students = (result.data || []).filter(s => s.parent_phone).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+        if (!result.success || students.length === 0) {
+          select.innerHTML = '<option value="">-- لا يوجد طلاب برقم ولي أمر في المجموعة دي --</option>';
+          hint.textContent = 'المحادثة محتاجة رقم هاتف ولي أمر مسجّل للطالب.';
+          return;
+        }
+        select.innerHTML = '<option value="">-- اختر الطالب --</option>' + students.map(s =>
+          `<option value="${escapeAttr(s.uid)}" data-name="${escapeAttr(s.name)}">${escapeHtml(s.name)}</option>`
+        ).join('');
+        select.disabled = false;
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الطلاب:', error);
+        select.innerHTML = '<option value="">-- تعذر التحميل --</option>';
+      }
+    }
+
+    async function submitNewConversation() {
+      const select = document.getElementById('newConvStudentSelect');
+      const studentUid = select.value;
+      const studentName = select.selectedOptions[0]?.dataset.name || '';
+      const message = document.getElementById('newConvMessageInput').value.trim();
+      if (!studentUid) { showToast('⚠️ اختر الطالب', 'warning'); return; }
+      if (!message) { showToast('⚠️ اكتب رسالة', 'warning'); return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/send-bulk-message', {
+          method: 'POST', headers, body: JSON.stringify({ mode: 'conversation', studentUid, message })
+        });
+        const result = await response.json();
+        if (result.success) {
+          closeNewConversationModal();
+          showToast('✅ تم بدء المحادثة', 'success');
+          await openConversationThread(studentUid, studentName);
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في بدء المحادثة:', error);
+        showToast('❌ فشل إرسال الرسالة', 'error');
+      }
+    }
+
+    function closeConversationThread() {
+      currentConversationStudentUid = null;
+      document.getElementById('conversationThreadView').style.display = 'none';
+      document.getElementById('conversationInboxList').style.display = 'block';
+      loadConversationInbox();
+    }
+
+    // ✅ (طلب) تبويب "محادثات أولياء الأمور" بيختفي تمامًا لو المدرس عطّل المحادثات من
+    // إعدادات الحساب — الإرسال الجماعي (التبويب التاني) مش متأثر إطلاقاً
+    function switchMessagesTab(name) {
+      document.querySelectorAll('#messagesTabs .tab').forEach(t => t.classList.remove('active'));
+      const tabBtn = document.querySelector('#messagesTabs .tab[data-tab="' + name + '"]');
+      if (tabBtn) tabBtn.classList.add('active');
+      document.querySelectorAll('#messagesTabsWrap .tab-content').forEach(tc => tc.classList.remove('active'));
+      const content = document.getElementById('tab-' + name);
+      if (content) content.classList.add('active');
+    }
+
+    async function checkConversationsEnabled() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-teacher-contact', { method: 'POST', headers });
+        if (response.status === 401) return;
+        const result = await response.json();
+        if (result.success && result.data.conversations_enabled === false) {
+          document.getElementById('conversationsTabBtn').style.display = 'none';
+        } else {
+          loadConversationInbox();
+        }
+      } catch (error) {
+        console.error('❌ خطأ في التحقق من حالة المحادثات:', error);
+        loadConversationInbox();
+      }
+    }
+
+    // ✅ Batch 23 (بند 8): تبويب "رسائل جماعية" بقى مربوط بصلاحية send_messages للمساعد (كان
+    // ظاهر دايماً لأي مساعد فتح الصفحة أصلاً، حتى لو دخل بصلاحية manage_conversations بس)، وتبويب
+    // "محادثات أولياء الأمور" بقى مربوط بـ manage_conversations — لو معاه واحدة بس، بيبدأ عليها
+    // مباشرة بدل ما يفتح على تبويب ملوش صلاحية يشوف محتواه
+    function applyMessagesTabPermissions() {
+      if (!isAssistant) return;
+      document.getElementById('bulkTabBtn').style.display = canSendMessages ? '' : 'none';
+      if (!canManageConversations) document.getElementById('conversationsTabBtn').style.display = 'none';
+      if (!canSendMessages && canManageConversations) switchMessagesTab('conversations');
+    }
+
+    // ✅ Batch 24 (بند 6): الضغط على إشعار رسالة من ولي الأمر كان بيفتح الصفحة عادي من غير
+    // ما يوصّل المدرس/المساعد للمحادثة نفسها — دلوقتي لو الرابط فيه ?openConversation=uid
+    // (جاي من جرس الإشعارات) بنفتح تبويب المحادثات وندخل على محادثة الطالب ده على طول
+    async function openConversationFromNotification() {
+      const params = new URLSearchParams(window.location.search);
+      const uid = params.get('openConversation');
+      if (!uid) return;
+      const name = params.get('name') || 'طالب';
+      switchMessagesTab('conversations');
+      await openConversationThread(uid, name);
+    }
+
     window.onload = function() {
       loadGroups();
+      applyMessagesTabPermissions();
+      if (canManageConversations) {
+        checkConversationsEnabled().then(openConversationFromNotification);
+      }
       if (!isAssistant) document.getElementById('assistantsCategoryTab').style.display = '';
       // ✅ إعادة تطبيق الوضع الليلي مرة تانية هنا كإجراء احتياطي، لضمان تطابقه مع باقي الصفحات من أول تحميل
       const savedThemeCheck = localStorage.getItem(getThemeKey());
@@ -1113,6 +1669,7 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="branding.js?v=2"></script>
 <script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

@@ -11,7 +11,9 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=45">
+  <!-- ✅ (طلب) لتبويب "تسجيل الطلاب" الجديد — نفس مكتبة توليد QR المستخدمة سابقاً في teacher-settings.html -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -24,19 +26,24 @@
 
       <nav class="sidebar-nav">
         <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="students.html" class="sidebar-item "><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item active"><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item "><i class="fas fa-pen-to-square"></i> الدرجات</a>
-        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات</a>
-        <a href="books.html" class="sidebar-item "><i class="fas fa-book"></i> المذكرات</a>
-        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="messages.html" class="sidebar-item " id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+
+        <div class="sidebar-section-label">🎓 الأكاديمية</div>
+        <a href="students.html" class="sidebar-item " id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item active" id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item " id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
+
+        <div class="sidebar-section-label">💰 المالية</div>
+        <a href="payments.html" class="sidebar-item " id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
         <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
 
-        <div class="sidebar-section-label">إدارة</div>
-        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <div class="sidebar-section-label">📊 التقارير</div>
+        <a href="reports.html" class="sidebar-item " id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
+
+        <div class="sidebar-section-label">⚙️ الإعدادات</div>
         <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
-        <a href="assistants-management.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
-        <a href="wifi-config.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-headset"></i> التواصل والنُسخ</a>
+        <a href="staff.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
+        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
       </nav>
 
       <div class="sidebar-footer">
@@ -52,6 +59,21 @@
           <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
         </button>
         <div class="sidebar-footer-actions">
+          <div class="notif-wrap" id="notifWrap" style="display:none;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-panel-header">
+                <span>الإشعارات</span>
+                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
           <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
           <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
         </div>
@@ -62,21 +84,6 @@
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
         <h2>المجموعات</h2>
-        <div class="notif-wrap" id="notifWrap" style="display:none;">
-          <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
-            <i class="fas fa-bell"></i>
-            <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-          </button>
-          <div class="notif-panel" id="notifPanel">
-            <div class="notif-panel-header">
-              <span>الإشعارات</span>
-              <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
-            </div>
-            <div class="notif-list" id="notifList">
-              <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
-            </div>
-          </div>
-        </div>
         <div style="width:24px;"></div>
       </div>
   <div class="container">
@@ -95,27 +102,30 @@
       </span>
     </div>
 
-    <div class="card" id="addGroupCard">
-      <div class="card-header">
-        <h3><i class="fas fa-plus-circle" style="color:var(--success);"></i> إضافة مجموعة جديدة</h3>
-      </div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-group full">
-            <label>اسم المجموعة <span class="required">*</span></label>
-            <input type="text" id="newGroupName" placeholder="مثال: المرحلة الإعدادية">
-          </div>
-        </div>
-        <div class="form-actions" id="formActions">
-          <button class="btn btn-success" id="addGroupBtn" onclick="addGroup()">
-            <i class="fas fa-save"></i> إضافة مجموعة
-          </button>
-          <button class="btn btn-outline" onclick="document.getElementById('newGroupName').value = '';">
-            <i class="fas fa-undo"></i> تفريغ
-          </button>
-        </div>
-      </div>
+    <!-- ✅ Aug 2026: إعادة تنظيم الصفحة لتبويبات (زي grades.html/books.html/payments.html) — كانت 4 كروت
+         متتالية في صفحة واحدة، دلوقتي 4 تبويبات: المجموعات الحالية، إضافة مجموعة، المراحل الدراسية، سجل الحصص -->
+    <div class="tabs" id="groupsTabs">
+      <button class="tab active" data-tab="list" onclick="switchGroupsTab('list')">
+        <i class="fas fa-list"></i> المجموعات الحالية
+      </button>
+      <button class="tab" data-tab="add" onclick="switchGroupsTab('add')">
+        <i class="fas fa-plus-circle"></i> إضافة مجموعة
+      </button>
+      <button class="tab" data-tab="levels" onclick="switchGroupsTab('levels')">
+        <i class="fas fa-layer-group"></i> المراحل الدراسية
+      </button>
+      <button class="tab" data-tab="sessions" onclick="switchGroupsTab('sessions')">
+        <i class="fas fa-calendar-week"></i> سجل الحصص
+      </button>
+      <!-- ✅ (طلب) نُقل من صفحة إعدادات الحساب — أقرب منطقياً لمجموعات الطلاب، ومتاح للمساعد
+           كمان لو معاه صلاحية manage_registration (مستقلة عن صلاحية manage_groups) -->
+      <button class="tab" data-tab="registration" id="tabBtnRegistration" onclick="switchGroupsTab('registration')" style="display:none;">
+        <i class="fas fa-user-plus"></i> تسجيل الطلاب
+      </button>
     </div>
+
+    <div id="groupsTabsWrap">
+    <div class="tab-content active" id="tab-list">
 
     <div class="card">
       <div class="card-header">
@@ -129,6 +139,150 @@
           </div>
         </div>
       </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-add">
+
+    <div class="card" id="addGroupCard">
+      <div class="card-header">
+        <h3><i class="fas fa-plus-circle" style="color:var(--success);"></i> إضافة مجموعة جديدة</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>اسم المجموعة <span class="required">*</span></label>
+            <input type="text" id="newGroupName" placeholder="مثال: المرحلة الإعدادية">
+          </div>
+          <div class="form-group full">
+            <label>الحد الأقصى لعدد الطلاب (اختياري)</label>
+            <input type="number" id="newGroupMaxStudents" min="1" placeholder="سيبه فاضي لو مفيش حد أقصى">
+          </div>
+          <!-- ✅ Aug 2026 (Phase I follow-up): لازم تحدد مدرس المجموعة وقت الإنشاء نفسه لحسابات السنتر -->
+          <div class="form-group full" id="newGroupInstructorField" style="display:none;">
+            <label>المدرس المسؤول عن المجموعة <span class="required">*</span></label>
+            <select id="newGroupInstructorSelect">
+              <option value="">-- اختر المدرس --</option>
+            </select>
+          </div>
+          <!-- ✅ (المرحلة الدراسية) متاحة لكل المدرسين، مش بس حسابات السنتر — اختيارية -->
+          <div class="form-group full">
+            <label>المرحلة الدراسية (اختياري)</label>
+            <select id="newGroupLevelSelect">
+              <option value="">-- بدون مرحلة دراسية --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions" id="formActions">
+          <button class="btn btn-success" id="addGroupBtn" onclick="addGroup()">
+            <i class="fas fa-save"></i> إضافة مجموعة
+          </button>
+          <button class="btn btn-outline" onclick="document.getElementById('newGroupName').value = '';">
+            <i class="fas fa-undo"></i> تفريغ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-levels">
+
+    <!-- ✅ (المرحلة الدراسية) إدارة المراحل الدراسية — متاحة لكل المدرسين (مش زي أسماء المدرسين
+         اللي مقصورة على حسابات السنتر في staff.html). حطيناها هنا في groups.html لأنها مرتبطة
+         مباشرة بفورم إنشاء المجموعة، وده المكان اللي المدرس هيحتاجها جنبه غالباً -->
+    <div class="card" id="educationLevelsCard">
+      <div class="card-header">
+        <h3><i class="fas fa-layer-group" style="color:var(--primary);"></i> إدارة المراحل الدراسية</h3>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--gray-500);font-size:13px;margin-bottom:14px;">
+          المراحل الدراسية بتظهر لولي الأمر في رابط التسجيل العام عشان يختار مرحلة ابنه بدل ما يكتب اسم مجموعة — أنت بعدين بتحدد المجموعة الفعلية وقت الموافقة على الطلب.
+        </p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>📝 اسم المرحلة الدراسية</label>
+            <input type="text" id="newLevelName" placeholder="مثال: الصف الأول الثانوي">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-success" onclick="addEducationLevel()">
+            <i class="fas fa-save"></i> إضافة مرحلة
+          </button>
+        </div>
+        <div class="table-wrapper" style="margin-top:16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>الحالة</th>
+                <th style="text-align:center;">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="educationLevelsBody">
+              <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--gray-400);">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-sessions">
+
+    <!-- ✅ Aug 2026 (Phase I follow-up 10): سجل الحصص — الحصص بقت بتتنشأ تلقائياً لحظة بدء تسجيل
+         الحضور (قارئ كروت أو يدوي) مش من هنا، وهنا بس لعرض/طباعة سجل حضور أي حصة سابقة لكل مجموعة -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-calendar-week" style="color:var(--primary);"></i> سجل الحصص</h3>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--gray-500);font-size:13px;margin-bottom:16px;">
+          الحصص بتتنشأ تلقائياً لحظة بدء تسجيل الحضور (من القارئ أو الحضور اليدوي). هنا تقدر تعرض أو تطبع سجل حضور أي حصة سابقة لأي مجموعة.
+        </p>
+        <div class="field-row">
+          <div class="field">
+            <label>المجموعة</label>
+            <select id="sessionGroupSelect" onchange="loadGroupSessions()">
+              <option value="">-- اختر المجموعة --</option>
+            </select>
+          </div>
+        </div>
+        <div id="sessionsListContainer" style="margin-top:20px;"></div>
+      </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-registration">
+
+    <!-- ✅ (طلب) نُقل من صفحة إعدادات الحساب (teacher-settings.html) لصفحة المجموعات — أقرب
+         منطقياً لأن قبول طلب انضمام بيحتاج اختيار مجموعة للطالب الجديد. متاح للمدرس دايماً،
+         وللمساعد لو معاه صلاحية manage_registration (منفصلة تماماً عن صلاحية manage_groups) -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-link" style="color:var(--primary);"></i> رابط التسجيل العام</h3>
+      </div>
+      <div class="card-body">
+        <span class="sub">شارك الرابط ده مع أولياء الأمور (زي صفحة فيسبوك السنتر) — أي حد يقدر يقدّم طلب انضمام لطالب جديد، وتقدر توافق أو ترفض من هنا.</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;">
+          <input type="text" id="registrationLinkDisplay" readonly dir="ltr" style="flex:1;min-width:200px;padding:10px;border-radius:8px;border:1px solid var(--gray-200);background:var(--gray-50);font-family:monospace;font-size:12.5px;">
+          <button class="btn btn-outline btn-sm" onclick="copyRegistrationLink()"><i class="fas fa-copy"></i> نسخ</button>
+          <button class="btn btn-outline btn-sm" id="regenerateRegistrationLinkBtn" onclick="regenerateRegistrationLink()" style="display:none;"><i class="fas fa-rotate"></i> توليد رابط جديد</button>
+        </div>
+        <p class="sub" id="regenerateRegistrationLinkHint" style="margin-top:8px;display:none;">⚠️ توليد رابط جديد بيوقف الرابط القديم فوراً — استخدمه بس لو الرابط القديم اتسرّب أو عايز توقفه.</p>
+
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200);">
+          <div id="registrationQrCode" style="background:white;padding:8px;border-radius:8px;border:1px solid var(--gray-200);display:inline-flex;"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <span class="sub">أو شارك رمز QR ده — أي حد يقدر يمسحه بكاميرا موبايله عشان يفتح رابط التسجيل مباشرة.</span>
+            <button class="btn btn-outline btn-sm" onclick="downloadRegistrationQr()" style="width:fit-content;"><i class="fas fa-download"></i> تحميل صورة QR</button>
+          </div>
+        </div>
+
+        <div id="registrationRequestsContainer" style="margin-top:18px;"></div>
+      </div>
+    </div>
+
+    </div>
     </div>
   </div>
 
@@ -185,7 +339,11 @@
           const clone = res.clone();
           const data = await clone.json();
           if (data && data.code === 'LICENSE_EXPIRED') {
-            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+            // ✅ بنحط الرسالة الحقيقية + اسم الدالة اللي رجّعت الخطأ في sessionStorage
+            // (مش URL parameter) عشان صفحة القفل تقدر تقراها وتعرضها صح للتشخيص
+            sessionStorage.setItem('lockReason', data.message || 'انتهت صلاحية الترخيص');
+            sessionStorage.setItem('lockSourceFunction', urlStr);
+            window.location.href = 'license-locked.html';
           }
         }
       } catch (e) { /* تجاهل */ }
@@ -277,7 +435,8 @@
 
     const assistantPermissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
     const isAssistant = userRole === 'assistant';
-    if (isAssistant) {
+    // ✅ الجرس ده بيشتغل للمدرس والمساعد الاتنين (Aug 2026) — كان قبل كده مقصور على المساعد بس
+    {
       const notifWrap = document.getElementById('notifWrap');
       if (notifWrap) {
         notifWrap.style.display = 'block';
@@ -296,8 +455,40 @@
       if (navR) navR.style.display = 'flex';
       if (navF) navF.style.display = 'flex';
       if (navL) navL.style.display = 'flex';
+    } else {
+      // ✅ Batch 21: القائمة الجانبية للمساعد لازم تعكس صلاحياته الفعلية في كل صفحة يزورها،
+      // مش لوحة التحكم بس — نفس منطق التفعيل المستخدم في assistant-dashboard.html
+      const navSt = document.getElementById('navStudents');
+      const navGr = document.getElementById('navGroups');
+      const navGd = document.getElementById('navGrades');
+      const navPay = document.getElementById('navPayments');
+      const navRep = document.getElementById('navReports');
+      const navMsg = document.getElementById('navMessages');
+      const navF = document.getElementById('navFinancial');
+      const navL = document.getElementById('navActivityLog');
+      const navA = document.getElementById('navManageAssistants');
+      if (navSt) navSt.style.display = assistantPermissions.view_students !== false ? 'flex' : 'none';
+      if (navGr) navGr.style.display = (assistantPermissions.manage_groups === true || assistantPermissions.manage_registration === true) ? 'flex' : 'none';
+      if (navGd) navGd.style.display = assistantPermissions.record_grades === true ? 'flex' : 'none';
+      if (navPay) navPay.style.display = assistantPermissions.record_payments === true ? 'flex' : 'none';
+      if (navRep) navRep.style.display = assistantPermissions.view_reports === true ? 'flex' : 'none';
+      if (navMsg) navMsg.style.display = (assistantPermissions.send_messages === true || assistantPermissions.manage_conversations === true) ? 'flex' : 'none';
+      if (navF) navF.style.display = assistantPermissions.view_financial === true ? 'flex' : 'none';
+      if (navL) navL.style.display = assistantPermissions.view_activity_log === true ? 'flex' : 'none';
+      if (navA) navA.style.display = assistantPermissions.view_staff === true ? 'flex' : 'none';
     }
     const canManageGroups = isAssistant ? (assistantPermissions.manage_groups === true) : true;
+    // ✅ (طلب) صلاحية مستقلة تماماً عن manage_groups — تاب "تسجيل الطلاب" اتنقل هنا من صفحة
+    // إعدادات الحساب، فتاح دايماً للمدرس، ومتاح للمساعد لو معاه صلاحية manage_registration
+    // حتى لو معندوش صلاحية manage_groups نفسها
+    const canManageRegistration = isAssistant ? (assistantPermissions.manage_registration === true) : true;
+    document.getElementById('tabBtnRegistration').style.display = canManageRegistration ? '' : 'none';
+    // ✅ توليد رابط جديد بيوقف الرابط القديم فوراً لكل المدرسين/المساعدين شغالين على الحساب —
+    // أثر جسيم بيمس الحساب كله، فسايبينه للمدرس نفسه بس، مش للمساعد حتى لو معاه الصلاحية دي
+    if (!isAssistant) {
+      document.getElementById('regenerateRegistrationLinkBtn').style.display = '';
+      document.getElementById('regenerateRegistrationLinkHint').style.display = '';
+    }
 
     const displayName = isAssistant && assistantName ? assistantName : teacherName;
     document.getElementById('userDisplayName').textContent = 'مرحباً، ' + displayName;
@@ -349,10 +540,10 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ clientId })
+          body: JSON.stringify({ action: 'listDetailed', clientId })
         });
 
         if (response.status === 401) {
@@ -375,18 +566,46 @@
             return;
           }
 
+          const isCenterAccount = sessionStorage.getItem('isCenter') === 'true';
           let html = '<div class="groups-list-grid">';
-          groups.forEach(g => {
+          groups.forEach((g, idx) => {
+            const isFull = g.maxStudents !== null && g.studentCount >= g.maxStudents;
+            const capacityLabel = g.maxStudents !== null
+              ? `${g.studentCount} / ${g.maxStudents} طالب` + (isFull ? ' — 🔴 ممتلئة' : '')
+              : `${g.studentCount} طالب — بدون حد أقصى`;
+            // ✅ Aug 2026 (Phase I): كل مجموعة في حساب سنتر بتتبع مدرس واحد — بيتحكم في كل بيانات/عمليات المجموعة دي
+            const instructorLabel = g.instructorName ? escapeHtml(g.instructorName) : 'بدون مدرس محدد';
+            // ✅ (المرحلة الدراسية) بُعد مستقل عن المدرس — متاح لكل المدرسين
+            const levelLabel = g.levelName ? escapeHtml(g.levelName) : 'بدون مرحلة دراسية';
+
+            // ✅ (طلب) تنظيم شكل كارت المجموعة: الاسم + شارات معلومات مرتبة، والإجراءات الأساسية
+            // (تعديل/حذف) ظاهرة دايماً، والباقي (المدرس/المرحلة/الحد الأقصى) في قائمة "⋮" — بدل ما
+            // كل الأزرار تتزنق في صف واحد وتحتاج سكرول أفقي جوه الكارت
+            const menuId = 'groupMenu_' + idx;
+            let menuItems = '';
+            if (isCenterAccount) {
+              menuItems += `<button onclick="closeAllActionMenus();openAssignInstructorModal('${escapeAttr(g.name)}', ${g.instructorNameId !== null && g.instructorNameId !== undefined ? g.instructorNameId : 'null'})"><i class="fas fa-chalkboard-user"></i> ربط المدرس</button>`;
+            }
+            menuItems += `<button onclick="closeAllActionMenus();openAssignLevelModal('${escapeAttr(g.name)}', ${g.levelId !== null && g.levelId !== undefined ? g.levelId : 'null'})"><i class="fas fa-layer-group"></i> ربط المرحلة الدراسية</button>`;
+            menuItems += `<button onclick="closeAllActionMenus();editGroupCapacity('${escapeAttr(g.name)}', ${g.maxStudents !== null ? g.maxStudents : 'null'})"><i class="fas fa-users-gear"></i> الحد الأقصى</button>`;
+            menuItems += `<button class="danger" onclick="closeAllActionMenus();deleteGroup('${escapeAttr(g.name)}')"><i class="fas fa-trash"></i> حذف</button>`;
+
             html += `
               <div class="group-item">
-                <span class="name">📁 ${escapeHtml(g)}</span>
-                <div class="actions">
-                  <button class="btn btn-warning btn-sm" onclick="renameGroup('${escapeAttr(g)}')" title="تعديل">
+                <span class="name">📁 ${escapeHtml(g.name)}</span>
+                <div class="group-item-badges">
+                  <span class="group-badge${isFull ? ' danger' : ''}"><i class="fas fa-user-group"></i> ${capacityLabel}</span>
+                  ${isCenterAccount ? `<span class="group-badge${g.instructorName ? '' : ' warning'}"><i class="fas fa-chalkboard-user"></i> ${instructorLabel}</span>` : ''}
+                  <span class="group-badge${g.levelName ? '' : ' muted'}"><i class="fas fa-layer-group"></i> ${levelLabel}</span>
+                </div>
+                <div class="row-actions">
+                  <button class="btn btn-warning btn-sm" onclick="renameGroup('${escapeAttr(g.name)}')" title="تعديل">
                     <i class="fas fa-edit"></i> تعديل
                   </button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteGroup('${escapeAttr(g)}')" title="حذف">
-                    <i class="fas fa-trash"></i> حذف
-                  </button>
+                  <div class="action-menu">
+                    <button class="btn btn-outline btn-sm" onclick="toggleActionMenu(event, '${menuId}')" title="مزيد من الإجراءات"><i class="fas fa-ellipsis-vertical"></i></button>
+                    <div class="action-menu-dropdown" id="${menuId}">${menuItems}</div>
+                  </div>
                 </div>
               </div>
             `;
@@ -409,18 +628,35 @@
       }
 
       const name = document.getElementById('newGroupName').value.trim();
+      const maxStudents = document.getElementById('newGroupMaxStudents').value.trim();
       if (!name) { showToast('⚠️ أدخل اسم المجموعة', 'warning'); return; }
+
+      // ✅ Aug 2026 (Phase I follow-up): حسابات السنتر لازم تحدد مدرس المجموعة وقت الإنشاء نفسه
+      const isCenterAccount = sessionStorage.getItem('isCenter') === 'true';
+      let instructorNameId = null;
+      if (isCenterAccount) {
+        instructorNameId = document.getElementById('newGroupInstructorSelect').value;
+        if (!instructorNameId) { showToast('⚠️ اختر المدرس المسؤول عن المجموعة', 'warning'); return; }
+      }
+
+      // ✅ (المرحلة الدراسية) اختيارية لكل المدرسين
+      const levelSelectEl = document.getElementById('newGroupLevelSelect');
+      const levelId = levelSelectEl ? levelSelectEl.value : '';
 
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/create-group', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'create',
             clientId,
             groupName: name,
+            maxStudents: maxStudents || null,
+            instructorNameId: instructorNameId ? Number(instructorNameId) : null,
+            levelId: levelId ? Number(levelId) : null,
             assistantId,
             assistantName
           })
@@ -436,6 +672,9 @@
         if (result.success) {
           showToast('✅ ' + result.message, 'success');
           document.getElementById('newGroupName').value = '';
+          document.getElementById('newGroupMaxStudents').value = '';
+          if (isCenterAccount) document.getElementById('newGroupInstructorSelect').value = '';
+          if (levelSelectEl) levelSelectEl.value = '';
           loadGroups();
         } else {
           showToast('❌ ' + result.message, 'error');
@@ -443,6 +682,48 @@
       } catch (error) {
         console.error('❌ خطأ:', error);
         showToast('❌ فشل إضافة المجموعة', 'error');
+      }
+    }
+
+    async function editGroupCapacity(groupName, currentMax) {
+      if (!canManageGroups) {
+        showToast('⛔ ليس لديك صلاحية تعديل المجموعات', 'error');
+        return;
+      }
+
+      const input = await customPrompt('الحد الأقصى لعدد الطلاب في "' + groupName + '" — سيبه فاضي لإلغاء الحد الأقصى:', currentMax || '');
+      if (input === null) return;
+      const trimmed = input.trim();
+      if (trimmed !== '' && (!/^\d+$/.test(trimmed) || Number(trimmed) < 1)) {
+        showToast('⚠️ أدخل رقم صحيح أكبر من صفر أو سيبه فاضي', 'warning');
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ action: 'setCapacity', clientId, groupName, maxStudents: trimmed || null })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          loadGroups();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل تحديث الحد الأقصى', 'error');
       }
     }
 
@@ -460,10 +741,11 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/rename-group', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'rename',
             clientId,
             oldName,
             newName: newName.trim(),
@@ -503,10 +785,11 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/delete-group', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'delete',
             clientId,
             groupName,
             assistantId,
@@ -545,10 +828,10 @@
         }
         if (jwt && pushToken) {
           // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
-          fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ token: pushToken })
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
           }).catch(() => {});
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
@@ -588,10 +871,10 @@
   try {
     const headers = getAuthHeaders();
     if (!headers) return;
-    const response = await fetch(PROJECT_URL + '/functions/v1/export-backup', {
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-backup', {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify({ clientId })
+      body: JSON.stringify({ action: 'export', clientId })
     });
     if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
     const result = await response.json();
@@ -629,6 +912,90 @@
   }
 }
 
+// ============================================
+// ✅ Aug 2026 (Phase I): ربط مجموعة بمدرس معيّن (حسابات السنتر) — كل بيانات/عمليات المجموعة
+// بعد كده بتتبع المدرس ده
+// ============================================
+async function openAssignInstructorModal(groupName, currentInstructorNameId) {
+  const overlay = document.createElement('div');
+  overlay.className = 'reset-modal-overlay open';
+  overlay.id = 'assignInstructorModalOverlay';
+  overlay.innerHTML = `
+    <div class="reset-modal-box">
+      <div class="modal-icon"><i class="fas fa-chalkboard-user"></i></div>
+      <h3>ربط مدرس بمجموعة "${escapeHtml(groupName)}"</h3>
+      <p>المدرس اللي هتختاره هيبقى مربوط بالمجموعة دي وكل بياناتها وعملياتها.</p>
+      <div class="form-group" style="text-align:right;margin:16px 0;">
+        <select id="assignInstructorSelect" style="width:100%;padding:10px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;">
+          <option value="">جاري التحميل...</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel-reset" onclick="closeAssignInstructorModal()">
+          <i class="fas fa-times"></i> إلغاء
+        </button>
+        <button class="btn btn-confirm-reset" onclick="confirmAssignInstructor('${escapeAttr(groupName)}')" style="background:var(--primary);">
+          <i class="fas fa-check"></i> حفظ
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function (e) { if (e.target === this) closeAssignInstructorModal(); });
+
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', {
+      method: 'POST', headers, body: JSON.stringify({ action: 'list' })
+    });
+    const result = await response.json();
+    const select = document.getElementById('assignInstructorSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- بدون مدرس --</option>';
+    if (result.success) {
+      (result.data || []).filter(n => n.is_active).forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n.id; opt.textContent = n.name;
+        if (currentInstructorNameId !== null && String(n.id) === String(currentInstructorNameId)) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+  } catch (error) {
+    console.error('❌ خطأ في تحميل المدرسين:', error);
+  }
+}
+
+function closeAssignInstructorModal() {
+  const modal = document.getElementById('assignInstructorModalOverlay');
+  if (modal) modal.remove();
+}
+
+async function confirmAssignInstructor(groupName) {
+  const select = document.getElementById('assignInstructorSelect');
+  const instructorNameId = select ? select.value : '';
+  if (!instructorNameId) { showToast('⚠️ اختر مدرساً أولاً', 'warning'); return; }
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'assignInstructor', clientId, groupName, instructorNameId: Number(instructorNameId) })
+    });
+    const result = await response.json();
+    if (result.success) {
+      showToast('✅ ' + result.message, 'success');
+      closeAssignInstructorModal();
+      loadGroups();
+    } else {
+      showToast('❌ ' + result.message, 'error');
+    }
+  } catch (error) {
+    console.error('❌ خطأ:', error);
+    showToast('❌ فشل ربط المدرس', 'error');
+  }
+}
+
 function openResetConfirm() {
   const overlay = document.createElement('div');
   overlay.className = 'reset-modal-overlay open';
@@ -637,17 +1004,54 @@ function openResetConfirm() {
   overlay.innerHTML = `
     <div class="reset-modal-box">
       <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
-      <h3>⚠️ تحذير خطير!</h3>
-      <p>أنت على وشك حذف <strong>جميع بيانات النظام</strong> بما في ذلك:</p>
-      <ul style="text-align:right;list-style:none;padding:8px 0;color:var(--gray-600);font-size:14px;">
-        <li>📋 <strong>جميع الطلاب</strong> المسجلين</li>
-        <li>📝 <strong>جميع الدرجات</strong> والامتحانات</li>
-        <li>💰 <strong>جميع المدفوعات</strong> (شهرية ومذكرات)</li>
-        <li>📖 <strong>جميع المذكرات</strong> وسجلاتها</li>
-        <li>✅ <strong>جميع سجلات الحضور</strong></li>
-      </ul>
+      <h3>⚠️ إعادة تهيئة النظام</h3>
+      <p>حدّد البيانات اللي عايز تحذفها بس — مش لازم تحذف كل حاجة (مثلاً لو العام الدراسي انتهى بس الطلاب مكملين سنة جديدة، سيب "الطلاب أنفسهم" من غير تحديد).</p>
+      <div class="reset-opts-list" style="text-align:right;padding:4px 12px;font-size:13.5px;margin:10px 0;">
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="attendance" checked> ✅ سجلات الحضور
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="payments" checked> 💰 المدفوعات الشهرية
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="grades" checked> 📝 الدرجات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="bookPayments" checked> 📖 سداد المذكرات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-top:1px solid var(--gray-200);margin-top:6px;padding-top:12px;">
+          <input type="checkbox" class="reset-opt" value="students"> 📋 الطلاب أنفسهم (بيانتهم وأرقامهم وكروتهم)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="groups"> 🏫 المجموعات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="books"> 📚 المذكرات نفسها (كبند، مش سداداتها بس)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="paymentTitles"> 🏷️ بنود السداد المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="examTitles"> 🏷️ أسماء الامتحانات المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="onlineExams"> 🖥️ الامتحانات الإلكترونية (أسئلتها ومحاولات الطلاب فيها)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="notifications"> 🔔 الإشعارات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="activityLogs"> 📜 سجل النشاطات القديم
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="registrationRequests"> 📋 طلبات التسجيل
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="conversations"> 💬 المحادثات مع أولياء الأمور
+        </label>
+      </div>
       <div class="warning-text">
-        <i class="fas fa-skull"></i> هذا الإجراء لا يمكن التراجع عنه!
+        <i class="fas fa-skull"></i> اللي هتحدده هيتحذف نهائياً، مفيش رجوع بعد كده!
       </div>
       <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
         <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
@@ -715,7 +1119,9 @@ async function confirmReset() {
     }
 
     // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
-    const requestBody = JSON.stringify({ clientId: clientId, password: password });
+    const selectedOptions = {};
+    document.querySelectorAll('.reset-opt').forEach(cb => { selectedOptions[cb.value] = cb.checked; });
+    const requestBody = JSON.stringify({ clientId: clientId, password: password, options: selectedOptions });
 
     const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
       method: 'POST',
@@ -768,7 +1174,7 @@ function timeAgo(dateStr) {
       return `منذ ${days} يوم`;
     }
 
-const NOTIF_ICONS = { bulk_message: '📨' };
+const NOTIF_ICONS = { bulk_message: '📨', center_teacher_message: '🏢', parent_message: '💬', teacher_message: '💬' };
 
     function playNotificationSound() {
       try {
@@ -861,8 +1267,18 @@ function toggleNotifPanel() {
       panel.style.position = 'fixed';
       panel.style.left = left + 'px';
       panel.style.right = 'auto';
-      panel.style.top = (btnRect.bottom + 10) + 'px';
       panel.style.width = panelWidth + 'px';
+      // ✅ Batch 24 (بند 4): بعد نقل الجرس لذيل القائمة الجانبية (تحت خالص)، فتح البانل تحت
+      // الزرار عادي هيطلعه خارج حدود الشاشة — لو مفيش مساحة كافية تحت، نفتحه لفوق بدل كده
+      const estimatedHeight = Math.min(420, window.innerHeight - margin * 2);
+      const spaceBelow = window.innerHeight - btnRect.bottom - margin;
+      if (spaceBelow < estimatedHeight && btnRect.top > estimatedHeight) {
+        panel.style.bottom = (window.innerHeight - btnRect.top + 10) + 'px';
+        panel.style.top = 'auto';
+      } else {
+        panel.style.top = (btnRect.bottom + 10) + 'px';
+        panel.style.bottom = 'auto';
+      }
     }
 
 document.addEventListener('click', function(e) {
@@ -874,19 +1290,35 @@ document.addEventListener('click', function(e) {
 
 async function markOneRead(id) {
       const item = notifData.find(n => n.id === id);
-      if (item && item.is_read) return;
+      const wasUnread = item && !item.is_read;
       try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
-          method: 'POST', headers, body: JSON.stringify({ notificationId: id })
-        });
-        if (item) item.is_read = true;
-        const badge = document.getElementById('notifBadge');
-        const unread = notifData.filter(n => !n.is_read).length;
-        if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
-        else badge.style.display = 'none';
-        renderNotifList();
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل كان مش بيعمل أي حاجة خالص (return مبكر) —
+        // دلوقتي بيوديك لمكان الإشعار برضه حتى لو كان مقروء من قبل، وبس اللي بيتعلَّم كمقروء
+        // فعلياً (نداء الـ API) هو اللي بيتخطّى لو كان مقروء أصلاً
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه المستخدم لمكان الإشعار نفسه بدل
+        // ما يفضل واقف في نفس الصفحة من غير ما يعرف يوصل للمحادثة/الطالب الخاص بالإشعار
+        if (item) {
+          if (item.type === 'parent_message' && item.student_uid) {
+            const nm = (item.details && item.details.student_name) || '';
+            window.location.href = 'messages.html?openConversation=' + encodeURIComponent(item.student_uid) + (nm ? '&name=' + encodeURIComponent(nm) : '');
+          } else if (item.type === 'center_teacher_message') {
+            window.location.href = 'messages.html';
+          }
+        }
       } catch (error) {
         console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
       }
@@ -941,12 +1373,666 @@ async function markAllRead() {
       }
     }
 
+    // ✅ Aug 2026 (Phase I follow-up): يظهر حقل اختيار المدرس في فورم إنشاء مجموعة جديدة لحسابات السنتر بس
+    async function loadInstructorsForNewGroup() {
+      if (sessionStorage.getItem('isCenter') !== 'true') return;
+      document.getElementById('newGroupInstructorField').style.display = 'block';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'list' })
+        });
+        const result = await response.json();
+        const select = document.getElementById('newGroupInstructorSelect');
+        select.innerHTML = '<option value="">-- اختر المدرس --</option>';
+        if (result.success) {
+          (result.data || []).filter(n => n.is_active).forEach(n => {
+            const opt = document.createElement('option');
+            opt.value = n.id; opt.textContent = n.name;
+            select.appendChild(opt);
+          });
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المدرسين:', error);
+      }
+    }
+
+    // ✅ (المرحلة الدراسية) بتظهر لكل المدرسين، مش بس حسابات السنتر — بتملأ select إنشاء المجموعة
+    async function loadLevelsForNewGroup() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-levels', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'list' })
+        });
+        const result = await response.json();
+        const select = document.getElementById('newGroupLevelSelect');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- بدون مرحلة دراسية --</option>';
+        if (result.success) {
+          (result.data || []).filter(l => l.is_active).forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l.id; opt.textContent = l.name;
+            select.appendChild(opt);
+          });
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المراحل الدراسية:', error);
+      }
+    }
+
+    // ============================================
+    // ✅ (المرحلة الدراسية) إدارة المراحل الدراسية — نفس نمط أسماء المدرسين في staff.html بالظبط
+    // ============================================
+    async function loadEducationLevels() {
+      const body = document.getElementById('educationLevelsBody');
+      if (!body) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-levels', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'list' })
+        });
+        const result = await response.json();
+        if (!result.success) {
+          body.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--danger);">${escapeHtml(result.message)}</td></tr>`;
+          return;
+        }
+        const levels = result.data || [];
+        if (levels.length === 0) {
+          body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--gray-400);">لا توجد مراحل دراسية بعد</td></tr>';
+          return;
+        }
+        body.innerHTML = levels.map(l => `
+          <tr>
+            <td>${escapeHtml(l.name)}</td>
+            <td>${l.is_active ? '🟢 مفعل' : '🔴 غير مفعل'}</td>
+            <td style="text-align:center;">
+              <button class="btn btn-outline btn-sm" onclick="toggleEducationLevel(${l.id}, ${!l.is_active})" title="${l.is_active ? 'تعطيل' : 'تفعيل'}">
+                <i class="fas fa-power-off"></i>
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="deleteEducationLevel(${l.id}, '${escapeAttr(l.name)}')" title="حذف">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المراحل الدراسية:', error);
+        body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--danger);">فشل تحميل المراحل الدراسية</td></tr>';
+      }
+    }
+
+    async function addEducationLevel() {
+      const input = document.getElementById('newLevelName');
+      const name = input.value.trim();
+      if (!name) { showToast('⚠️ أدخل اسم المرحلة الدراسية', 'warning'); return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-levels', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'add', name })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          input.value = '';
+          loadEducationLevels();
+          loadLevelsForNewGroup();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل إضافة المرحلة الدراسية', 'error');
+      }
+    }
+
+    async function toggleEducationLevel(id, newActive) {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-levels', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'update', id, isActive: newActive })
+        });
+        const result = await response.json();
+        if (result.success) { loadEducationLevels(); loadLevelsForNewGroup(); }
+        else showToast('❌ ' + result.message, 'error');
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل تحديث حالة المرحلة الدراسية', 'error');
+      }
+    }
+
+    async function deleteEducationLevel(id, name) {
+      if (!(await customConfirm(`متأكد من حذف المرحلة الدراسية "${name}"؟`))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-levels', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'delete', id })
+        });
+        const result = await response.json();
+        if (result.success) { showToast('✅ ' + result.message, 'success'); loadEducationLevels(); loadLevelsForNewGroup(); }
+        else showToast('❌ ' + result.message, 'error');
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل حذف المرحلة الدراسية', 'error');
+      }
+    }
+
+    // ============================================
+    // ✅ (المرحلة الدراسية) ربط مجموعة بمرحلة دراسية — نفس نمط openAssignInstructorModal بالظبط
+    // ============================================
+    async function openAssignLevelModal(groupName, currentLevelId) {
+      const overlay = document.createElement('div');
+      overlay.className = 'reset-modal-overlay open';
+      overlay.id = 'assignLevelModalOverlay';
+      overlay.innerHTML = `
+        <div class="reset-modal-box">
+          <div class="modal-icon"><i class="fas fa-layer-group"></i></div>
+          <h3>ربط مرحلة دراسية بمجموعة "${escapeHtml(groupName)}"</h3>
+          <p>المرحلة اللي هتختارها هتظهر لولي الأمر في رابط التسجيل العام كتصنيف للمجموعة دي.</p>
+          <div class="form-group" style="text-align:right;margin:16px 0;">
+            <select id="assignLevelSelect" style="width:100%;padding:10px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;">
+              <option value="">جاري التحميل...</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-cancel-reset" onclick="closeAssignLevelModal()">
+              <i class="fas fa-times"></i> إلغاء
+            </button>
+            <button class="btn btn-confirm-reset" onclick="confirmAssignLevel('${escapeAttr(groupName)}')" style="background:var(--primary);">
+              <i class="fas fa-check"></i> حفظ
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function (e) { if (e.target === this) closeAssignLevelModal(); });
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-levels', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'list' })
+        });
+        const result = await response.json();
+        const select = document.getElementById('assignLevelSelect');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- بدون مرحلة دراسية --</option>';
+        if (result.success) {
+          (result.data || []).filter(l => l.is_active).forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l.id; opt.textContent = l.name;
+            if (currentLevelId !== null && String(l.id) === String(currentLevelId)) opt.selected = true;
+            select.appendChild(opt);
+          });
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المراحل الدراسية:', error);
+      }
+    }
+
+    function closeAssignLevelModal() {
+      const modal = document.getElementById('assignLevelModalOverlay');
+      if (modal) modal.remove();
+    }
+
+    async function confirmAssignLevel(groupName) {
+      const select = document.getElementById('assignLevelSelect');
+      const levelId = select ? select.value : '';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
+          method: 'POST', headers,
+          body: JSON.stringify({ action: 'assignLevel', clientId, groupName, levelId: levelId ? Number(levelId) : null })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          closeAssignLevelModal();
+          loadGroups();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل ربط المرحلة الدراسية', 'error');
+      }
+    }
+
+    function switchGroupsTab(name) {
+      document.querySelectorAll('#groupsTabs .tab').forEach(t => t.classList.remove('active'));
+      const tabBtn = document.querySelector('#groupsTabs .tab[data-tab="' + name + '"]');
+      if (tabBtn) tabBtn.classList.add('active');
+      document.querySelectorAll('#groupsTabsWrap .tab-content').forEach(tc => tc.classList.remove('active'));
+      const content = document.getElementById('tab-' + name);
+      if (content) content.classList.add('active');
+      closeAllActionMenus();
+    }
+
+    // ============================================
+    // ✅ (طلب) رابط التسجيل العام + QR + طلبات الانضمام — منقولة من صفحة إعدادات الحساب
+    // (teacher-settings.html) لتاب "تسجيل الطلاب" هنا. متاحة للمدرس دايماً، وللمساعد لو معاه
+    // صلاحية manage_registration (مستقلة تماماً عن manage_groups، فليها كاش مجموعات خاص بيها
+    // بدل ما تعتمد على loadGroups() اللي بترجع فاضية لو المساعد معندوش manage_groups)
+    // ============================================
+    window.__registrationGroupsCache = []; // [{id, name, instructorNameId, instructorName, levelId, levelName, ...}]
+
+    async function loadGroupsForRegistration() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed', clientId })
+        });
+        const result = await response.json();
+        if (result.success) window.__registrationGroupsCache = result.data || [];
+      } catch (error) { console.error('❌ خطأ في تحميل المجموعات:', error); }
+    }
+
+    async function setupRegistrationLink() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-teacher-contact', { method: 'POST', headers });
+        const result = await response.json();
+        const token = result.success ? (result.data || {}).registration_token : null;
+        if (token) {
+          const link = window.location.origin + window.location.pathname.replace('groups.html', 'register.html') + '?token=' + encodeURIComponent(token);
+          document.getElementById('registrationLinkDisplay').value = link;
+          renderRegistrationQr(link);
+        } else {
+          document.getElementById('registrationLinkDisplay').value = isAssistant
+            ? '⚠️ المدرس لسه معملوش رابط تسجيل'
+            : '⚠️ لسه معندكش رابط تسجيل — اضغط "توليد رابط جديد"';
+          document.getElementById('registrationQrCode').innerHTML = '';
+        }
+      } catch (error) { console.error('❌ خطأ في تحميل رابط التسجيل:', error); }
+    }
+
+    // ✅ (طلب) توليد QR code لرابط التسجيل — بيتولد محلياً في المتصفح (مكتبة qrcodejs عبر CDN)
+    function renderRegistrationQr(link) {
+      const container = document.getElementById('registrationQrCode');
+      if (!container || typeof QRCode === 'undefined') return;
+      container.innerHTML = '';
+      new QRCode(container, { text: link, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });
+    }
+
+    function downloadRegistrationQr() {
+      const container = document.getElementById('registrationQrCode');
+      if (!container) return;
+      const img = container.querySelector('img');
+      const canvas = container.querySelector('canvas');
+      const dataUrl = img ? img.src : (canvas ? canvas.toDataURL('image/png') : null);
+      if (!dataUrl) { showToast('⚠️ لسه مفيش رابط تسجيل متولّد', 'warning'); return; }
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'رابط-التسجيل-QR.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function copyRegistrationLink() {
+      const input = document.getElementById('registrationLinkDisplay');
+      input.select();
+      navigator.clipboard.writeText(input.value).then(() => {
+        showToast('✅ اتنسخ الرابط', 'success');
+      }).catch(() => {
+        showToast('⚠️ متعرفتش أنسخ تلقائياً — انسخه يدوياً', 'warning');
+      });
+    }
+
+    // ✅ الزرار ده مخفي أصلاً للمساعد من الـ HTML — الدالة هنا بس للمدرس اللي شايف الزرار
+    async function regenerateRegistrationLink() {
+      if (!(await customConfirm('توليد رابط جديد هيوقف الرابط القديم فوراً — متأكد؟'))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-teacher-contact', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'regenerateRegistrationToken' })
+        });
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) await setupRegistrationLink();
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل توليد الرابط', 'error');
+      }
+    }
+
+    async function loadRegistrationRequests() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-registration-requests', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'list' })
+        });
+        const result = await response.json();
+        const container = document.getElementById('registrationRequestsContainer');
+        if (!result.success) return;
+
+        const pending = (result.data || []).filter(r => r.status === 'pending');
+        const waitlisted = (result.data || []).filter(r => r.status === 'waitlisted');
+
+        if (pending.length === 0 && waitlisted.length === 0) {
+          container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;">مفيش طلبات معلّقة دلوقتي.</p>';
+          return;
+        }
+
+        const renderRequestCard = (r) => {
+          // ✅ فلترة مركّبة: كل بُعد (مدرس / مرحلة دراسية) بيتفلتر بس لو الطلب فعلاً بيحمله —
+          // عشان طلبات/مجموعات من غير مرحلة أو من غير مدرس تفضل تظهر بدل ما تختفي
+          const relevantGroups = (window.__registrationGroupsCache || []).filter(g => {
+            const instructorMatch = !r.instructor_name_id || g.instructorNameId === r.instructor_name_id;
+            const levelMatch = !r.level_id || g.levelId === r.level_id;
+            return instructorMatch && levelMatch;
+          });
+          return `
+          <div style="padding:12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">
+            <strong>${escapeHtml(r.student_name)}</strong>
+            ${r.instructorName ? `<span class="badge" style="margin-right:6px;">👨‍🏫 ${escapeHtml(r.instructorName)}</span>` : ''}
+            ${r.levelName ? `<span class="badge" style="margin-right:6px;">🏷️ ${escapeHtml(r.levelName)}</span>` : ''}
+            <div style="font-size:12.5px;color:var(--gray-500);margin-top:4px;">
+              ولي الأمر: ${escapeHtml(r.parent_name || '—')} — ${escapeHtml(r.parent_phone)}
+              ${r.student_phone ? ' — هاتف الطالب: ' + escapeHtml(r.student_phone) : ''}
+            </div>
+            ${r.notes ? `<div style="font-size:12.5px;color:var(--gray-500);margin-top:4px;">ملاحظات: ${escapeHtml(r.notes)}</div>` : ''}
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <select id="approveGroupSelect_${r.id}" style="flex:1;padding:6px;font-size:12.5px;">
+                <option value="">-- اختر المجموعة --</option>
+                ${relevantGroups.map(g => `<option value="${escapeAttr(g.name)}">${escapeHtml(g.name)}</option>`).join('')}
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="approveRegistration(${r.id})">✅ قبول</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectRegistration(${r.id})">❌ رفض</button>
+            </div>
+          </div>
+        `;
+        };
+
+        let html = '';
+        if (pending.length > 0) {
+          html += `<h4 style="font-size:14px;margin-bottom:10px;">📥 طلبات معلّقة (${pending.length})</h4>` + pending.map(renderRequestCard).join('');
+        }
+        if (waitlisted.length > 0) {
+          html += `<h4 style="font-size:14px;margin:${pending.length > 0 ? '18px' : '0'} 0 10px;">📋 قائمة انتظار — مجموعات ممتلئة (${waitlisted.length})</h4>` + waitlisted.map(renderRequestCard).join('');
+        }
+        container.innerHTML = html;
+      } catch (error) { console.error('❌ خطأ في تحميل الطلبات:', error); }
+    }
+
+    async function approveRegistration(requestId) {
+      const groupName = document.getElementById('approveGroupSelect_' + requestId).value;
+      if (!groupName) { showToast('⚠️ اختر المجموعة الأول', 'warning'); return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-registration-requests', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'approve', requestId, groupName })
+        });
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) { await loadRegistrationRequests(); }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشلت الموافقة', 'error');
+      }
+    }
+
+    async function rejectRegistration(requestId) {
+      if (!(await customConfirm('هل أنت متأكد من رفض الطلب ده؟'))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-registration-requests', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'reject', requestId })
+        });
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) await loadRegistrationRequests();
+      } catch (error) { console.error('❌ خطأ:', error); }
+    }
+
+    // ✅ قائمة "⋮" لإجراءات كارت المجموعة (نفس أسلوب students.html) — بنستخدم position:fixed محسوبة
+    // بالـ JS عشان القائمة متتقصّش جوه .groups-list-grid اللي بقى ليها max-height + overflow-y:auto
+    function closeAllActionMenus() {
+      document.querySelectorAll('.action-menu-dropdown.open').forEach(el => {
+        el.classList.remove('open');
+        if (el._originalParent) {
+          el._originalParent.insertBefore(el, el._originalNextSibling || null);
+          el._originalParent = null;
+          el._originalNextSibling = null;
+        }
+      });
+    }
+
+    const ACTION_MENU_MARGIN = 10;
+    function toggleActionMenu(event, menuId) {
+      event.stopPropagation();
+      const menu = document.getElementById(menuId);
+      const isOpen = menu.classList.contains('open');
+      closeAllActionMenus();
+      if (isOpen) return;
+      const btnRect = event.currentTarget.getBoundingClientRect();
+      menu._originalParent = menu.parentNode;
+      menu._originalNextSibling = menu.nextSibling;
+      document.body.appendChild(menu);
+      menu.classList.add('open');
+      const menuWidth = menu.offsetWidth || 220;
+      let left = btnRect.right - menuWidth;
+      if (left < ACTION_MENU_MARGIN) left = ACTION_MENU_MARGIN;
+      if (left + menuWidth > window.innerWidth - ACTION_MENU_MARGIN) left = window.innerWidth - ACTION_MENU_MARGIN - menuWidth;
+      menu.style.left = left + 'px';
+      menu.style.right = 'auto';
+      // ✅ (طلب) لو مفيش مساحة كفاية تحت الزرار (قرب آخر الصفحة)، افتح القائمة لفوق بدل ما تتقص/تختفي
+      const menuHeight = menu.offsetHeight || 200;
+      const spaceBelow = window.innerHeight - btnRect.bottom;
+      let top;
+      if (spaceBelow < menuHeight + ACTION_MENU_MARGIN && btnRect.top > menuHeight + ACTION_MENU_MARGIN) {
+        top = btnRect.top - menuHeight - 4;
+      } else {
+        top = btnRect.bottom + 4;
+      }
+      if (top < ACTION_MENU_MARGIN) top = ACTION_MENU_MARGIN;
+      menu.style.top = top + 'px';
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.action-menu')) closeAllActionMenus();
+    });
+    document.getElementById('groupsList')?.addEventListener('scroll', closeAllActionMenus, true);
+    window.addEventListener('scroll', closeAllActionMenus, true);
+    window.addEventListener('resize', closeAllActionMenus);
+
     window.onload = function() {
       applyPermissions();
       if (canManageGroups) {
         loadGroups();
+        loadInstructorsForNewGroup();
+        loadLevelsForNewGroup();
+        loadEducationLevels();
+      }
+      loadGroupSessionsGroupList();
+      if (canManageRegistration) {
+        loadGroupsForRegistration().then(() => loadRegistrationRequests());
+        setupRegistrationLink();
       }
     };
+  </script>
+  <style>
+    /* ✅ Aug 2026: سجل حضور الحصة بيتعرض جوه الصفحة نفسها (مودال) بدل فتح نافذة جديدة — زر
+       الطباعة بيظهر بعد العرض عشان المستخدم اللي عاوز يشوف بس مايضطرش يطبع */
+    #rosterModalOverlay .roster-modal-box { max-width: 640px; text-align: right; }
+    #rosterModalOverlay .roster-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    #rosterModalOverlay .roster-header img { height: 46px; width: 46px; object-fit: contain; border-radius: 8px; }
+    #rosterModalOverlay .roster-header .roster-titles h3 { margin: 0; font-size: 19px; }
+    #rosterModalOverlay .roster-header .roster-titles span { font-size: 13px; color: var(--gray-600); }
+    #rosterModalOverlay table { border-collapse: collapse; width: 100%; margin-top: 14px; font-size: 13px; }
+    #rosterModalOverlay th, #rosterModalOverlay td { border: 1px solid var(--gray-200); padding: 6px 10px; text-align: right; }
+    #rosterModalOverlay th { background: var(--gray-50); }
+    #rosterModalOverlay td.center, #rosterModalOverlay th.center { text-align: center; }
+    #rosterModalOverlay .roster-table-wrap { max-height: 50vh; overflow-y: auto; }
+    @media print {
+      body.roster-printing > *:not(#rosterModalOverlay) { display: none !important; }
+      body.roster-printing #rosterModalOverlay {
+        position: static !important; background: none !important; backdrop-filter: none !important;
+        padding: 0 !important; display: block !important;
+      }
+      body.roster-printing #rosterModalOverlay .roster-modal-box {
+        box-shadow: none !important; max-width: 100% !important; margin: 0 !important; animation: none !important;
+      }
+      body.roster-printing #rosterModalOverlay .roster-no-print { display: none !important; }
+      #rosterModalOverlay .roster-table-wrap { max-height: none !important; overflow: visible !important; }
+    }
+  </style>
+  <script>
+    // ============================================
+    // ✅ Aug 2026 (Phase I follow-up 10): سجل الحصص (قراءة/طباعة فقط — الإنشاء بقى بيحصل تلقائياً
+    // لحظة بدء تسجيل الحضور من dashboard.html أو assistant-dashboard.html)
+    // ============================================
+    async function loadGroupSessionsGroupList() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const groupsResponse = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+          method: 'POST', headers, body: JSON.stringify({ clientId })
+        });
+        const groupsResult = await groupsResponse.json();
+        if (groupsResult.success) {
+          const select = document.getElementById('sessionGroupSelect');
+          select.innerHTML = '<option value="">-- اختر المجموعة --</option>' +
+            (groupsResult.data || []).map(g => `<option value="${g}">${g}</option>`).join('');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المجموعات:', error);
+      }
+    }
+
+    async function loadGroupSessions() {
+      const groupName = document.getElementById('sessionGroupSelect').value;
+      const container = document.getElementById('sessionsListContainer');
+      if (!groupName) { container.innerHTML = ''; return; }
+      container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</p>';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group-sessions', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'history', groupName })
+        });
+        const result = await response.json();
+        if (result.success) renderSessionsList(result.data || []);
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الحصص:', error);
+      }
+    }
+
+    function renderSessionsList(sessions) {
+      const container = document.getElementById('sessionsListContainer');
+      if (sessions.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;">مفيش حصص اتسجلت لهذه المجموعة لسه.</p>';
+        return;
+      }
+      container.innerHTML = sessions.map(s => {
+        const dateStr = new Date(s.session_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' });
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--gray-50);border-radius:8px;margin-bottom:6px;font-size:13px;">
+            <span>📅 ${escapeHtml(dateStr)} — ${escapeHtml(s.session_label)}${s.instructor_name ? ' — 👤 ' + escapeHtml(s.instructor_name) : ''} — ⏱ مهلة ${s.absence_threshold_minutes} د</span>
+            <button class="btn btn-outline btn-sm" onclick="viewSessionRoster(${s.id})"><i class="fas fa-print"></i> عرض/طباعة</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ✅ Aug 2026: سجل الحضور بيتعرض جوه الصفحة (مودال) — الطباعة اختيار بعد العرض مش تلقائي.
+    // الشعار: لو المستخدم رافع شعار خاص بيه (brandLogoUrl في sessionStorage — بيتظبط من
+    // teacher-settings.html وبيتحمّل وقت تسجيل الدخول) بيستبدل شعار فَصلي الافتراضي في التقرير،
+    // بنفس المنطق اللي branding.js بيطبّقه على باقي الصفحة.
+    function closeRosterModal() {
+      const modal = document.getElementById('rosterModalOverlay');
+      if (modal) modal.remove();
+      document.body.classList.remove('roster-printing');
+    }
+
+    function printRosterModal() {
+      document.body.classList.add('roster-printing');
+      const cleanup = () => document.body.classList.remove('roster-printing');
+      window.addEventListener('afterprint', cleanup, { once: true });
+      // setTimeout بسيط عشان نضمن الـ class اتطبّق قبل ما نادي print في كل المتصفحات
+      setTimeout(() => { window.print(); setTimeout(cleanup, 500); }, 50);
+    }
+
+    function buildRosterModalHtml(session, roster) {
+      const logoUrl = sessionStorage.getItem('brandLogoUrl') || 'assets/logo-icon.svg';
+      const centerName = teacherName || 'فَصلي';
+      const dateStr = new Date(session.session_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+      const presentCount = roster.filter(r => r.present).length;
+      const rowsHtml = roster.map((r, i) => `
+        <tr>
+          <td class="center">${i + 1}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td class="center">${r.present ? '✅ حاضر' : '❌ غائب'}</td>
+          <td class="center">${escapeHtml(r.time || '—')}</td>
+        </tr>
+      `).join('');
+      return `
+        <div class="roster-modal-box reset-modal-box">
+          <div class="roster-header">
+            <img src="${escapeAttr(logoUrl)}" alt="شعار" onerror="this.src='assets/logo-icon.svg';">
+            <div class="roster-titles">
+              <h3>${escapeHtml(centerName)}</h3>
+              <span>سجل حضور — ${escapeHtml(session.session_label || '')} — ${escapeHtml(session.group_name || '')}</span>
+            </div>
+          </div>
+          <p style="margin:4px 0;font-size:14px;color:var(--gray-700);">
+            📅 ${escapeHtml(dateStr)}${session.instructor_name ? ' — 👤 ' + escapeHtml(session.instructor_name) : ''}
+          </p>
+          <p style="margin:4px 0 10px;font-size:14px;color:var(--gray-700);">
+            👥 إجمالي الطلاب: ${roster.length} — ✅ حاضر: ${presentCount} — ❌ غائب: ${roster.length - presentCount}
+          </p>
+          <div class="roster-table-wrap">
+            <table>
+              <thead><tr><th class="center">#</th><th>الطالب</th><th class="center">الحالة</th><th class="center">الوقت</th></tr></thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
+          <div class="modal-actions roster-no-print" style="margin-top:18px;">
+            <button class="btn btn-cancel-reset" onclick="closeRosterModal()"><i class="fas fa-times"></i> إغلاق</button>
+            <button class="btn btn-confirm-reset" style="background:var(--primary);" onclick="printRosterModal()"><i class="fas fa-print"></i> طباعة</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function viewSessionRoster(sessionId) {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group-sessions', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'rosterForSession', sessionId })
+        });
+        const result = await response.json();
+        if (!result.success) { showToast('❌ ' + result.message, 'error'); return; }
+        const session = result.session;
+        const roster = result.data || [];
+
+        const existing = document.getElementById('rosterModalOverlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'reset-modal-overlay open';
+        overlay.id = 'rosterModalOverlay';
+        overlay.innerHTML = buildRosterModalHtml(session, roster);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function (e) { if (e.target === this) closeRosterModal(); });
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل عرض سجل الحصة', 'error');
+      }
+    }
   </script>
   <script>
     if ('serviceWorker' in navigator) {
@@ -955,6 +2041,7 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="branding.js?v=2"></script>
 <script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 <style>
   [data-theme="dark"] .student-card { background: var(--gray-100); border-color: var(--gray-200); }
@@ -137,15 +137,38 @@
       </div>
     </div>
 
+    <!-- ✅ (طلب) لو الطالب مربوط بأكتر من مجموعة، بيظهر هنا اختيار (راديو) للمجموعة اللي عايز
+         تشوف بياناتها — الصفحة كلها (الإحصائيات/الاختبارات/الحضور/الدرجات/المدفوعات/المذكرات)
+         بتتفلتر على المجموعة المختارة بس، من غير خيار "كل المجموعات" -->
+    <div class="card" id="studentGroupFilterCard" style="display:none;">
+      <div class="card-body" style="padding:12px 16px;">
+        <label style="font-size:13.5px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:8px;"><i class="fas fa-layer-group"></i> اختر المجموعة اللي عايز تشوف بياناتها:</label>
+        <div id="studentGroupFilterRadios" style="display:flex;flex-wrap:wrap;gap:14px;"></div>
+      </div>
+    </div>
+
     <!-- ====== التبويبات ====== -->
     <div class="card">
       <div class="card-body" style="padding:0;">
         <div style="padding:18px 24px; border-bottom:1px solid var(--gray-200);">
           <div class="tabs">
+            <button class="tab" data-tab="messages" id="messagesTabBtn">💬 تواصل</button>
             <button class="tab active" data-tab="attendance">📅 الحضور</button>
             <button class="tab" data-tab="grades">📝 الدرجات</button>
+            <button class="tab" data-tab="exams">📄 الاختبارات الإلكترونية</button>
             <button class="tab" data-tab="payments">💰 المدفوعات (شهري)</button>
             <button class="tab" data-tab="books">📖 المذكرات</button>
+          </div>
+        </div>
+
+        <!-- تبويب تواصل مع المدرس -->
+        <div id="tab-messages" class="tab-content" style="padding:24px;">
+          <div id="conversationMessages" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;padding:4px;">
+            <div style="text-align:center;padding:16px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin"></i></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="conversationReplyInput" placeholder="اكتب رسالتك للمدرس هنا..." style="flex:1;" onkeydown="if(event.key==='Enter'){sendParentMessage();}">
+            <button class="btn btn-primary" onclick="sendParentMessage()"><i class="fas fa-paper-plane"></i></button>
           </div>
         </div>
 
@@ -185,6 +208,13 @@
           </div>
         </div>
 
+        <!-- تبويب الاختبارات الإلكترونية -->
+        <div id="tab-exams" class="tab-content" style="padding:24px;">
+          <div id="examsListContainer">
+            <div style="text-align:center;padding:16px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin"></i></div>
+          </div>
+        </div>
+
         <!-- تبويب المدفوعات الشهرية -->
         <div id="tab-payments" class="tab-content" style="padding:24px;">
           <div class="table-wrapper">
@@ -215,10 +245,11 @@
                   <th>💳 المدفوع</th>
                   <th>📌 الحالة</th>
                   <th>📅 التاريخ</th>
+                  <th>📥 الملف</th>
                 </tr>
               </thead>
               <tbody id="booksBody">
-                <tr><td colspan="5" class="loading">⏳ جاري التحميل...</td></tr>
+                <tr><td colspan="6" class="loading">⏳ جاري التحميل...</td></tr>
               </tbody>
             </table>
           </div>
@@ -287,7 +318,11 @@
           const clone = res.clone();
           const data = await clone.json();
           if (data && data.code === 'LICENSE_EXPIRED') {
-            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+            // ✅ بنحط الرسالة الحقيقية + اسم الدالة اللي رجّعت الخطأ في sessionStorage
+            // (مش URL parameter) عشان صفحة القفل تقدر تقراها وتعرضها صح للتشخيص
+            sessionStorage.setItem('lockReason', data.message || 'انتهت صلاحية الترخيص');
+            sessionStorage.setItem('lockSourceFunction', urlStr);
+            window.location.href = 'license-locked.html';
           }
         }
       } catch (e) { /* تجاهل */ }
@@ -377,6 +412,7 @@
           displayStudentInfo(studentDataCache);
           loadAttendance(studentUid);
           loadGrades(studentUid);
+          loadExams(studentUid);
           loadPayments(studentUid);
           loadBooks(studentUid);
           updateLastUpdate();
@@ -412,6 +448,7 @@
             displayStudentInfo(studentDataCache);
             loadAttendance(studentUid);
             loadGrades(studentUid);
+            loadExams(studentUid);
             loadPayments(studentUid);
             loadBooks(studentUid);
             updateLastUpdate();
@@ -431,6 +468,8 @@
 
     function displayStudentInfo(data) {
       document.getElementById('studentName').textContent = data.name || 'غير معروف';
+      // ✅ (طلب) لازم تتعرض كل المجموعات اللي الطالب فيها، مش بس أول مجموعة دخلها — بيتحدّث لاحقًا
+      // في setupParentGroupFilter لما تجيب كل المجموعات من get-student-full-profile
       document.getElementById('infoGroup').textContent = data.group_name || '-';
       document.getElementById('infoTeacher').textContent = data.teacher_name || '-';
       document.getElementById('infoUid').textContent = data.uid || '-';
@@ -438,10 +477,21 @@
       if (data.name) {
         document.getElementById('parentName').textContent = 'مرحباً، ولي أمر ' + data.name;
       }
-      // ✅ نستخدم نفس القيمة بالظبط اللي لوحة تحكم ولي الأمر بتعرضها (أيام حضور الطالب ÷ الأيام اللي المجموعة
-      // كلها حضرت فيها فعلياً)، بدل حساب منفصل كان بيدّي نتيجة مختلفة ومضلّلة أحياناً
-      document.getElementById('statPresent').textContent = data.present_days ?? 0;
-      document.getElementById('statAttendancePercent').textContent = (data.attendance_percent ?? 0) + '%';
+
+      // ✅ (طلب) تبويب "تواصل" يختفي تمامًا لو المدرس عطّل محادثات أولياء الأمور من إعدادات حسابه
+      const messagesTabBtn = document.getElementById('messagesTabBtn');
+      if (data.conversations_enabled === false) {
+        messagesTabBtn.style.display = 'none';
+        // لو كان مفتوح بالفعل (نادر، مش التبويب الافتراضي هنا)، نرجّع لتبويب الحضور بدل ما يفضل فاضي
+        if (messagesTabBtn.classList.contains('active')) {
+          messagesTabBtn.classList.remove('active');
+          document.getElementById('tab-messages')?.classList.remove('active');
+          document.querySelector('.tab[data-tab="attendance"]')?.classList.add('active');
+          document.getElementById('tab-attendance')?.classList.add('active');
+        }
+      } else {
+        messagesTabBtn.style.display = '';
+      }
     }
 
     function updateLastUpdate() {
@@ -452,6 +502,154 @@
     // ============================================
     // LOAD ATTENDANCE
     // ============================================
+    // ✅ بيانات آخر تحميل ناجح لكل تبويب — تُستخدم لتطبيق فلتر المجموعة من غير إعادة نداء السيرفر
+    let lastLoadedAttendance = [];
+    let lastLoadedGrades = [];
+    let lastLoadedPayments = [];
+    let lastLoadedBooks = [];
+    let lastLoadedExams = [];
+    let currentStudentGroupFilter = null; // ✅ (طلب) فلتر المجموعة المختارة — دايمًا مجموعة محددة، مفيش خيار "الكل"
+    let studentGroupsList = []; // ✅ (طلب) كل المجموعات اللي الطالب فيها، مش بس أول مجموعة دخلها
+
+    // ✅ (طلب) لو الطالب مربوط بأكتر من مجموعة، بنبني قائمة الفلتر من كل المجموعات اللي هو فيها
+    // (بيرجعها get-student-full-profile في info.groups: الأساسية + المربوطة) وبنظهر كارت الفلتر
+    // بس لو فعلاً فيه أكتر من مجموعة — طالب في مجموعة واحدة مايتغيّرش شكل صفحته خالص.
+    function setupParentGroupFilter(info) {
+      const fromInfo = Array.isArray(info?.groups) ? info.groups : [];
+      const fromData = new Set();
+      [...lastLoadedAttendance, ...lastLoadedGrades, ...lastLoadedPayments, ...lastLoadedBooks].forEach(r => {
+        if (r.group_name) fromData.add(r.group_name);
+      });
+      lastLoadedExams.forEach(e => { if (e.groupName) fromData.add(e.groupName); });
+      const allGroups = Array.from(new Set([...fromInfo, ...fromData])).filter(Boolean);
+      studentGroupsList = allGroups.length > 0 ? allGroups : [info?.group_name].filter(Boolean);
+
+      // ✅ (طلب) لازم تتعرض كل المجموعات اللي الطالب فيها، مش بس أول مجموعة دخلها
+      document.getElementById('infoGroup').textContent = studentGroupsList.length > 1 ? studentGroupsList.join(' ، ') : (studentGroupsList[0] || '-');
+
+      const card = document.getElementById('studentGroupFilterCard');
+      const radiosWrap = document.getElementById('studentGroupFilterRadios');
+      if (allGroups.length <= 1) {
+        card.style.display = 'none';
+        currentStudentGroupFilter = allGroups[0] || info?.group_name || null;
+        return;
+      }
+      card.style.display = '';
+      // ✅ (طلب) فلتر راديو بدل قائمة منسدلة، وبدون خيار "كل المجموعات" — لازم مجموعة واحدة محددة دايمًا
+      if (!allGroups.includes(currentStudentGroupFilter)) currentStudentGroupFilter = allGroups[0];
+      radiosWrap.innerHTML = allGroups.map(g => `
+        <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;">
+          <input type="radio" name="studentGroupFilter" value="${escapeHtml(g)}" onchange="applyParentGroupFilter()" ${g === currentStudentGroupFilter ? 'checked' : ''}>
+          ${escapeHtml(g)}
+        </label>
+      `).join('');
+    }
+
+    function applyParentGroupFilter() {
+      const checked = document.querySelector('input[name="studentGroupFilter"]:checked');
+      if (checked) currentStudentGroupFilter = checked.value;
+      const byGroup = r => r.group_name === currentStudentGroupFilter;
+
+      renderAttendanceRows(lastLoadedAttendance.filter(byGroup));
+      renderGradesRows(lastLoadedGrades.filter(byGroup));
+      // ✅ (طلب) رجّعنا فلترة المدفوعات على المجموعة المختارة زي باقي التابات — كان قرار سابق
+      // (دفعة 23 بند 3) إنها تستثنى وتتعرض كلها مع بعض، لكن اتطلب دلوقتي عكسه صراحة: كل مجموعة
+      // تعرض مدفوعاتها هي بس (اشتراكات + مذكرات) لو الطالب مربوط بأكتر من مجموعة (تعدد
+      // المواد/المدرسين)، عشان ولي الأمر يشوف حساب كل مادة/مجموعة منفصل عن التانية بدل ما تتجمع
+      renderPaymentsRows(lastLoadedPayments.filter(byGroup));
+      renderBooksRows(lastLoadedBooks.filter(byGroup));
+      renderExamsRows(lastLoadedExams.filter(e => e.groupName === currentStudentGroupFilter));
+      // ✅ إحصائيات المدفوعات (عدد + إجمالي شهري+مذكرات) فوق لازم تتحدّث هي كمان مع تغيير الفلتر،
+      // مش بس أول تحميل — كانت بتفضل على قيمة أول مجموعة تحميل للصفحة حتى لو المستخدم غيّر الفلتر
+      updatePaymentsStats();
+    }
+
+    // ✅ (طلب) كروت الإحصائيات السريعة (عدد المدفوعات + إجمالي المدفوع) لازم تتفلتر بنفس منطق
+    // الجدول تحتها بالظبط — بتتحسب من نفس lastLoadedPayments/lastLoadedBooks المفلترين بالفعل
+    // على currentStudentGroupFilter، فمفيش نداء سيرفر إضافي مطلوب
+    function updatePaymentsStats() {
+      const byGroup = r => r.group_name === currentStudentGroupFilter;
+      const paymentsData = lastLoadedPayments.filter(byGroup);
+      const paymentsCount = paymentsData.filter(p => !p.missed).length;
+      let totalPaid = paymentsData.filter(p => !p.missed).reduce((s, p) => s + Number(p.amount || 0), 0);
+      const booksData = lastLoadedBooks.filter(byGroup);
+      totalPaid += booksData.reduce((s, b) => s + Number(b.amount || 0), 0);
+      document.getElementById('statPayments').textContent = paymentsCount;
+      document.getElementById('statPaidAmount').textContent = totalPaid + ' ج.م';
+    }
+
+    // ✅ (طلب) الطالب ممكن يكون مربوط بأكتر من مجموعة (تعدد المواد/المدرسين) — بدل ما بياناته
+    // تتعرض مخلوطة في جدول واحد، بنفصلها بعنوان فرعي لكل مجموعة عشان تبقى أسهل في القراءة.
+    // لو البيانات كلها من مجموعة واحدة (الحالة الأشيع) بيفضل الشكل زي ما هو من غير أي عنوان إضافي.
+    // (لو المستخدم فلتر على مجموعة معيّنة، الصفوف كلها من نفس المجموعة أصلاً فمش هيظهر أي عنوان)
+    function groupRowsByGroupName(rows) {
+      const groups = [];
+      const indexByName = {};
+      rows.forEach(r => {
+        const name = r.group_name || 'بدون مجموعة';
+        if (!(name in indexByName)) {
+          indexByName[name] = groups.length;
+          groups.push({ name, rows: [] });
+        }
+        groups[indexByName[name]].rows.push(r);
+      });
+      return groups;
+    }
+
+    function renderGroupSectionHeader(groupName, count, colspan) {
+      return `<tr><td colspan="${colspan}" style="background:var(--gray-50);font-weight:700;padding:8px 12px;color:var(--gray-700);">📁 ${escapeHtml(groupName)} <span style="font-weight:500;color:var(--gray-500);">(${count})</span></td></tr>`;
+    }
+
+    function renderAttendanceRows(data) {
+      const tbody = document.getElementById('attendanceBody');
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-state"><i class="fas fa-calendar-day" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد سجلات حضور</td></tr>';
+        document.getElementById('statPresent').textContent = '0';
+        document.getElementById('statAttendancePercent').textContent = '0%';
+        return;
+      }
+
+      // ✅ (طلب) لازم كل الصفحة (وده شامل الإحصائيات) تعرض بيانات المجموعة المختارة بس —
+      // بدل الرقم العام من لوحة التحكم، بنحسب النسبة من سجلات المجموعة المفلترة فعلياً
+      let presentCount = 0;
+      data.forEach(r => { if (r.status === 'present') presentCount++; });
+      document.getElementById('statPresent').textContent = presentCount;
+      document.getElementById('statAttendancePercent').textContent = Math.round((presentCount / data.length) * 100) + '%';
+
+      const rowTpl = record => {
+        const statusClass = record.status === 'present' ? 'status-present' : 'status-absent';
+        const statusText = record.status === 'present' ? '✅ حاضر' : '❌ غائب';
+        const date = new Date(record.date);
+        const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+        let timeStr = '—';
+        if (record.created_at) {
+          const date = new Date(record.created_at);
+          timeStr = date.toLocaleTimeString('ar-EG', {
+            timeZone: 'Africa/Cairo',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } else if (record.time) {
+          timeStr = record.time;
+        }
+        return `
+          <tr>
+            <td>${dateStr}</td>
+            <td>${timeStr}</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          </tr>
+        `;
+      };
+      const attGroups = groupRowsByGroupName(data);
+      let html = '';
+      if (attGroups.length > 1) {
+        attGroups.forEach(g => { html += renderGroupSectionHeader(g.name, g.rows.length, 3) + g.rows.map(rowTpl).join(''); });
+      } else {
+        data.forEach(r => { html += rowTpl(r); });
+      }
+      tbody.innerHTML = html;
+    }
+
     async function loadAttendance(uid) {
       const tbody = document.getElementById('attendanceBody');
       tbody.innerHTML = '<tr><td colspan="3" class="loading"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</td></tr>';
@@ -460,7 +658,7 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-attendance', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-full-profile', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({ studentUid: uid, parentPhone: parentPhone })
@@ -479,45 +677,9 @@
         const result = await response.json();
 
         if (result.success) {
-          const data = result.data || [];
-          if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="empty-state"><i class="fas fa-calendar-day" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد سجلات حضور</td></tr>';
-            document.getElementById('statPresent').textContent = '0';
-            document.getElementById('statAttendancePercent').textContent = '0%';
-            return;
-          }
-
-          let presentCount = 0;
-          let html = '';
-          data.forEach(record => {
-            if (record.status === 'present') presentCount++;
-            const statusClass = record.status === 'present' ? 'status-present' : 'status-absent';
-            const statusText = record.status === 'present' ? '✅ حاضر' : '❌ غائب';
-            const date = new Date(record.date);
-            const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
-            let timeStr = '—';
-            if (record.created_at) {
-              const date = new Date(record.created_at);
-              timeStr = date.toLocaleTimeString('ar-EG', {
-                timeZone: 'Africa/Cairo',
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-            } else if (record.time) {
-              timeStr = record.time;
-            }
-            html += `
-              <tr>
-                <td>${dateStr}</td>
-                <td>${timeStr}</td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-              </tr>
-            `;
-          });
-          tbody.innerHTML = html;
-          // ✅ نسبة الحضور والأيام بتتعرض من displayStudentInfo (نفس مصدر لوحة التحكم)، مش من هنا —
-          // الحساب اللي كان هنا قبل كده كان بيعتمد بس على عدد سجلات آخر 30 يوم للطالب ده لوحده،
-          // وده كان بيدّي نسبة مختلفة عن اللي في الكارت الرئيسي (وأحياناً مضلّلة لو مفيش سجلات غياب صريحة)
+          lastLoadedAttendance = (result.data?.attendance || []);
+          setupParentGroupFilter(result.data?.info);
+          renderAttendanceRows(lastLoadedAttendance.filter(r => r.group_name === currentStudentGroupFilter));
         } else {
           tbody.innerHTML = `<tr><td colspan="3" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadAttendance('${uid}')">إعادة المحاولة</button></td></tr>`;
         }
@@ -547,7 +709,7 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-grades', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-full-profile', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({ studentUid: uid, parentPhone: parentPhone })
@@ -566,46 +728,9 @@
         const result = await response.json();
 
         if (result.success) {
-          const data = result.data || [];
-          if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="empty-state"><i class="fas fa-file-alt" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد درجات مسجلة</td></tr>';
-            document.getElementById('statGrades').textContent = '0';
-            document.getElementById('statAvg').textContent = '0%';
-            return;
-          }
-
-          let totalScore = 0, totalMax = 0, takenCount = 0;
-          let html = '';
-          data.forEach(grade => {
-            if (grade.missed) {
-              html += `
-                <tr class="report-row-alert">
-                  <td><strong>${escapeHtml(grade.exam_name)}</strong></td>
-                  <td>—</td>
-                  <td><span class="status-badge status-unpaid">❌ لم يحضر الامتحان</span></td>
-                </tr>
-              `;
-              return;
-            }
-            takenCount++;
-            const date = new Date(grade.created_at);
-            const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
-            const max = grade.max_score || 1;
-            totalScore += Number(grade.score);
-            totalMax += Number(max);
-            html += `
-              <tr>
-                <td>${escapeHtml(grade.exam_name)}</td>
-                <td><strong>${grade.score}</strong> / ${max}</td>
-                <td>${dateStr}</td>
-              </tr>
-            `;
-          });
-          tbody.innerHTML = html;
-
-          const avg = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
-          document.getElementById('statGrades').textContent = takenCount;
-          document.getElementById('statAvg').textContent = avg + '%';
+          lastLoadedGrades = (result.data?.grades || []);
+          setupParentGroupFilter(result.data?.info);
+          renderGradesRows(lastLoadedGrades.filter(r => r.group_name === currentStudentGroupFilter));
         } else {
           tbody.innerHTML = `<tr><td colspan="3" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadGrades('${uid}')">إعادة المحاولة</button></td></tr>`;
         }
@@ -615,9 +740,98 @@
       }
     }
 
+    function renderGradesRows(data) {
+      const tbody = document.getElementById('gradesBody');
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-state"><i class="fas fa-file-alt" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد درجات مسجلة</td></tr>';
+        document.getElementById('statGrades').textContent = '0';
+        document.getElementById('statAvg').textContent = '0%';
+        return;
+      }
+
+      let totalScore = 0, totalMax = 0, takenCount = 0;
+      const rowTpl = grade => {
+        if (grade.missed) {
+          return `
+            <tr class="report-row-alert">
+              <td><strong>${escapeHtml(grade.exam_name)}</strong></td>
+              <td>—</td>
+              <td><span class="status-badge status-unpaid">❌ لم يحضر الامتحان</span></td>
+            </tr>
+          `;
+        }
+        takenCount++;
+        const date = new Date(grade.created_at);
+        const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+        const max = grade.max_score || 1;
+        totalScore += Number(grade.score);
+        totalMax += Number(max);
+        return `
+          <tr>
+            <td>${escapeHtml(grade.exam_name)}</td>
+            <td><strong>${grade.score}</strong> / ${max}</td>
+            <td>${dateStr}</td>
+          </tr>
+        `;
+      };
+      const gradeGroups = groupRowsByGroupName(data);
+      let html = '';
+      if (gradeGroups.length > 1) {
+        gradeGroups.forEach(g => { html += renderGroupSectionHeader(g.name, g.rows.length, 3) + g.rows.map(rowTpl).join(''); });
+      } else {
+        data.forEach(r => { html += rowTpl(r); });
+      }
+      tbody.innerHTML = html;
+
+      const avg = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+      document.getElementById('statGrades').textContent = takenCount;
+      document.getElementById('statAvg').textContent = avg + '%';
+    }
+
     // ============================================
     // LOAD PAYMENTS
     // ============================================
+    function renderPaymentsRows(data) {
+      const tbody = document.getElementById('paymentsBody');
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><i class="fas fa-coins" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد مدفوعات شهرية</td></tr>';
+        return;
+      }
+      const rowTpl = payment => {
+        if (payment.missed) {
+          return `
+            <tr class="report-row-alert">
+              <td><strong>${escapeHtml(payment.title)}</strong></td>
+              <td>0 / ${payment.total_amount} ج.م</td>
+              <td><span class="status-badge status-unpaid">❌ غير مدفوع</span></td>
+              <td>—</td>
+            </tr>
+          `;
+        }
+        const date = new Date(payment.created_at);
+        const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+        const isFull = payment.amount >= payment.total_amount;
+        const statusClass = isFull ? 'status-paid' : (payment.amount > 0 ? 'status-partial' : 'status-unpaid');
+        const statusText = isFull ? '✅ مدفوع بالكامل' : (payment.amount > 0 ? '🟡 دفعة جزئية' : '❌ غير مدفوع');
+        return `
+          <tr>
+            <td>${escapeHtml(payment.title)}</td>
+            <td><strong>${payment.amount}</strong> / ${payment.total_amount} ج.م</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td>${dateStr}</td>
+          </tr>
+        `;
+      };
+      const paymentGroups = groupRowsByGroupName(data);
+      let html = '';
+      if (paymentGroups.length > 1) {
+        paymentGroups.forEach(g => { html += renderGroupSectionHeader(g.name, g.rows.length, 4) + g.rows.map(rowTpl).join(''); });
+      } else {
+        data.forEach(r => { html += rowTpl(r); });
+      }
+      tbody.innerHTML = html;
+    }
+
     async function loadPayments(uid) {
       const tbody = document.getElementById('paymentsBody');
       tbody.innerHTML = '<tr><td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</td></tr>';
@@ -626,7 +840,7 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-payments', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-full-profile', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({ studentUid: uid, parentPhone: parentPhone })
@@ -646,44 +860,18 @@
 
         let totalPaid = 0;
         let paymentsCount = 0;
+        const byGroup = r => r.group_name === currentStudentGroupFilter;
 
         if (result.success) {
-          const data = result.data || [];
+          lastLoadedPayments = (result.data?.payments || []);
+          setupParentGroupFilter(result.data?.info);
+          // ✅ (طلب) المدفوعات بقت متفلترة على المجموعة المختارة زي باقي التابات (كان قرار سابق
+          // إنها تستثنى وتتعرض كل المجموعات مع بعض، اتطلب دلوقتي عكسه) — الجدول والإحصائيات
+          // فوقه بيعرضوا بس مدفوعات المجموعة المختارة (اشتراكات + مذكرات)
+          const data = lastLoadedPayments.filter(byGroup);
           paymentsCount = data.filter(p => !p.missed).length;
-
-          if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><i class="fas fa-coins" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد مدفوعات شهرية</td></tr>';
-          } else {
-            let html = '';
-            data.forEach(payment => {
-              if (payment.missed) {
-                html += `
-                  <tr class="report-row-alert">
-                    <td><strong>${escapeHtml(payment.title)}</strong></td>
-                    <td>0 / ${payment.total_amount} ج.م</td>
-                    <td><span class="status-badge status-unpaid">❌ غير مدفوع</span></td>
-                    <td>—</td>
-                  </tr>
-                `;
-                return;
-              }
-              const date = new Date(payment.created_at);
-              const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
-              const isFull = payment.amount >= payment.total_amount;
-              const statusClass = isFull ? 'status-paid' : (payment.amount > 0 ? 'status-partial' : 'status-unpaid');
-              const statusText = isFull ? '✅ مدفوع بالكامل' : (payment.amount > 0 ? '🟡 دفعة جزئية' : '❌ غير مدفوع');
-              totalPaid += Number(payment.amount);
-              html += `
-                <tr>
-                  <td>${escapeHtml(payment.title)}</td>
-                  <td><strong>${payment.amount}</strong> / ${payment.total_amount} ج.م</td>
-                  <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                  <td>${dateStr}</td>
-                </tr>
-              `;
-            });
-            tbody.innerHTML = html;
-          }
+          totalPaid = data.filter(p => !p.missed).reduce((s, p) => s + Number(p.amount || 0), 0);
+          renderPaymentsRows(data);
         } else {
           tbody.innerHTML = `<tr><td colspan="4" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadPayments('${uid}')">إعادة المحاولة</button></td></tr>`;
         }
@@ -691,7 +879,7 @@
         // جلب مدفوعات المذكرات وإضافتها للإجمالي
         const booksHeaders = getAuthHeaders();
         if (booksHeaders) {
-          const booksResponse = await fetch(PROJECT_URL + '/functions/v1/get-student-books', {
+          const booksResponse = await fetch(PROJECT_URL + '/functions/v1/get-student-full-profile', {
             method: 'POST',
             headers: booksHeaders,
             body: JSON.stringify({ studentUid: uid, parentPhone: parentPhone })
@@ -700,7 +888,7 @@
           if (booksResponse.ok) {
             const booksResult = await booksResponse.json();
             if (booksResult.success) {
-              const booksData = booksResult.data || [];
+              const booksData = (booksResult.data?.books || []).filter(byGroup);
               let booksTotal = 0;
               booksData.forEach(book => {
                 booksTotal += Number(book.amount || 0);
@@ -730,7 +918,7 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-books', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-full-profile', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({ studentUid: uid, parentPhone: parentPhone })
@@ -749,44 +937,9 @@
         const result = await response.json();
 
         if (result.success) {
-          const data = result.data || [];
-          if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-book" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لم يشتري هذا الطالب أي مذكرات</td></tr>';
-            document.getElementById('statBooks').textContent = '0';
-            return;
-          }
-
-          let html = '';
-          data.forEach(book => {
-            if (book.missed) {
-              html += `
-                <tr class="report-row-alert">
-                  <td><strong>${escapeHtml(book.book_name || 'مذكرة')}</strong></td>
-                  <td>${book.price || 0} ج.م</td>
-                  <td>0 ج.م</td>
-                  <td><span class="status-badge status-unpaid">❌ غير مسدد</span></td>
-                  <td>—</td>
-                </tr>
-              `;
-              return;
-            }
-            const date = new Date(book.paid_at || book.created_at);
-            const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
-            const isFull = book.amount >= book.price;
-            const statusClass = isFull ? 'status-paid' : 'status-partial';
-            const statusText = isFull ? '✅ مدفوع بالكامل' : '🟡 دفعة جزئية';
-            html += `
-              <tr>
-                <td><strong>${escapeHtml(book.book_name || 'مذكرة')}</strong></td>
-                <td>${book.price || 0} ج.م</td>
-                <td>${book.amount || 0} ج.م</td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                <td>${dateStr}</td>
-              </tr>
-            `;
-          });
-          tbody.innerHTML = html;
-          document.getElementById('statBooks').textContent = data.filter(b => !b.missed).length;
+          lastLoadedBooks = (result.data?.books || []);
+          setupParentGroupFilter(result.data?.info);
+          renderBooksRows(lastLoadedBooks.filter(r => r.group_name === currentStudentGroupFilter));
         } else {
           tbody.innerHTML = `<tr><td colspan="5" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadBooks('${uid}')">إعادة المحاولة</button></td></tr>`;
         }
@@ -804,6 +957,188 @@
       }
     }
 
+    function renderBooksRows(data) {
+      const tbody = document.getElementById('booksBody');
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-book" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لم يشتري هذا الطالب أي مذكرات</td></tr>';
+        document.getElementById('statBooks').textContent = '0';
+        return;
+      }
+
+      const rowTpl = book => {
+        if (book.missed) {
+          return `
+            <tr class="report-row-alert">
+              <td><strong>${escapeHtml(book.book_name || 'مذكرة')}</strong></td>
+              <td>${book.price || 0} ج.م</td>
+              <td>0 ج.م</td>
+              <td><span class="status-badge status-unpaid">❌ غير مسدد</span></td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+          `;
+        }
+        const date = new Date(book.paid_at || book.created_at);
+        const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+        const isFull = book.amount >= book.price;
+        const statusClass = isFull ? 'status-paid' : 'status-partial';
+        const statusText = isFull ? '✅ مدفوع بالكامل' : '🟡 دفعة جزئية';
+        return `
+          <tr>
+            <td><strong>${escapeHtml(book.book_name || 'مذكرة')}</strong></td>
+            <td>${book.price || 0} ج.م</td>
+            <td>${book.amount || 0} ج.م</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td>${dateStr}</td>
+            <td>${book.file_url ? `<a href="${book.file_url}" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-download"></i></a>` : '—'}</td>
+          </tr>
+        `;
+      };
+      const bookGroups = groupRowsByGroupName(data);
+      let html = '';
+      if (bookGroups.length > 1) {
+        bookGroups.forEach(g => { html += renderGroupSectionHeader(g.name, g.rows.length, 6) + g.rows.map(rowTpl).join(''); });
+      } else {
+        data.forEach(r => { html += rowTpl(r); });
+      }
+      tbody.innerHTML = html;
+      document.getElementById('statBooks').textContent = data.filter(b => !b.missed).length;
+    }
+
+    // ============================================
+    // LOAD EXAMS (الاختبارات الإلكترونية)
+    // ============================================
+    // ✅ (طلب) الاختبارات الإلكترونية مش كانت ظاهرة لولي الأمر خالص — دلوقتي بتتعرض هنا،
+    // مربوطة بنفس فلتر المجموعة زي باقي بيانات الصفحة
+    async function loadExams(uid) {
+      const container = document.getElementById('examsListContainer');
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-exams-for-student', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ studentUid: uid, parentPhone: parentPhone })
+        });
+
+        if (response.status === 401) {
+          showToast('⛔ انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+          setTimeout(() => {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+          }, 1500);
+          return;
+        }
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const result = await response.json();
+
+        if (result.success) {
+          lastLoadedExams = result.data || [];
+          setupParentGroupFilter(studentDataCache);
+          renderExamsRows(lastLoadedExams.filter(e => e.groupName === currentStudentGroupFilter));
+        } else {
+          container.innerHTML = `<p style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ ${escapeHtml(result.message)}</p>`;
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الاختبارات:', error);
+        container.innerHTML = '<p style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">⚠️ تعذر تحميل الاختبارات</p>';
+      }
+    }
+
+    function renderExamsRows(data) {
+      const container = document.getElementById('examsListContainer');
+      if (data.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;padding:20px;"><i class="fas fa-file-pen" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا يوجد اختبارات إلكترونية لهذه المجموعة</p>';
+        return;
+      }
+      container.innerHTML = data.map(e => {
+        let statusHtml;
+        if (e.status === 'not_started') {
+          statusHtml = '<span style="font-size:13px;color:var(--gray-500);">⏳ لسه ماخدش الاختبار</span>';
+        } else if (e.status === 'in_progress') {
+          statusHtml = '<span style="font-size:13px;color:var(--warning);">🕐 جاري الاختبار</span>';
+        } else {
+          const statusLabel = e.status === 'timed_out' ? 'انتهى الوقت' : 'خلّص';
+          statusHtml = `<span style="font-size:13px;color:var(--success);">✅ ${statusLabel} — ${e.score} / ${e.totalPossible}</span>`;
+        }
+        // ✅ (طلب) توضيح لولي الأمر هل الاختبار ده بيتحسب في درجات ابنه الرسمية ولا مجرد تدريب حر
+        const gradeBadge = e.countsTowardGrade
+          ? '<span title="درجة ابنك في الاختبار ده بتتسجّل في درجاته الرسمية" style="font-size:11px;color:var(--success);"><i class="fas fa-chart-line"></i> رسمي</span>'
+          : '<span title="مجرد تدريب حر — مابيتحسبش في درجاته" style="font-size:11px;color:var(--gray-500);"><i class="fas fa-dumbbell"></i> تدريب</span>';
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+            <div>
+              <strong>${escapeHtml(e.title)}</strong>
+              <div style="font-size:12px;color:var(--gray-500);margin-top:3px;">${e.durationMinutes} دقيقة — ${e.questionCount} سؤال — ${gradeBadge}</div>
+            </div>
+            ${statusHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ============================================
+    // تواصل ثنائي الاتجاه مع المدرس
+    // ============================================
+    async function loadConversation() {
+      const container = document.getElementById('conversationMessages');
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-notifications', {
+          method: 'POST', headers, body: JSON.stringify({ mode: 'conversation', studentUid })
+        });
+        const result = await response.json();
+        if (!result.success) { container.innerHTML = '<p style="color:var(--danger);">تعذر تحميل الرسائل</p>'; return; }
+
+        const messages = result.data || [];
+        if (messages.length === 0) {
+          container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;">ابدأ المحادثة مع المدرس من هنا.</p>';
+          return;
+        }
+        container.innerHTML = messages.map(m => {
+          const isParent = m.sender_role === 'parent';
+          const time = new Date(m.created_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+          return `
+            <div style="align-self:${isParent ? 'flex-end' : 'flex-start'};max-width:80%;background:${isParent ? '#FDF1CC' : 'var(--gray-100)'};border-radius:12px;padding:8px 12px;">
+              <div style="font-size:13px;color:${isParent ? '#3B2E0A' : 'var(--gray-900)'};">${escapeHtml(m.message)}</div>
+              <div style="font-size:10.5px;color:var(--gray-500);margin-top:3px;">${escapeHtml(m.sender_name)} — ${time}</div>
+            </div>
+          `;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المحادثة:', error);
+        container.innerHTML = '<p style="color:var(--danger);">تعذر تحميل الرسائل</p>';
+      }
+    }
+
+    async function sendParentMessage() {
+      const input = document.getElementById('conversationReplyInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/send-bulk-message', {
+          method: 'POST', headers, body: JSON.stringify({ mode: 'conversation', studentUid, message })
+        });
+        const result = await response.json();
+        if (result.success) {
+          input.value = '';
+          await loadConversation();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إرسال الرسالة:', error);
+        showToast('❌ فشل إرسال الرسالة', 'error');
+      }
+    }
+
     // ============================================
     // REFRESH ALL
     // ============================================
@@ -811,6 +1146,7 @@
       studentDataCache = null;
       showToast('⏳ جاري تحديث جميع البيانات...', 'info');
       await loadStudentDetails();
+      await loadConversation();
       showToast('✅ تم تحديث البيانات', 'success');
     }
 
@@ -873,8 +1209,19 @@
     // ============================================
     // INIT
     // ============================================
+    // ✅ Batch 24 (بند 6): الضغط على إشعار (حضور/درجة/دفعة/رسالة) كان بيوصل لصفحة الطالب
+    // بس على أول تبويب افتراضي، من غير ما يوجّه ولي الأمر مباشرة للتبويب الخاص بالإشعار
+    function activateTabFromUrl() {
+      const tabName = urlParams.get('tab');
+      if (!tabName) return;
+      const tabBtn = document.querySelector('.tab[data-tab="' + tabName + '"]');
+      if (tabBtn) tabBtn.click();
+    }
+
     window.onload = function() {
       loadStudentDetails();
+      loadConversation();
+      activateTabFromUrl();
     };
   </script>
   <script>
@@ -884,6 +1231,7 @@
       });
     }
   </script>
+<script src="branding.js?v=2"></script>
 <script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

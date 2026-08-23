@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>تسجيل المدفوعات - فَصلي</title>
-  <meta name="description" content="تسجيل ومتابعة مدفوعات واشتراكات الطلاب في نظام فَصلي">
+  <title>المدفوعات والمذكرات - فَصلي</title>
+  <meta name="description" content="تسجيل ومتابعة مدفوعات واشتراكات الطلاب ومذكرات الدروس في نظام فَصلي">
   <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -24,19 +24,24 @@
 
       <nav class="sidebar-nav">
         <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="students.html" class="sidebar-item "><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item "><i class="fas fa-pen-to-square"></i> الدرجات</a>
-        <a href="payments.html" class="sidebar-item active"><i class="fas fa-sack-dollar"></i> المدفوعات</a>
-        <a href="books.html" class="sidebar-item "><i class="fas fa-book"></i> المذكرات</a>
-        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="messages.html" class="sidebar-item " id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+
+        <div class="sidebar-section-label">🎓 الأكاديمية</div>
+        <a href="students.html" class="sidebar-item " id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item " id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item " id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
+
+        <div class="sidebar-section-label">💰 المالية</div>
+        <a href="payments.html" class="sidebar-item active" id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
         <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
 
-        <div class="sidebar-section-label">إدارة</div>
-        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <div class="sidebar-section-label">📊 التقارير</div>
+        <a href="reports.html" class="sidebar-item " id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
+
+        <div class="sidebar-section-label">⚙️ الإعدادات</div>
         <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
-        <a href="assistants-management.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
-        <a href="wifi-config.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-headset"></i> التواصل والنُسخ</a>
+        <a href="staff.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
+        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
       </nav>
 
       <div class="sidebar-footer">
@@ -52,6 +57,21 @@
           <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
         </button>
         <div class="sidebar-footer-actions">
+          <div class="notif-wrap" id="notifWrap" style="display:none;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-panel-header">
+                <span>الإشعارات</span>
+                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
           <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
           <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
         </div>
@@ -61,39 +81,37 @@
     <div class="main-area">
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-        <h2>المدفوعات</h2>
-        <div class="notif-wrap" id="notifWrap" style="display:none;">
-          <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
-            <i class="fas fa-bell"></i>
-            <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-          </button>
-          <div class="notif-panel" id="notifPanel">
-            <div class="notif-panel-header">
-              <span>الإشعارات</span>
-              <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
-            </div>
-            <div class="notif-list" id="notifList">
-              <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
-            </div>
-          </div>
-        </div>
+        <h2>المدفوعات والمذكرات</h2>
         <div style="width:24px;"></div>
       </div>
   <div class="container">
     <div class="breadcrumb">
       <a onclick="goBackToDashboard()">الرئيسية</a>
       <span class="separator">›</span>
-      <span>تسجيل المدفوعات</span>
+      <span>المدفوعات والمذكرات</span>
     </div>
 
     <div class="page-header">
       <div>
-        <h2>💰 تسجيل المدفوعات</h2>
+        <h2>💰 المدفوعات والمذكرات</h2>
       </div>
       <span id="roleIndicator" style="font-size:13px;color:var(--gray-500);">
         <i class="fas fa-user-tag"></i> دور: <strong id="userRoleDisplay">مدرس</strong>
       </span>
     </div>
+
+    <!-- ✅ Aug 2026: دمج صفحتي "المدفوعات" و"المذكرات" في صفحة واحدة بتبويبين رئيسيين -->
+    <div class="tabs" id="mainSectionTabs">
+      <button class="tab active" data-tab="payments" onclick="switchMainSectionTab('payments')">
+        <i class="fas fa-sack-dollar"></i> المدفوعات
+      </button>
+      <button class="tab" data-tab="books" onclick="switchMainSectionTab('books')">
+        <i class="fas fa-book"></i> المذكرات
+      </button>
+    </div>
+
+    <div id="mainSectionTabsWrap">
+    <div class="tab-content active" id="mainsec-payments">
 
     <div class="stats-row" id="statsRow">
       <div class="stat-card">
@@ -113,6 +131,64 @@
         <div class="stat-value danger" id="statUnpaid">0</div>
       </div>
     </div>
+
+    <!-- ✅ Aug 2026: إعادة تنظيم الصفحة لتبويبات (زي grades.html/books.html) — كانت 3 كروت متتالية،
+         دلوقتي 3 تبويبات: إدارة البنود، تسجيل سداد، المدفوعات المسجلة. شريط الإحصائيات فوق فضل
+         زي ما هو (ظاهر دايمًا مهما كان التبويب المفتوح، مش جزء من أي تبويب بعينه) -->
+    <div class="tabs" id="paymentsTabs">
+      <button class="tab active" data-tab="titles" onclick="switchPaymentsTab('titles')">
+        <i class="fas fa-tags"></i> إدارة البنود
+      </button>
+      <button class="tab" data-tab="add" onclick="switchPaymentsTab('add')">
+        <i class="fas fa-plus-circle"></i> تسجيل سداد
+      </button>
+      <button class="tab" data-tab="list" onclick="switchPaymentsTab('list')">
+        <i class="fas fa-list"></i> المدفوعات المسجلة
+      </button>
+    </div>
+
+    <div id="paymentsTabsWrap">
+    <div class="tab-content active" id="tab-titles">
+
+    <!-- ✅ بند جديد: إنشاء بند سداد وتحديد سعره بمعزل تام عن أي عملية سداد فعلية -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-tags" style="color:var(--primary);"></i> إدارة بنود السداد</h3>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--gray-500);font-size:13px;margin-bottom:16px;">
+          أنشئ بند سداد وسعره الافتراضي من غير ما تكون مضطر تسجّل عملية سداد فعلية لأي طالب دلوقتي.
+        </p>
+        <div class="field-row">
+          <div class="field">
+            <label>اسم البند</label>
+            <input type="text" id="standaloneTitleName" placeholder="مثال: اشتراك شهر أكتوبر">
+          </div>
+          <div class="field">
+            <label>السعر الافتراضي</label>
+            <input type="number" id="standaloneTitleAmount" placeholder="مثال: 200">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="createStandaloneTitle()">➕ إنشاء البند</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-list" style="color:var(--primary);"></i> البنود الحالية</h3>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>اسم البند</th><th>السعر الافتراضي</th><th>إجراء</th></tr></thead>
+            <tbody id="paymentTitlesBody"><tr><td colspan="3" class="loading">⏳ جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-add">
 
     <div class="card" id="addPaymentCard">
       <div class="card-header">
@@ -165,6 +241,9 @@
       </div>
     </div>
 
+    </div>
+    <div class="tab-content" id="tab-list">
+
     <div class="card">
       <div class="card-header">
         <h3><i class="fas fa-list" style="color:var(--primary);"></i> المدفوعات المسجلة</h3>
@@ -207,6 +286,160 @@
           </table>
         </div>
       </div>
+    </div>
+
+    </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="mainsec-books">
+
+    <div class="tabs" id="booksTabs">
+      <button class="tab active" data-tab="manage" onclick="switchBooksTab('manage')">
+        <i class="fas fa-book"></i> المذكرات
+      </button>
+      <button class="tab" data-tab="pay" onclick="switchBooksTab('pay')">
+        <i class="fas fa-money-bill-wave"></i> تسجيل سداد
+      </button>
+      <button class="tab" data-tab="status" onclick="switchBooksTab('status')">
+        <i class="fas fa-chart-bar"></i> حالة السداد
+      </button>
+    </div>
+
+    <div id="booksTabsWrap">
+    <div class="tab-content active" id="tab-manage">
+
+    <div class="card" id="addBookCard">
+      <div class="card-header">
+        <h3><i class="fas fa-plus-circle" style="color:var(--success);"></i> إضافة مذكرة جديدة</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>📝 اسم المذكرة <span class="required">*</span></label>
+            <input type="text" id="bookName" placeholder="مثال: اللغة العربية">
+          </div>
+          <div class="form-group">
+            <label>💰 السعر (ج.م) <span class="required">*</span></label>
+            <input type="number" id="bookPrice" placeholder="مثال: 50" min="1">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-success" onclick="addBook()">
+            <i class="fas fa-save"></i> إضافة مذكرة
+          </button>
+          <button class="btn btn-outline" onclick="resetBookForm()">
+            <i class="fas fa-undo"></i> تفريغ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-list" style="color:var(--primary);"></i> قائمة المذكرات</h3>
+      </div>
+      <div class="card-body">
+        <div id="booksList">
+          <div class="empty-state">
+            <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
+            <h4>جاري التحميل...</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-pay">
+
+    <div class="card" id="payBookCard">
+      <div class="card-header">
+        <h3><i class="fas fa-money-bill-wave" style="color:var(--warning);"></i> تسجيل سداد مذكرة</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>المجموعة <span class="required">*</span></label>
+            <select id="bookGroup" onchange="loadBookStudents()">
+              <option value="">-- اختر المجموعة --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>المذكرة <span class="required">*</span></label>
+            <select id="bookSelect">
+              <option value="">-- اختر المذكرة --</option>
+            </select>
+          </div>
+          <div class="form-group full field-with-suggestions">
+            <label>البحث عن طلاب (تقدر تختار أكتر من طالب) <span class="required">*</span></label>
+            <input type="text" id="bookStudentSearch" placeholder="اكتب اسم الطالب أو UID..." autocomplete="off" oninput="filterBookStudents()">
+            <div id="bookSuggestions" class="suggestions-box"></div>
+            <div id="selectedBookStudentsChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+            <span class="hint">💡 اختار كل الطلاب اللي هيدفعوا نفس المذكرة بنفس المبلغ، وهيتسجّلوا كلهم دفعة واحدة</span>
+          </div>
+          <div class="form-group full">
+            <label>المبلغ المدفوع الآن (ج.م) <span class="required">*</span></label>
+            <input type="number" id="bookPaymentAmount" placeholder="أدخل المبلغ الذي يدفعه الطالب الآن" min="1" step="0.5" value="">
+            <span class="hint">💡 أدخل المبلغ الذي يدفعه الطالب حالياً (يمكن أن يكون دفعة جزئية)</span>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-warning" onclick="submitBookPayment()">
+            <i class="fas fa-check"></i> تسجيل السداد
+          </button>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-status">
+
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-chart-bar" style="color:var(--info);"></i> حالة سداد المذكرات</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>المجموعة <span class="required">*</span></label>
+            <select id="bookStatusGroup" onchange="loadBookStatus()">
+              <option value="">-- اختر المجموعة --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>المذكرة <span class="required">*</span></label>
+            <select id="bookStatusSelect" onchange="loadBookStatus()">
+              <option value="">-- اختر المذكرة --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>بحث عن طالب</label>
+            <input type="text" id="bookStatusSearch" placeholder="🔍 اكتب اسم الطالب..." oninput="filterBookStatusTable()">
+          </div>
+          <div class="form-group">
+            <label>الحالة</label>
+            <select id="bookStatusFilterSelect" onchange="filterBookStatusTable()">
+              <option value="">📊 كل الحالات</option>
+              <option value="paid">✅ مدفوع بالكامل</option>
+              <option value="partial">🟡 دفعة جزئية</option>
+              <option value="unpaid">❌ غير مدفوع</option>
+            </select>
+          </div>
+        </div>
+        <div id="bookStatusResultsCount" style="margin-top:8px;font-size:12.5px;color:var(--gray-500);"></div>
+        <div id="bookStatusContainer" style="margin-top:16px;">
+          <div class="empty-state">
+            <i class="fas fa-info-circle" style="font-size:24px;"></i>
+            <h4>اختر المجموعة والمذكرة لعرض حالتها</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    </div>
+
+    </div>
     </div>
   </div>
 
@@ -298,7 +531,11 @@
           const clone = res.clone();
           const data = await clone.json();
           if (data && data.code === 'LICENSE_EXPIRED') {
-            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+            // ✅ بنحط الرسالة الحقيقية + اسم الدالة اللي رجّعت الخطأ في sessionStorage
+            // (مش URL parameter) عشان صفحة القفل تقدر تقراها وتعرضها صح للتشخيص
+            sessionStorage.setItem('lockReason', data.message || 'انتهت صلاحية الترخيص');
+            sessionStorage.setItem('lockSourceFunction', urlStr);
+            window.location.href = 'license-locked.html';
           }
         }
       } catch (e) { /* تجاهل */ }
@@ -390,7 +627,8 @@
 
     const assistantPermissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
     const isAssistant = userRole === 'assistant';
-    if (isAssistant) {
+    // ✅ الجرس ده بيشتغل للمدرس والمساعد الاتنين (Aug 2026) — كان قبل كده مقصور على المساعد بس
+    {
       const notifWrap = document.getElementById('notifWrap');
       if (notifWrap) {
         notifWrap.style.display = 'block';
@@ -409,6 +647,27 @@
       if (navR) navR.style.display = 'flex';
       if (navF) navF.style.display = 'flex';
       if (navL) navL.style.display = 'flex';
+    } else {
+      // ✅ Batch 21: القائمة الجانبية للمساعد لازم تعكس صلاحياته الفعلية في كل صفحة يزورها،
+      // مش لوحة التحكم بس — نفس منطق التفعيل المستخدم في assistant-dashboard.html
+      const navSt = document.getElementById('navStudents');
+      const navGr = document.getElementById('navGroups');
+      const navGd = document.getElementById('navGrades');
+      const navPay = document.getElementById('navPayments');
+      const navRep = document.getElementById('navReports');
+      const navMsg = document.getElementById('navMessages');
+      const navF = document.getElementById('navFinancial');
+      const navL = document.getElementById('navActivityLog');
+      const navA = document.getElementById('navManageAssistants');
+      if (navSt) navSt.style.display = assistantPermissions.view_students !== false ? 'flex' : 'none';
+      if (navGr) navGr.style.display = (assistantPermissions.manage_groups === true || assistantPermissions.manage_registration === true) ? 'flex' : 'none';
+      if (navGd) navGd.style.display = assistantPermissions.record_grades === true ? 'flex' : 'none';
+      if (navPay) navPay.style.display = assistantPermissions.record_payments === true ? 'flex' : 'none';
+      if (navRep) navRep.style.display = assistantPermissions.view_reports === true ? 'flex' : 'none';
+      if (navMsg) navMsg.style.display = (assistantPermissions.send_messages === true || assistantPermissions.manage_conversations === true) ? 'flex' : 'none';
+      if (navF) navF.style.display = assistantPermissions.view_financial === true ? 'flex' : 'none';
+      if (navL) navL.style.display = assistantPermissions.view_activity_log === true ? 'flex' : 'none';
+      if (navA) navA.style.display = assistantPermissions.view_staff === true ? 'flex' : 'none';
     }
     const canViewPayments = isAssistant ? (assistantPermissions.view_students !== false) : true;
     const canRecordPayments = isAssistant ? (assistantPermissions.record_payments === true) : true;
@@ -505,6 +764,7 @@
     }
 
     let allStudents = [];
+    let paymentsLoadToken = 0; // ✅ حماية من تعارض الطلبات
 
     async function loadPaymentStudents() {
       const group = document.getElementById('paymentGroup').value;
@@ -532,6 +792,12 @@
     }
 
     let selectedStudents = [];
+
+    // ✅ Aug 2026: متغيرات خاصة بتبويب "المذكرات" بعد الدمج مع books.html
+    let bookStudentsList = [];
+    let bookPrices = {};
+    let booksData = [];
+    let selectedBookStudents = [];
 
     function filterStudents() {
       const query = document.getElementById('studentSearch').value.trim().toLowerCase();
@@ -597,12 +863,18 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/add-payment', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'add',
             clientId,
             studentUids: selectedStudents.map(s => s.uid),
+            // ✅ Batch 22 (بند 3): المجموعة المختارة فوق فى الفورم كانت بتتحدد بس عشان تفلتر
+            // قايمة الطلاب فى المنتقي، لكن ماكانتش بتتبعت للسيرفر خالص — فالمدفوعة كانت دايماً
+            // بتتسجّل على مجموعة الطالب الأساسية بغض النظر عن أي مجموعة محددة فعلياً هنا، وده
+            // كان بيسبب ربط غلط للمدفوعة بمجموعة تانية لأي طالب مرتبط بأكتر من مجموعة
+            groupName: group,
             title,
             totalAmount: Number(total),
             amount: Number(amount),
@@ -646,12 +918,64 @@
       }
     }
 
+    async function createStandaloneTitle() {
+      const name = document.getElementById('standaloneTitleName').value.trim();
+      const amount = document.getElementById('standaloneTitleAmount').value.trim();
+      if (!name) { showToast('⚠️ أدخل اسم البند', 'warning'); return; }
+      if (amount === '' || isNaN(amount) || Number(amount) < 0) { showToast('⚠️ أدخل سعراً صحيحاً', 'warning'); return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/create-payment-title', {
+          method: 'POST', headers, body: JSON.stringify({ title: name, defaultAmount: Number(amount) })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          document.getElementById('standaloneTitleName').value = '';
+          document.getElementById('standaloneTitleAmount').value = '';
+          await loadPaymentTitles();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل إنشاء البند', 'error');
+      }
+    }
+
+    // ✅ (طلب) حذف بند سداد من قائمة البنود الحالية — يرفضه الباك اند (409) لو فيه مدفوعات
+    // فعلية مسجّلة تحت البند ده، ويطلب حذفها الأول من "المدفوعات المسجلة"
+    async function deletePaymentTitle(title) {
+      const ok = await customConfirm(`متأكد إنك عايز تحذف بند "${title}"؟`);
+      if (!ok) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'deleteTitle', title })
+        });
+        if (response.status === 401) { handleUnauthorized(); return; }
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          await loadPaymentTitles();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حذف البند:', error);
+        showToast('❌ فشل حذف البند', 'error');
+      }
+    }
+
     async function loadPaymentTitles() {
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/get-payment-titles', {
-          method: 'POST', headers, body: JSON.stringify({ clientId })
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-titles', {
+          method: 'POST', headers, body: JSON.stringify({ clientId , type: 'payment' })
         });
         if (response.status === 401) { handleUnauthorized(); return; }
         const result = await response.json();
@@ -686,6 +1010,23 @@
         if (!currentFilterValue && savedTitle && [...filterSelect.options].some(o => o.value === savedTitle)) {
           filterSelect.value = savedTitle;
         }
+
+        // ✅ (طلب) عرض البنود الحالية في تبويب "إدارة البنود" نفسه، مش بس داخل الـ selects
+        const titlesBody = document.getElementById('paymentTitlesBody');
+        if (titlesBody) {
+          const titles = result.success ? (result.data || []) : [];
+          if (titles.length === 0) {
+            titlesBody.innerHTML = '<tr><td colspan="3" class="loading">لا يوجد بنود سداد بعد</td></tr>';
+          } else {
+            titlesBody.innerHTML = titles.map(t => `
+              <tr>
+                <td>${escapeHtml(t.title)}</td>
+                <td>${t.defaultAmount ? escapeHtml(String(t.defaultAmount)) + ' ج.م' : '—'}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deletePaymentTitle('${escapeAttr(t.title)}')"><i class="fas fa-trash"></i> حذف</button></td>
+              </tr>
+            `).join('');
+          }
+        }
       } catch (error) {
         console.error('❌ خطأ في تحميل بنود السداد:', error);
       }
@@ -706,6 +1047,7 @@
     let allStudentsForStats = [];
 
     async function loadPayments() {
+      const myLoadToken = ++paymentsLoadToken;
       const filterGroup = document.getElementById('filterGroup').value;
       const tbody = document.getElementById('paymentsBody');
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
@@ -731,6 +1073,9 @@
           handleUnauthorized('انتهت صلاحية الجلسة');
           return;
         }
+
+        // ✅ لو حد غيّر الفلتر تاني قبل ما الطلب ده يخلص، نتجاهل النتيجة دي تماماً
+        if (myLoadToken !== paymentsLoadToken) return;
 
         const studentsResult = await studentsResponse.json();
         const allStudentsInView = studentsResult.success ? (studentsResult.data || []) : [];
@@ -961,10 +1306,11 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/update-payment', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'update',
             paymentId,
             amount: Number(amount),
             assistantId,
@@ -1002,10 +1348,11 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/delete-payment', {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
+            action: 'delete',
             paymentId: paymentId,
             assistantId: assistantId,
             assistantName: assistantName
@@ -1044,10 +1391,10 @@
         }
         if (jwt && pushToken) {
           // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
-          fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ token: pushToken })
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
           }).catch(() => {});
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
@@ -1087,10 +1434,10 @@
   try {
     const headers = getAuthHeaders();
     if (!headers) return;
-    const response = await fetch(PROJECT_URL + '/functions/v1/export-backup', {
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-backup', {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify({ clientId })
+      body: JSON.stringify({ action: 'export', clientId })
     });
     if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
     const result = await response.json();
@@ -1136,17 +1483,54 @@ function openResetConfirm() {
   overlay.innerHTML = `
     <div class="reset-modal-box">
       <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
-      <h3>⚠️ تحذير خطير!</h3>
-      <p>أنت على وشك حذف <strong>جميع بيانات النظام</strong> بما في ذلك:</p>
-      <ul style="text-align:right;list-style:none;padding:8px 0;color:var(--gray-600);font-size:14px;">
-        <li>📋 <strong>جميع الطلاب</strong> المسجلين</li>
-        <li>📝 <strong>جميع الدرجات</strong> والامتحانات</li>
-        <li>💰 <strong>جميع المدفوعات</strong> (شهرية ومذكرات)</li>
-        <li>📖 <strong>جميع المذكرات</strong> وسجلاتها</li>
-        <li>✅ <strong>جميع سجلات الحضور</strong></li>
-      </ul>
+      <h3>⚠️ إعادة تهيئة النظام</h3>
+      <p>حدّد البيانات اللي عايز تحذفها بس — مش لازم تحذف كل حاجة (مثلاً لو العام الدراسي انتهى بس الطلاب مكملين سنة جديدة، سيب "الطلاب أنفسهم" من غير تحديد).</p>
+      <div class="reset-opts-list" style="text-align:right;padding:4px 12px;font-size:13.5px;margin:10px 0;">
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="attendance" checked> ✅ سجلات الحضور
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="payments" checked> 💰 المدفوعات الشهرية
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="grades" checked> 📝 الدرجات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="bookPayments" checked> 📖 سداد المذكرات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-top:1px solid var(--gray-200);margin-top:6px;padding-top:12px;">
+          <input type="checkbox" class="reset-opt" value="students"> 📋 الطلاب أنفسهم (بيانتهم وأرقامهم وكروتهم)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="groups"> 🏫 المجموعات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="books"> 📚 المذكرات نفسها (كبند، مش سداداتها بس)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="paymentTitles"> 🏷️ بنود السداد المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="examTitles"> 🏷️ أسماء الامتحانات المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="onlineExams"> 🖥️ الامتحانات الإلكترونية (أسئلتها ومحاولات الطلاب فيها)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="notifications"> 🔔 الإشعارات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="activityLogs"> 📜 سجل النشاطات القديم
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="registrationRequests"> 📋 طلبات التسجيل
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="conversations"> 💬 المحادثات مع أولياء الأمور
+        </label>
+      </div>
       <div class="warning-text">
-        <i class="fas fa-skull"></i> هذا الإجراء لا يمكن التراجع عنه!
+        <i class="fas fa-skull"></i> اللي هتحدده هيتحذف نهائياً، مفيش رجوع بعد كده!
       </div>
       <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
         <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
@@ -1214,7 +1598,9 @@ async function confirmReset() {
     }
 
     // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
-    const requestBody = JSON.stringify({ clientId: clientId, password: password });
+    const selectedOptions = {};
+    document.querySelectorAll('.reset-opt').forEach(cb => { selectedOptions[cb.value] = cb.checked; });
+    const requestBody = JSON.stringify({ clientId: clientId, password: password, options: selectedOptions });
 
     const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
       method: 'POST',
@@ -1267,7 +1653,7 @@ function timeAgo(dateStr) {
       return `منذ ${days} يوم`;
     }
 
-const NOTIF_ICONS = { bulk_message: '📨' };
+const NOTIF_ICONS = { bulk_message: '📨', center_teacher_message: '🏢', parent_message: '💬', teacher_message: '💬' };
 
     function playNotificationSound() {
       try {
@@ -1360,8 +1746,18 @@ function toggleNotifPanel() {
       panel.style.position = 'fixed';
       panel.style.left = left + 'px';
       panel.style.right = 'auto';
-      panel.style.top = (btnRect.bottom + 10) + 'px';
       panel.style.width = panelWidth + 'px';
+      // ✅ Batch 24 (بند 4): بعد نقل الجرس لذيل القائمة الجانبية (تحت خالص)، فتح البانل تحت
+      // الزرار عادي هيطلعه خارج حدود الشاشة — لو مفيش مساحة كافية تحت، نفتحه لفوق بدل كده
+      const estimatedHeight = Math.min(420, window.innerHeight - margin * 2);
+      const spaceBelow = window.innerHeight - btnRect.bottom - margin;
+      if (spaceBelow < estimatedHeight && btnRect.top > estimatedHeight) {
+        panel.style.bottom = (window.innerHeight - btnRect.top + 10) + 'px';
+        panel.style.top = 'auto';
+      } else {
+        panel.style.top = (btnRect.bottom + 10) + 'px';
+        panel.style.bottom = 'auto';
+      }
     }
 
 document.addEventListener('click', function(e) {
@@ -1373,19 +1769,35 @@ document.addEventListener('click', function(e) {
 
 async function markOneRead(id) {
       const item = notifData.find(n => n.id === id);
-      if (item && item.is_read) return;
+      const wasUnread = item && !item.is_read;
       try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
-          method: 'POST', headers, body: JSON.stringify({ notificationId: id })
-        });
-        if (item) item.is_read = true;
-        const badge = document.getElementById('notifBadge');
-        const unread = notifData.filter(n => !n.is_read).length;
-        if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
-        else badge.style.display = 'none';
-        renderNotifList();
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل كان مش بيعمل أي حاجة خالص (return مبكر) —
+        // دلوقتي بيوديك لمكان الإشعار برضه حتى لو كان مقروء من قبل، وبس اللي بيتعلَّم كمقروء
+        // فعلياً (نداء الـ API) هو اللي بيتخطّى لو كان مقروء أصلاً
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه المستخدم لمكان الإشعار نفسه بدل
+        // ما يفضل واقف في نفس الصفحة من غير ما يعرف يوصل للمحادثة/الطالب الخاص بالإشعار
+        if (item) {
+          if (item.type === 'parent_message' && item.student_uid) {
+            const nm = (item.details && item.details.student_name) || '';
+            window.location.href = 'messages.html?openConversation=' + encodeURIComponent(item.student_uid) + (nm ? '&name=' + encodeURIComponent(nm) : '');
+          } else if (item.type === 'center_teacher_message') {
+            window.location.href = 'messages.html';
+          }
+        }
       } catch (error) {
         console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
       }
@@ -1440,6 +1852,720 @@ async function markAllRead() {
       }
     }
 
+    // ✅ Aug 2026: تبديل تبويبات صفحة المدفوعات — كل بيانات الصفحة بتتحمّل مرة واحدة في
+    // window.onload زي ما كان قبل التبويبات، فمفيش تحميل كسول لازم هنا
+    // ✅ Aug 2026: دوال تبويب "المذكرات" بعد الدمج مع books.html
+    async function addBook() {
+          const name = document.getElementById('bookName').value.trim();
+          const price = document.getElementById('bookPrice').value.trim();
+
+          if (!name) { showToast('⚠️ أدخل اسم المذكرة', 'warning'); return; }
+          if (!price || isNaN(price) || Number(price) <= 0) { showToast('⚠️ أدخل سعراً صحيحاً', 'warning'); return; }
+
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/manage-book', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({
+                action: 'add',
+                teacherId: clientId,
+                name: name,
+                price: Number(price),
+                assistantId: assistantId,
+                assistantName: assistantName
+              })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+              showToast('✅ ' + result.message, 'success');
+              resetBookForm();
+              loadBooks();
+            } else {
+              showToast('❌ ' + result.message, 'error');
+            }
+          } catch (error) {
+            console.error('❌ خطأ:', error);
+            showToast('❌ فشل إضافة المذكرة', 'error');
+          }
+        }
+
+    async function deleteBook(bookId, bookName) {
+          if (!(await customConfirm('⚠️ هل أنت متأكد من حذف المذكرة "' + bookName + '"؟ سيتم حذف جميع سجلات سدادها.'))) return;
+
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/manage-book', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({
+                action: 'delete',
+                bookId: bookId,
+                assistantId: assistantId,
+                assistantName: assistantName
+              })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+              showToast('✅ ' + result.message, 'success');
+              loadBooks();
+            } else {
+              showToast('❌ ' + result.message, 'error');
+            }
+          } catch (error) {
+            console.error('❌ خطأ:', error);
+            showToast('❌ فشل حذف المذكرة', 'error');
+          }
+        }
+
+    async function deleteBookFile(bookId) {
+          if (!(await customConfirm('هل أنت متأكد من حذف الملف المرفوع؟ (المذكرة نفسها هتفضل موجودة، الملف بس هيتشال)'))) return;
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+            const response = await fetch(PROJECT_URL + '/functions/v1/upload-book-file', {
+              method: 'POST', headers, body: JSON.stringify({ action: 'delete', bookId })
+            });
+            const result = await response.json();
+            if (result.success) { showToast('✅ اتحذف', 'success'); await loadBooks(); }
+            else showToast('❌ ' + result.message, 'error');
+          } catch (error) { console.error('❌ خطأ:', error); }
+        }
+
+    async function deleteBookPayment(paymentId, studentName, bookName) {
+          if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف سداد "${bookName}" للطالب "${studentName}"؟`))) return;
+
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/manage-book-payment', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({
+                action: 'delete',
+                paymentId: paymentId,
+                assistantId: assistantId,
+                assistantName: assistantName
+              })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+              showToast('✅ ' + result.message, 'success');
+              loadBookStatus();
+            } else {
+              showToast('❌ ' + result.message, 'error');
+            }
+          } catch (error) {
+            console.error('❌ خطأ:', error);
+            showToast('❌ فشل حذف السداد', 'error');
+          }
+        }
+
+    async function editBookName(bookId, oldName, oldPrice) {
+          const newName = await customPrompt('تعديل اسم المذكرة — الاسم الحالي: ' + oldName + ' — أدخل الاسم الجديد:', oldName);
+          if (newName === null || newName.trim() === '') return;
+
+          const newPrice = await customPrompt('تعديل السعر — السعر الحالي: ' + oldPrice + ' ج.م — أدخل السعر الجديد:', oldPrice);
+          if (newPrice === null) return;
+          if (isNaN(newPrice) || Number(newPrice) <= 0) { showToast('⚠️ أدخل سعراً صحيحاً', 'warning'); return; }
+
+          if (newName.trim() === oldName && Number(newPrice) === Number(oldPrice)) {
+            showToast('ℹ️ مفيش أي تغيير', 'info');
+            return;
+          }
+
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/manage-book', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({
+                action: 'update',
+                bookId: bookId,
+                name: newName.trim(),
+                price: Number(newPrice),
+                assistantId: assistantId,
+                assistantName: assistantName
+              })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+              showToast('✅ ' + result.message, 'success');
+              loadBooks();
+              loadBookStatus();
+            } else {
+              showToast('❌ ' + result.message, 'error');
+            }
+          } catch (error) {
+            console.error('❌ خطأ:', error);
+            showToast('❌ فشل تعديل المذكرة', 'error');
+          }
+        }
+
+    async function editBookPayment(paymentId, studentName, bookName, currentAmount, price) {
+          const newAmount = await customPrompt(
+            `تعديل سداد المذكرة — الطالب: ${studentName} — المذكرة: ${bookName} — المبلغ الحالي: ${currentAmount} ج.م من ${price} ج.م — أدخل المبلغ الجديد:`,
+            currentAmount
+          );
+          if (newAmount === null) return;
+          if (isNaN(newAmount) || Number(newAmount) < 0) {
+            showToast('⚠️ أدخل مبلغاً صحيحاً', 'warning');
+            return;
+          }
+          if (Number(newAmount) > Number(price)) {
+            showToast(`⚠️ المبلغ (${newAmount}) مايصحش يكون أكبر من سعر المذكرة (${price})`, 'warning');
+            return;
+          }
+          const finalAmount = Number(newAmount);
+          if (finalAmount === currentAmount) {
+            showToast('ℹ️ المبلغ لم يتغير', 'info');
+            return;
+          }
+
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const payload = { action: 'update', paymentId: paymentId, amount: finalAmount, assistantId: assistantId, assistantName: assistantName };
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/manage-book-payment', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify(payload)
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+              showToast('✅ ' + result.message, 'success');
+              loadBookStatus();
+            } else {
+              showToast('❌ ' + result.message, 'error');
+            }
+          } catch (error) {
+            console.error('❌ خطأ:', error);
+            showToast('❌ فشل تعديل السداد: ' + error.message, 'error');
+          }
+        }
+
+    function filterBookStatusTable() {
+          const q = document.getElementById('bookStatusSearch').value.trim().toLowerCase();
+          const selectedStatus = document.getElementById('bookStatusFilterSelect').value;
+          const rows = document.querySelectorAll('#bookStatusContainer tr[data-student-name]');
+          let visibleCount = 0;
+          rows.forEach(row => {
+            const matchesSearch = row.dataset.studentName.includes(q);
+            const matchesStatus = !selectedStatus || row.dataset.status === selectedStatus;
+            const isVisible = matchesSearch && matchesStatus;
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
+          });
+          const countEl = document.getElementById('bookStatusResultsCount');
+          if (countEl) {
+            countEl.textContent = rows.length
+              ? ((q || selectedStatus) ? `📋 بيعرض ${visibleCount} من ${rows.length} طالب` : `📋 إجمالي ${rows.length} طالب`)
+              : '';
+          }
+        }
+
+    function filterBookStudents() {
+          const query = document.getElementById('bookStudentSearch').value.trim().toLowerCase();
+          const box = document.getElementById('bookSuggestions');
+          if (query.length < 1) { box.style.display = 'none'; return; }
+          const selectedUids = new Set(selectedBookStudents.map(s => s.uid));
+          const matches = bookStudentsList.filter(s => !selectedUids.has(s.uid) && (s.name.toLowerCase().includes(query) || s.uid.toLowerCase().includes(query)));
+          if (matches.length === 0) { box.style.display = 'none'; return; }
+          box.innerHTML = '';
+          matches.forEach(s => {
+            const div = document.createElement('div');
+            div.innerHTML = '<strong>' + escapeHtml(s.name) + '</strong> <span class="suggestion-uid">' + escapeHtml(s.uid) + '</span> <span style="color:var(--gray-400);font-size:12px;">(' + escapeHtml(s.group_name) + ')</span>';
+            div.onclick = function() {
+              selectedBookStudents.push({ uid: s.uid, name: s.name });
+              document.getElementById('bookStudentSearch').value = '';
+              box.style.display = 'none';
+              renderSelectedBookStudentsChips();
+            };
+            box.appendChild(div);
+          });
+          box.style.display = 'block';
+        }
+
+    function handleBookFileSelected(bookId, inputEl) {
+          const file = inputEl.files[0];
+          if (!file) return;
+          if (!file.name.toLowerCase().endsWith('.pdf')) {
+            showToast('⚠️ لازم يكون الملف بصيغة PDF', 'warning');
+            inputEl.value = '';
+            return;
+          }
+          if (file.size > 8 * 1024 * 1024) {
+            showToast('⚠️ حجم الملف أكبر من 8 ميجا', 'warning');
+            inputEl.value = '';
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = async function() {
+            try {
+              const headers = getAuthHeaders();
+              if (!headers) return;
+              showToast('⏳ جاري رفع الملف...', 'info');
+              const response = await fetch(PROJECT_URL + '/functions/v1/upload-book-file', {
+                method: 'POST', headers,
+                body: JSON.stringify({ action: 'upload', bookId, fileName: file.name, fileBase64: reader.result })
+              });
+              const result = await response.json();
+              if (result.success) {
+                showToast('✅ ' + result.message, 'success');
+                await loadBooks();
+              } else {
+                showToast('❌ ' + result.message, 'error');
+              }
+            } catch (error) {
+              console.error('❌ خطأ:', error);
+              showToast('❌ فشل رفع الملف', 'error');
+            }
+            inputEl.value = '';
+          };
+          reader.readAsDataURL(file);
+        }
+
+    async function loadBookGroups() {
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({ clientId })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+              const groups = result.data || [];
+              const select = document.getElementById('bookGroup');
+              select.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+              groups.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g;
+                opt.textContent = g;
+                select.appendChild(opt);
+              });
+            }
+          } catch (error) { console.error('❌ خطأ في تحميل المجموعات:', error); }
+        }
+
+    async function loadBookStatus() {
+          const group = document.getElementById('bookStatusGroup').value;
+          const bookId = document.getElementById('bookStatusSelect').value;
+          const container = document.getElementById('bookStatusContainer');
+          document.getElementById('bookStatusSearch').value = '';
+          document.getElementById('bookStatusFilterSelect').value = '';
+
+          if (!group || !bookId) {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-info-circle" style="font-size:24px;"></i><h4>اختر المجموعة والمذكرة لعرض حالتها</h4></div>';
+            return;
+          }
+
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i><h4>جاري التحميل...</h4></div>';
+
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/get-book-status', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({ teacherId: clientId, bookId: bookId, groupName: group })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+              const data = (result.data || []).sort((a, b) => a.student_name.localeCompare(b.student_name, 'ar'));
+              if (data.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-user-slash" style="font-size:32px;opacity:0.5;"></i><h4>لا يوجد طلاب في هذه المجموعة</h4></div>';
+                return;
+              }
+
+              let html = `
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>الطالب</th>
+                        <th>المبلغ</th>
+                        <th>التاريخ</th>
+                        <th>الحالة</th>
+                        <th style="text-align:center;">إجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+              `;
+
+              data.forEach(item => {
+                const date = new Date(item.paid_at);
+                const dateStr = date.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+            
+                let statusClass = 'status-unpaid';
+                let statusText = '❌ غير مدفوع';
+                let showEditButton = true;
+                let showDeleteButton = true;
+
+                if (item.amount >= item.price) {
+                  statusClass = 'status-paid';
+                  statusText = '✅ مدفوع بالكامل';
+                  showEditButton = false;
+                  showDeleteButton = true;
+                } else if (item.amount > 0 && item.amount < item.price) {
+                  statusClass = 'status-partial';
+                  statusText = `🟡 دفعة جزئية (${item.amount} / ${item.price} ج.م)`;
+                  showEditButton = true;
+                  showDeleteButton = true;
+                } else {
+                  statusClass = 'status-unpaid';
+                  statusText = '❌ غير مدفوع';
+                  showEditButton = false;
+                  showDeleteButton = false;
+                }
+
+                let actionsHtml = '—';
+                if (item.payment_id) {
+                  let buttons = '';
+                  if (showEditButton) {
+                    buttons += `<button class="btn btn-warning btn-sm" onclick="editBookPayment('${item.payment_id}', '${escapeAttr(item.student_name)}', '${escapeAttr(item.book_name)}', ${item.amount}, ${item.price})" title="تعديل المبلغ">
+                      <i class="fas fa-edit"></i>
+                    </button> `;
+                  }
+                  if (showDeleteButton) {
+                    buttons += `<button class="btn btn-danger btn-sm" onclick="deleteBookPayment('${item.payment_id}', '${escapeAttr(item.student_name)}', '${escapeAttr(item.book_name)}')" title="حذف السداد">
+                      <i class="fas fa-trash"></i>
+                    </button>`;
+                  }
+                  actionsHtml = buttons || '—';
+                }
+
+                html += `
+                  <tr data-student-name="${escapeAttr(item.student_name.toLowerCase())}" data-status="${statusClass.replace('status-', '')}">
+                    <td><strong>${escapeHtml(item.student_name)}</strong></td>
+                    <td>${item.amount || 0} / ${item.price} ج.م</td>
+                    <td>${dateStr}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td style="text-align:center;">${actionsHtml}</td>
+                  </tr>
+                `;
+              });
+
+              html += `</tbody></table></div>`;
+              container.innerHTML = html;
+              filterBookStatusTable();
+            } else {
+              showToast('❌ ' + result.message, 'error');
+            }
+          } catch (error) {
+            console.error('❌ خطأ:', error);
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle" style="font-size:32px;opacity:0.5;"></i><h4>خطأ في التحميل</h4></div>';
+          }
+        }
+
+    async function loadBookStatusGroups() {
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({ clientId })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+              const groups = result.data || [];
+              const select = document.getElementById('bookStatusGroup');
+              select.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+              groups.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g;
+                opt.textContent = g;
+                select.appendChild(opt);
+              });
+            }
+          } catch (error) { console.error('❌ خطأ في تحميل المجموعات:', error); }
+        }
+
+    async function loadBookStudents() {
+          const group = document.getElementById('bookGroup').value;
+          if (!group) { bookStudentsList = []; return; }
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/get-students', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({ clientId, groupName: group })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+            if (result.success) { bookStudentsList = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar')); }
+          } catch (error) { console.error('❌ خطأ في تحميل الطلاب:', error); }
+        }
+
+    async function loadBooks() {
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/get-books', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({ teacherId: clientId })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+              booksData = result.data || [];
+              const container = document.getElementById('booksList');
+              const bookSelect = document.getElementById('bookSelect');
+              const statusSelect = document.getElementById('bookStatusSelect');
+
+              bookPrices = {};
+              booksData.forEach(b => { bookPrices[b.id] = b.price; });
+
+              if (booksData.length === 0) {
+                container.innerHTML = `
+                  <div class="empty-state">
+                    <i class="fas fa-book" style="font-size:48px;opacity:0.5;"></i>
+                    <h4>لا توجد مذكرات</h4>
+                    <p style="color:var(--gray-400);font-size:13px;">أضف مذكرة جديدة من الأعلى</p>
+                  </div>
+                `;
+                bookSelect.innerHTML = '<option value="">-- لا توجد مذكرات --</option>';
+                statusSelect.innerHTML = '<option value="">-- لا توجد مذكرات --</option>';
+                return;
+              }
+
+              let html = '';
+              booksData.forEach(b => {
+                html += `
+                  <div class="book-item">
+                    <div class="book-info">
+                      <span class="book-icon">📘</span>
+                      <span class="book-name">${escapeHtml(b.name)}</span>
+                      <span class="book-price">${b.price} ج.م</span>
+                      ${b.file_url ? `<a href="${b.file_url}" target="_blank" style="font-size:12px;color:var(--success);margin-right:8px;"><i class="fas fa-file-pdf"></i> الملف مرفوع</a>` : `<span style="font-size:12px;color:var(--gray-400);margin-right:8px;">📄 مفيش ملف مرفوع</span>`}
+                    </div>
+                    <div class="book-actions">
+                      <input type="file" accept="application/pdf" id="bookFileInput_${b.id}" style="display:none;" onchange="handleBookFileSelected(${b.id}, this)">
+                      <button class="btn btn-info btn-sm" onclick="document.getElementById('bookFileInput_${b.id}').click()" title="${b.file_url ? 'استبدال الملف' : 'رفع ملف PDF'}">
+                        <i class="fas fa-upload"></i>
+                      </button>
+                      ${b.file_url ? `<button class="btn btn-danger btn-sm" onclick="deleteBookFile(${b.id})" title="حذف الملف"><i class="fas fa-file-circle-xmark"></i></button>` : ''}
+                      <button class="btn btn-warning btn-sm" onclick="editBookName('${b.id}', '${escapeAttr(b.name)}', ${b.price})" title="تعديل المذكرة">
+                        <i class="fas fa-edit"></i> تعديل
+                      </button>
+                      <button class="btn btn-danger btn-sm" onclick="deleteBook('${b.id}', '${escapeAttr(b.name)}')" title="حذف المذكرة">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;
+              });
+              container.innerHTML = html;
+
+              bookSelect.innerHTML = '<option value="">-- اختر المذكرة --</option>';
+              statusSelect.innerHTML = '<option value="">-- اختر المذكرة --</option>';
+              booksData.forEach(b => {
+                const opt1 = document.createElement('option');
+                opt1.value = b.id;
+                opt1.textContent = b.name + ' (' + b.price + ' ج.م)';
+                bookSelect.appendChild(opt1.cloneNode(true));
+                const opt2 = document.createElement('option');
+                opt2.value = b.id;
+                opt2.textContent = b.name + ' (' + b.price + ' ج.م)';
+                statusSelect.appendChild(opt2);
+              });
+
+              loadBookGroups();
+              loadBookStatusGroups();
+            }
+          } catch (error) {
+            console.error('❌ خطأ في تحميل المذكرات:', error);
+            showToast('❌ فشل تحميل المذكرات', 'error');
+          }
+        }
+
+    function removeSelectedBookStudent(index) {
+          selectedBookStudents.splice(index, 1);
+          renderSelectedBookStudentsChips();
+        }
+
+    function renderSelectedBookStudentsChips() {
+          const container = document.getElementById('selectedBookStudentsChips');
+          container.innerHTML = selectedBookStudents.map((s, i) => `
+            <span style="display:inline-flex;align-items:center;gap:6px;background:var(--gray-100);color:var(--gray-800);border-radius:16px;padding:4px 6px 4px 12px;font-size:12.5px;">
+              ${escapeHtml(s.name)}
+              <button type="button" onclick="removeSelectedBookStudent(${i})" style="background:none;border:none;color:var(--gray-500);cursor:pointer;font-size:14px;line-height:1;padding:2px;">&times;</button>
+            </span>
+          `).join('');
+        }
+
+    function resetBookForm() {
+          document.getElementById('bookName').value = '';
+          document.getElementById('bookPrice').value = '';
+        }
+
+    async function submitBookPayment() {
+          const group = document.getElementById('bookGroup').value;
+          const bookId = document.getElementById('bookSelect').value;
+          const paymentAmount = document.getElementById('bookPaymentAmount').value.trim();
+
+          if (!group) { showToast('⚠️ اختر المجموعة', 'warning'); return; }
+          if (!bookId) { showToast('⚠️ اختر المذكرة', 'warning'); return; }
+          if (selectedBookStudents.length === 0) { showToast('⚠️ اختر طالب واحد على الأقل', 'warning'); return; }
+          if (!paymentAmount || isNaN(paymentAmount) || Number(paymentAmount) <= 0) {
+            showToast('⚠️ أدخل مبلغاً صحيحاً أكبر من صفر', 'warning');
+            return;
+          }
+
+          const amount = Number(paymentAmount);
+          const price = bookPrices[bookId];
+          if (price && amount > price) {
+            showToast(`⚠️ المبلغ (${amount} ج.م) يتجاوز سعر المذكرة (${price} ج.م)`, 'warning');
+            return;
+          }
+
+          try {
+            const headers = getAuthHeaders();
+            if (!headers) return;
+
+            const response = await fetch(PROJECT_URL + '/functions/v1/manage-book-payment', {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({
+                action: 'pay',
+                teacherId: clientId,
+                bookId: bookId,
+                studentUids: selectedBookStudents.map(s => s.uid),
+                amount: amount,
+                assistantId: assistantId,
+                assistantName: assistantName
+              })
+            });
+
+            if (response.status === 401) {
+              handleUnauthorized('انتهت صلاحية الجلسة');
+              return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+              showToast('✅ ' + result.message, 'success');
+              document.getElementById('bookStudentSearch').value = '';
+              selectedBookStudents = [];
+              renderSelectedBookStudentsChips();
+              document.getElementById('bookPaymentAmount').value = '';
+              loadBookStatus();
+            } else {
+              showToast('❌ ' + result.message, 'error');
+            }
+          } catch (error) {
+            console.error('❌ خطأ:', error);
+            showToast('❌ فشل تسجيل السداد', 'error');
+          }
+        }
+
+    function switchBooksTab(name) {
+          document.querySelectorAll('#booksTabs .tab').forEach(t => t.classList.remove('active'));
+          const tabBtn = document.querySelector('#booksTabs .tab[data-tab="' + name + '"]');
+          if (tabBtn) tabBtn.classList.add('active');
+          document.querySelectorAll('#booksTabsWrap .tab-content').forEach(tc => tc.classList.remove('active'));
+          const content = document.getElementById('tab-' + name);
+          if (content) content.classList.add('active');
+        }
+
+    function switchMainSectionTab(name) {
+      document.querySelectorAll('#mainSectionTabs .tab').forEach(t => t.classList.remove('active'));
+      const tabBtn = document.querySelector('#mainSectionTabs .tab[data-tab="' + name + '"]');
+      if (tabBtn) tabBtn.classList.add('active');
+      document.querySelectorAll('#mainSectionTabsWrap > .tab-content').forEach(tc => tc.classList.remove('active'));
+      const content = document.getElementById('mainsec-' + name);
+      if (content) content.classList.add('active');
+    }
+
+    function switchPaymentsTab(name) {
+      document.querySelectorAll('#paymentsTabs .tab').forEach(t => t.classList.remove('active'));
+      const tabBtn = document.querySelector('#paymentsTabs .tab[data-tab="' + name + '"]');
+      if (tabBtn) tabBtn.classList.add('active');
+      document.querySelectorAll('#paymentsTabsWrap .tab-content').forEach(tc => tc.classList.remove('active'));
+      const content = document.getElementById('tab-' + name);
+      if (content) content.classList.add('active');
+    }
+
     window.onload = async function() {
       applyPermissions();
       const savedStatus = localStorage.getItem('paymentsFilterStatus_' + clientId);
@@ -1448,6 +2574,8 @@ async function markAllRead() {
       await loadPaymentTitles();
       await loadPayments();
       filterTable();
+      // ✅ Aug 2026: تحميل بيانات تبويب "المذكرات" أيضاً بعد الدمج مع books.html
+      loadBooks();
     };
   </script>
   <script>
@@ -1457,6 +2585,7 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="branding.js?v=2"></script>
 <script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>

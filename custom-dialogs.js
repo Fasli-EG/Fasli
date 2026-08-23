@@ -38,7 +38,7 @@
     msgEl.textContent = message;
     inputEl.style.display = isPrompt ? 'block' : 'none';
     inputEl.value = defaultValue || '';
-    confirmBtn.style.background = danger ? '#e53e3e' : '#F2B705';
+    confirmBtn.style.background = danger ? '#e53e3e' : 'var(--primary, #F2B705)';
     confirmBtn.style.color = danger ? '#fff' : '#0B1C33';
     confirmBtn.textContent = isPrompt ? 'حفظ' : 'تأكيد';
 

@@ -11,7 +11,8 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=52">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
@@ -24,19 +25,24 @@
 
       <nav class="sidebar-nav">
         <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="students.html" class="sidebar-item "><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item "><i class="fas fa-pen-to-square"></i> الدرجات</a>
-        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات</a>
-        <a href="books.html" class="sidebar-item "><i class="fas fa-book"></i> المذكرات</a>
-        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
+        <a href="messages.html" class="sidebar-item " id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+
+        <div class="sidebar-section-label">🎓 الأكاديمية</div>
+        <a href="students.html" class="sidebar-item " id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item " id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item " id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
+
+        <div class="sidebar-section-label">💰 المالية</div>
+        <a href="payments.html" class="sidebar-item " id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
         <a href="financial.html" class="sidebar-item active" id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
 
-        <div class="sidebar-section-label">إدارة</div>
-        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+        <div class="sidebar-section-label">📊 التقارير</div>
+        <a href="reports.html" class="sidebar-item " id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
+
+        <div class="sidebar-section-label">⚙️ الإعدادات</div>
         <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
-        <a href="assistants-management.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة المساعدين</a>
-        <a href="wifi-config.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-headset"></i> التواصل والنُسخ</a>
+        <a href="staff.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
+        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
       </nav>
 
       <div class="sidebar-footer">
@@ -52,6 +58,21 @@
           <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
         </button>
         <div class="sidebar-footer-actions">
+          <div class="notif-wrap" id="notifWrap" style="display:none;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-panel-header">
+                <span>الإشعارات</span>
+                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
           <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
           <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
         </div>
@@ -62,7 +83,6 @@
       <div class="topbar">
         <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
         <h2>الدخل الشهري</h2>
-        <div style="width:24px;"></div>
       </div>
 
   <div class="container">
@@ -71,6 +91,23 @@
       <span id="roleIndicator" style="font-size:13px;color:var(--gray-500);"><i class="fas fa-user-tag"></i> دور: <strong id="userRoleDisplay">مدرس</strong></span>
     </div>
 
+    <!-- ✅ Aug 2026: إعادة تنظيم الصفحة لتبويبات (زي grades.html/books.html/payments.html) —
+         كانت 3 كروت متتالية، دلوقتي 3 تبويبات: ملخص الدخل، أرباح بند/مذكرة، المصروفات -->
+    <div class="tabs" id="financialTabs">
+      <button class="tab active" data-tab="summary" onclick="switchFinancialTab('summary')">
+        <i class="fas fa-sack-dollar"></i> ملخص الدخل
+      </button>
+      <button class="tab" data-tab="filter" onclick="switchFinancialTab('filter')">
+        <i class="fas fa-filter"></i> أرباح بند أو مذكرة
+      </button>
+      <button class="tab" data-tab="expenses" onclick="switchFinancialTab('expenses')">
+        <i class="fas fa-money-bill-trend-up"></i> المصروفات
+      </button>
+    </div>
+
+    <div id="financialTabsWrap">
+    <div class="tab-content active" id="tab-summary">
+
     <div class="card" id="financialCard">
       <div class="card-header">
         <h3><i class="fas fa-sack-dollar" style="color:var(--success);"></i> ملخص الدخل</h3>
@@ -78,17 +115,30 @@
       </div>
       <div class="card-body">
         <div class="stats-row" style="margin-bottom:0;">
+          <div class="stat-card stat-card-featured">
+            <div class="stat-card-top"><div class="stat-card-icon"><i class="fas fa-chart-line"></i></div></div>
+            <div class="stat-value" id="finNetProfit">0</div>
+            <div class="stat-label">صافي الربح الحقيقي</div>
+          </div>
           <div class="stat-card">
+            <div class="stat-card-top"><div class="stat-card-icon badge-success"><i class="fas fa-sack-dollar"></i></div></div>
             <div class="stat-value" id="finGrandTotal">0</div>
             <div class="stat-label">إجمالي الدخل (ج.م)</div>
           </div>
           <div class="stat-card">
+            <div class="stat-card-top"><div class="stat-card-icon badge-info"><i class="fas fa-user-graduate"></i></div></div>
             <div class="stat-value" id="finSubsTotal">0</div>
             <div class="stat-label">من الاشتراكات</div>
           </div>
           <div class="stat-card">
+            <div class="stat-card-top"><div class="stat-card-icon badge-primary"><i class="fas fa-book"></i></div></div>
             <div class="stat-value" id="finBooksTotal">0</div>
             <div class="stat-label">من المذكرات</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top"><div class="stat-card-icon badge-danger"><i class="fas fa-arrow-trend-down"></i></div></div>
+            <div class="stat-value danger" id="finExpensesTotal">0</div>
+            <div class="stat-label">إجمالي المصروفات</div>
           </div>
         </div>
         <button class="btn btn-outline btn-sm" style="margin-top:14px;" onclick="toggleFinancialDetails()">
@@ -108,6 +158,95 @@
           </table>
         </div>
       </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-filter">
+
+    <!-- ✅ فلتر إضافي: أرباح بند سداد أو مذكرة معيّنة، حسب المجموعة -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-filter" style="color:var(--primary);"></i> أرباح بند أو مذكرة معيّنة</h3>
+      </div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label>نوع البند</label>
+            <select id="finFilterType" onchange="renderFinancialFilter()">
+              <option value="title">بند سداد (اشتراك)</option>
+              <option value="book">مذكرة</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>المجموعة</label>
+            <select id="finFilterGroup" onchange="renderFinancialFilter()">
+              <option value="">-- كل المجموعات --</option>
+            </select>
+          </div>
+          <div class="field">
+            <label id="finFilterItemLabel">البند</label>
+            <select id="finFilterItem" onchange="renderFinancialFilter()">
+              <option value="">-- الكل --</option>
+            </select>
+          </div>
+        </div>
+        <div id="finFilterResult" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab-expenses">
+
+    <!-- ✅ إدارة المصروفات — عشان "الدخل" يبقى "صافي ربح حقيقي" -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-money-bill-trend-up" style="color:var(--danger);"></i> المصروفات</h3>
+      </div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label>نوع المصروف</label>
+            <select id="newExpenseCategory">
+              <option value="rent">🏢 إيجار</option>
+              <option value="salaries">👥 رواتب/مرتبات</option>
+              <option value="utilities">💡 فواتير (كهرباء، مياه، نت)</option>
+              <option value="supplies">📦 مستلزمات</option>
+              <option value="marketing">📢 تسويق وإعلان</option>
+              <option value="other">📋 أخرى</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>المبلغ</label>
+            <input type="number" id="newExpenseAmount" placeholder="مثال: 3000">
+          </div>
+          <div class="field">
+            <label>التاريخ</label>
+            <input type="date" id="newExpenseDate">
+          </div>
+        </div>
+        <div class="field">
+          <label>وصف (اختياري)</label>
+          <input type="text" id="newExpenseDescription" placeholder="مثال: إيجار شهر أغسطس">
+        </div>
+        <button class="btn btn-primary" onclick="addExpense()">➕ تسجيل المصروف</button>
+
+        <div id="expenseDonutWrapper" style="display:none;margin-top:20px;max-width:320px;">
+          <!-- ✅ Batch 23 (بند 7): مكانش فيه لون نص محدد صراحة، فكان بياخد اللون الافتراضي (أسود)
+               بدل ما يتبدّل مع الوضع الليلي زي باقي عناوين الكروت -->
+          <h4 style="font-size:14px;margin-bottom:10px;color:var(--gray-900);"><i class="fas fa-chart-pie" style="color:var(--primary);"></i> توزيع المصروفات</h4>
+          <canvas id="expenseDonutChart" height="220"></canvas>
+        </div>
+
+        <div class="table-wrapper" style="margin-top:18px;">
+          <table>
+            <thead><tr><th>التاريخ</th><th>النوع</th><th>الوصف</th><th>المبلغ</th><th></th></tr></thead>
+            <tbody id="expensesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    </div>
     </div>
     </div>
   </div>
@@ -162,7 +301,11 @@
           const clone = res.clone();
           const data = await clone.json();
           if (data && data.code === 'LICENSE_EXPIRED') {
-            window.location.href = 'license-locked.html?reason=' + encodeURIComponent(data.message || '');
+            // ✅ بنحط الرسالة الحقيقية + اسم الدالة اللي رجّعت الخطأ في sessionStorage
+            // (مش URL parameter) عشان صفحة القفل تقدر تقراها وتعرضها صح للتشخيص
+            sessionStorage.setItem('lockReason', data.message || 'انتهت صلاحية الترخيص');
+            sessionStorage.setItem('lockSourceFunction', urlStr);
+            window.location.href = 'license-locked.html';
           }
         }
       } catch (e) { /* تجاهل */ }
@@ -248,10 +391,27 @@
     if (!clientId) { sessionStorage.clear(); window.location.href = LOGIN_URL; }
 
     const isAssistant = userRole === 'assistant';
+    const assistantPermissions = JSON.parse(sessionStorage.getItem('assistantPermissions') || '{}');
+    // ✅ Batch 21: الصفحة دي محتاجة صلاحية "عرض الدخل الشهري" — كانت متاحة لأي مساعد من غير
+    // أي تحقق فرونت إند (السيرفر بس هو اللي كان بيرفض) فمساعد من غير الصلاحية كان يقدر يفتحها
+    if (isAssistant && assistantPermissions.view_financial !== true) {
+      showToast('⛔ ليس لديك صلاحية لعرض الدخل الشهري، تواصل مع المدرس', 'error');
+      setTimeout(() => { window.location.href = 'assistant-dashboard.html'; }, 1500);
+    }
     document.getElementById('userRoleDisplay').textContent = isAssistant ? 'مساعد' : 'مدرس';
     const displayName = isAssistant && assistantName ? assistantName : teacherName;
     document.getElementById('userDisplayName').textContent = 'مرحباً، ' + displayName;
     document.getElementById('userAvatar').textContent = displayName.charAt(0);
+
+    // ✅ جرس الإشعارات — للمدرس والمساعد الاتنين (Aug 2026)
+    {
+      const notifWrap = document.getElementById('notifWrap');
+      if (notifWrap) {
+        notifWrap.style.display = 'block';
+        loadNotifications();
+        setInterval(loadNotifications, 20000);
+      }
+    }
 
     function showToast(message, type = 'info', target = 'screen') {
       let container;
@@ -301,10 +461,10 @@
   try {
     const headers = getAuthHeaders();
     if (!headers) return;
-    const response = await fetch(PROJECT_URL + '/functions/v1/export-backup', {
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-backup', {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify({ clientId })
+      body: JSON.stringify({ action: 'export', clientId })
     });
     if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
     const result = await response.json();
@@ -350,17 +510,54 @@ function openResetConfirm() {
   overlay.innerHTML = `
     <div class="reset-modal-box">
       <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
-      <h3>⚠️ تحذير خطير!</h3>
-      <p>أنت على وشك حذف <strong>جميع بيانات النظام</strong> بما في ذلك:</p>
-      <ul style="text-align:right;list-style:none;padding:8px 0;color:var(--gray-600);font-size:14px;">
-        <li>📋 <strong>جميع الطلاب</strong> المسجلين</li>
-        <li>📝 <strong>جميع الدرجات</strong> والامتحانات</li>
-        <li>💰 <strong>جميع المدفوعات</strong> (شهرية ومذكرات)</li>
-        <li>📖 <strong>جميع المذكرات</strong> وسجلاتها</li>
-        <li>✅ <strong>جميع سجلات الحضور</strong></li>
-      </ul>
+      <h3>⚠️ إعادة تهيئة النظام</h3>
+      <p>حدّد البيانات اللي عايز تحذفها بس — مش لازم تحذف كل حاجة (مثلاً لو العام الدراسي انتهى بس الطلاب مكملين سنة جديدة، سيب "الطلاب أنفسهم" من غير تحديد).</p>
+      <div class="reset-opts-list" style="text-align:right;padding:4px 12px;font-size:13.5px;margin:10px 0;">
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="attendance" checked> ✅ سجلات الحضور
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="payments" checked> 💰 المدفوعات الشهرية
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="grades" checked> 📝 الدرجات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="bookPayments" checked> 📖 سداد المذكرات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-top:1px solid var(--gray-200);margin-top:6px;padding-top:12px;">
+          <input type="checkbox" class="reset-opt" value="students"> 📋 الطلاب أنفسهم (بيانتهم وأرقامهم وكروتهم)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="groups"> 🏫 المجموعات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="books"> 📚 المذكرات نفسها (كبند، مش سداداتها بس)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="paymentTitles"> 🏷️ بنود السداد المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="examTitles"> 🏷️ أسماء الامتحانات المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="onlineExams"> 🖥️ الامتحانات الإلكترونية (أسئلتها ومحاولات الطلاب فيها)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="notifications"> 🔔 الإشعارات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="activityLogs"> 📜 سجل النشاطات القديم
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="registrationRequests"> 📋 طلبات التسجيل
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="conversations"> 💬 المحادثات مع أولياء الأمور
+        </label>
+      </div>
       <div class="warning-text">
-        <i class="fas fa-skull"></i> هذا الإجراء لا يمكن التراجع عنه!
+        <i class="fas fa-skull"></i> اللي هتحدده هيتحذف نهائياً، مفيش رجوع بعد كده!
       </div>
       <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
         <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
@@ -428,7 +625,9 @@ async function confirmReset() {
     }
 
     // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
-    const requestBody = JSON.stringify({ clientId: clientId, password: password });
+    const selectedOptions = {};
+    document.querySelectorAll('.reset-opt').forEach(cb => { selectedOptions[cb.value] = cb.checked; });
+    const requestBody = JSON.stringify({ clientId: clientId, password: password, options: selectedOptions });
 
     const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
       method: 'POST',
@@ -513,10 +712,10 @@ async function confirmReset() {
         }
         if (jwt && pushToken) {
           // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
-          fetch(PROJECT_URL + '/functions/v1/unregister-push-token', {
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
-            body: JSON.stringify({ token: pushToken })
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
           }).catch(() => {});
         }
       } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
@@ -525,6 +724,9 @@ async function confirmReset() {
         window.location.href = LOGIN_URL;
       }
     }
+
+    let finByGroupAndTitle = [];
+    let finByGroupAndBook = [];
 
     async function loadFinancialSummary() {
       try {
@@ -542,6 +744,14 @@ async function confirmReset() {
         document.getElementById('finGrandTotal').textContent = d.grandTotal.toLocaleString('ar-EG');
         document.getElementById('finSubsTotal').textContent = d.subscriptionsTotal.toLocaleString('ar-EG');
         document.getElementById('finBooksTotal').textContent = d.booksTotal.toLocaleString('ar-EG');
+        document.getElementById('finExpensesTotal').textContent = (d.expensesTotal || 0).toLocaleString('ar-EG');
+        document.getElementById('finNetProfit').textContent = (d.netProfit ?? d.grandTotal).toLocaleString('ar-EG');
+        await loadExpenses();
+
+        finByGroupAndTitle = d.byGroupAndTitle || [];
+        finByGroupAndBook = d.byGroupAndBook || [];
+        populateFinancialFilterDropdowns();
+        renderFinancialFilter();
 
         const tbody = document.getElementById('finGroupsTableBody');
         if (d.byGroup.length === 0) {
@@ -561,11 +771,191 @@ async function confirmReset() {
       }
     }
 
+    // ✅ نعبّي قائمة "المجموعة" و"البند/المذكرة" من البيانات اللي رجعت فعلياً هذا الشهر
+    function populateFinancialFilterDropdowns() {
+      const type = document.getElementById('finFilterType').value;
+      const source = type === 'book' ? finByGroupAndBook : finByGroupAndTitle;
+
+      const groupSelect = document.getElementById('finFilterGroup');
+      const currentGroup = groupSelect.value;
+      const groups = [...new Set(source.map(x => x.groupName))].sort((a, b) => a.localeCompare(b, 'ar'));
+      groupSelect.innerHTML = '<option value="">-- كل المجموعات --</option>' +
+        groups.map(g => `<option value="${g}">${g}</option>`).join('');
+      groupSelect.value = groups.includes(currentGroup) ? currentGroup : '';
+
+      const itemLabel = document.getElementById('finFilterItemLabel');
+      itemLabel.textContent = type === 'book' ? 'المذكرة' : 'البند';
+
+      const itemSelect = document.getElementById('finFilterItem');
+      const currentItem = itemSelect.value;
+      const itemKey = type === 'book' ? 'bookName' : 'title';
+      const items = [...new Set(source.map(x => x[itemKey]))].sort((a, b) => a.localeCompare(b, 'ar'));
+      itemSelect.innerHTML = '<option value="">-- الكل --</option>' +
+        items.map(i => `<option value="${i}">${i}</option>`).join('');
+      itemSelect.value = items.includes(currentItem) ? currentItem : '';
+    }
+
+    // ✅ بيعرض إجمالي الربح المفلتر حسب النوع + المجموعة + البند/المذكرة المختارين
+    function renderFinancialFilter() {
+      populateFinancialFilterDropdowns();
+
+      const type = document.getElementById('finFilterType').value;
+      const groupFilter = document.getElementById('finFilterGroup').value;
+      const itemFilter = document.getElementById('finFilterItem').value;
+      const itemKey = type === 'book' ? 'bookName' : 'title';
+      const source = type === 'book' ? finByGroupAndBook : finByGroupAndTitle;
+
+      const filtered = source.filter(x =>
+        (!groupFilter || x.groupName === groupFilter) &&
+        (!itemFilter || x[itemKey] === itemFilter)
+      );
+
+      const resultEl = document.getElementById('finFilterResult');
+      if (filtered.length === 0) {
+        resultEl.innerHTML = '<p style="color:var(--gray-400);font-size:13px;">مفيش دخل مسجّل يطابق الفلتر ده هذا الشهر.</p>';
+        return;
+      }
+
+      const total = filtered.reduce((sum, x) => sum + x.amount, 0);
+      resultEl.innerHTML = `
+        <div style="background:var(--gray-50);border-radius:10px;padding:14px;margin-bottom:12px;">
+          <span style="font-size:13px;color:var(--gray-500);">إجمالي الربح المطابق للفلتر</span>
+          <div style="font-size:22px;font-weight:800;color:var(--success);">${total.toLocaleString('ar-EG')} ج.م</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--gray-200);text-align:right;">
+              <th style="padding:6px;">المجموعة</th>
+              <th style="padding:6px;">${type === 'book' ? 'المذكرة' : 'البند'}</th>
+              <th style="padding:6px;">المبلغ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(x => `
+              <tr style="border-bottom:1px solid var(--gray-100);">
+                <td style="padding:6px;">${x.groupName}</td>
+                <td style="padding:6px;">${x[itemKey]}</td>
+                <td style="padding:6px;font-weight:600;">${x.amount.toLocaleString('ar-EG')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ============================================
+    // ✅ إدارة المصروفات
+    // ============================================
+    async function loadExpenses() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const month = document.getElementById('financialMonthSelect').value;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-expense', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'list', month })
+        });
+        const result = await response.json();
+        const tbody = document.getElementById('expensesTableBody');
+        if (!result.success || (result.data || []).length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400);">لا توجد مصروفات مسجّلة هذا الشهر</td></tr>';
+          document.getElementById('expenseDonutWrapper').style.display = 'none';
+          return;
+        }
+        const categoryLabels = { rent: '🏢 إيجار', salaries: '👥 رواتب', utilities: '💡 فواتير', supplies: '📦 مستلزمات', marketing: '📢 تسويق', other: '📋 أخرى' };
+        tbody.innerHTML = result.data.map(e => `
+          <tr>
+            <td>${new Date(e.expense_date).toLocaleDateString('ar-EG')}</td>
+            <td>${categoryLabels[e.category] || e.category}</td>
+            <td>${escapeHtml(e.description || '—')}</td>
+            <td><strong>${Number(e.amount).toLocaleString('ar-EG')} ج.م</strong></td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteExpense(${e.id})"><i class="fas fa-trash"></i></button></td>
+          </tr>
+        `).join('');
+        renderExpenseDonut(result.data, categoryLabels);
+      } catch (error) { console.error('❌ خطأ في تحميل المصروفات:', error); }
+    }
+
+    let expenseDonutChartInstance = null;
+    function renderExpenseDonut(expenses, categoryLabels) {
+      const wrapper = document.getElementById('expenseDonutWrapper');
+      const totals = {};
+      expenses.forEach(e => { totals[e.category] = (totals[e.category] || 0) + Number(e.amount); });
+      const entries = Object.entries(totals).filter(([, v]) => v > 0);
+      if (entries.length === 0) { wrapper.style.display = 'none'; return; }
+      wrapper.style.display = 'block';
+
+      const labels = entries.map(([cat]) => (categoryLabels[cat] || cat).replace(/^[^؀-ۿ]+/, '').trim());
+      const data = entries.map(([, v]) => v);
+      const brandPrimary = (getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()) || '#F2B705';
+      const palette = [brandPrimary, '#3D7DD8', '#1FAA6D', '#E08A2B', '#E5484D', '#8A6300'];
+
+      const ctx = document.getElementById('expenseDonutChart').getContext('2d');
+      if (expenseDonutChartInstance) {
+        expenseDonutChartInstance.data.labels = labels;
+        expenseDonutChartInstance.data.datasets[0].data = data;
+        expenseDonutChartInstance.update();
+        return;
+      }
+      expenseDonutChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: palette.slice(0, data.length), borderWidth: 0 }] },
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } } }, cutout: '60%' }
+      });
+    }
+
+    async function addExpense() {
+      const category = document.getElementById('newExpenseCategory').value;
+      const amount = document.getElementById('newExpenseAmount').value;
+      const expenseDate = document.getElementById('newExpenseDate').value;
+      const description = document.getElementById('newExpenseDescription').value.trim();
+
+      if (!amount || Number(amount) <= 0) { showToast('⚠️ أدخلي مبلغاً صحيحاً', 'warning'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-expense', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'add', category, amount, expenseDate, description })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          document.getElementById('newExpenseAmount').value = '';
+          document.getElementById('newExpenseDescription').value = '';
+          await loadFinancialSummary();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل تسجيل المصروف', 'error');
+      }
+    }
+
+    async function deleteExpense(expenseId) {
+      if (!(await customConfirm('هل أنت متأكد من حذف المصروف ده؟'))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-expense', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'delete', expenseId })
+        });
+        const result = await response.json();
+        if (result.success) { showToast('✅ اتحذف', 'success'); await loadFinancialSummary(); }
+        else showToast('❌ ' + result.message, 'error');
+      } catch (error) { console.error('❌ خطأ:', error); }
+    }
+
     function populateFinancialMonths() {
       const select = document.getElementById('financialMonthSelect');
       const now = new Date();
       const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-      for (let i = 0; i < 6; i++) {
+      const allOpt = document.createElement('option');
+      allOpt.value = 'ALL';
+      allOpt.textContent = '🗓️ كل الشهور';
+      select.appendChild(allOpt);
+      // ✅ (طلب) الفلتر لازم يحتوي على كل شهور السنة (12 شهر) مش 6 بس
+      for (let i = 0; i < 12; i++) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const opt = document.createElement('option');
@@ -573,6 +963,7 @@ async function confirmReset() {
         opt.textContent = `${months[d.getMonth()]} ${d.getFullYear()}`;
         select.appendChild(opt);
       }
+      select.value = 'ALL';
     }
 
     function toggleFinancialDetails() {
@@ -582,6 +973,198 @@ async function confirmReset() {
       document.getElementById('finDetailsToggleText').textContent = isOpen ? 'عرض تفاصيل كل مجموعة' : 'إخفاء التفاصيل';
     }
 
+
+
+    let notifData = [];
+    let lastUnreadCount = 0;
+
+    function timeAgo(dateStr) {
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 1) return 'الآن';
+      if (mins < 60) return `منذ ${mins} د`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `منذ ${hrs} س`;
+      const days = Math.floor(hrs / 24);
+      return `منذ ${days} يوم`;
+    }
+
+    const NOTIF_ICONS = { bulk_message: '📨', center_teacher_message: '🏢', parent_message: '💬', teacher_message: '💬' };
+
+    function playNotificationSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [880, 1175].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          const start = now + i * 0.12;
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.18, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.25);
+        });
+      } catch (e) { /* بعض المتصفحات بتمنع الصوت قبل أي تفاعل من المستخدم، نتجاهل بهدوء */ }
+    }
+
+    async function loadNotifications() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-notifications', {
+          method: 'POST', headers, body: JSON.stringify({})
+        });
+        if (response.status === 401) return;
+        const result = await response.json();
+        if (!result.success) return;
+
+        if (result.unreadCount > lastUnreadCount && lastUnreadCount !== undefined) {
+          playNotificationSound();
+          // ✅ في تطبيق سطح المكتب، نعرض إشعار نظام حقيقي في درج الإشعارات زي أي برنامج
+          if (window.electronNotify && result.data && result.data[0]) {
+            window.electronNotify.show(result.data[0].title || 'إشعار جديد', result.data[0].message || '').catch(() => {});
+          }
+        }
+        lastUnreadCount = result.unreadCount;
+
+        notifData = result.data || [];
+        const badge = document.getElementById('notifBadge');
+        if (result.unreadCount > 0) {
+          badge.style.display = 'flex';
+          badge.textContent = result.unreadCount > 9 ? '9+' : result.unreadCount;
+        } else {
+          badge.style.display = 'none';
+        }
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الإشعارات:', error);
+      }
+    }
+
+    function renderNotifList() {
+      const list = document.getElementById('notifList');
+      if (notifData.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">مفيش إشعارات لسه</div>';
+        return;
+      }
+      list.innerHTML = notifData.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
+          <div class="n-time">${timeAgo(n.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const isOpening = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+      if (isOpening) positionNotifPanel();
+    }
+
+    // ✅ بنحسب مكان القائمة فعلياً وقت كل فتحة، بناءً على موقع زرار الجرس الحقيقي وحجم الشاشة الحالي —
+    // ده بيضمن رياضياً إنها تفضل جوه حدود الشاشة تماماً، مهما كان حجم الجهاز أو عرض نافذة المتصفح
+    function positionNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const btn = document.getElementById('notifBtn') || document.querySelector('.notif-wrap');
+      if (!panel || !btn) return;
+      const btnRect = btn.getBoundingClientRect();
+      const margin = 12;
+      const panelWidth = Math.min(340, window.innerWidth - margin * 2);
+      let left = btnRect.right - panelWidth;
+      if (left < margin) left = margin;
+      if (left + panelWidth > window.innerWidth - margin) left = window.innerWidth - margin - panelWidth;
+      panel.style.position = 'fixed';
+      panel.style.left = left + 'px';
+      panel.style.right = 'auto';
+      panel.style.width = panelWidth + 'px';
+      // ✅ Batch 24 (بند 4): بعد نقل الجرس لذيل القائمة الجانبية (تحت خالص)، فتح البانل تحت
+      // الزرار عادي هيطلعه خارج حدود الشاشة — لو مفيش مساحة كافية تحت، نفتحه لفوق بدل كده
+      const estimatedHeight = Math.min(420, window.innerHeight - margin * 2);
+      const spaceBelow = window.innerHeight - btnRect.bottom - margin;
+      if (spaceBelow < estimatedHeight && btnRect.top > estimatedHeight) {
+        panel.style.bottom = (window.innerHeight - btnRect.top + 10) + 'px';
+        panel.style.top = 'auto';
+      } else {
+        panel.style.top = (btnRect.bottom + 10) + 'px';
+        panel.style.bottom = 'auto';
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      const wrap = document.querySelector('.notif-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('notifPanel').classList.remove('open');
+      }
+    });
+
+    async function markOneRead(id) {
+      const item = notifData.find(n => n.id === id);
+      const wasUnread = item && !item.is_read;
+      try {
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل كان مش بيعمل أي حاجة خالص (return مبكر) —
+        // دلوقتي بيوديك لمكان الإشعار برضه حتى لو كان مقروء من قبل، وبس اللي بيتعلَّم كمقروء
+        // فعلياً (نداء الـ API) هو اللي بيتخطّى لو كان مقروء أصلاً
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه المستخدم لمكان الإشعار نفسه بدل
+        // ما يفضل واقف في نفس الصفحة من غير ما يعرف يوصل للمحادثة/الطالب الخاص بالإشعار
+        if (item) {
+          if (item.type === 'parent_message' && item.student_uid) {
+            const nm = (item.details && item.details.student_name) || '';
+            window.location.href = 'messages.html?openConversation=' + encodeURIComponent(item.student_uid) + (nm ? '&name=' + encodeURIComponent(nm) : '');
+          } else if (item.type === 'center_teacher_message') {
+            window.location.href = 'messages.html';
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
+      }
+    }
+
+    async function markAllRead() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+          method: 'POST', headers, body: JSON.stringify({ markAll: true })
+        });
+        notifData.forEach(n => n.is_read = true);
+        document.getElementById('notifBadge').style.display = 'none';
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الكل كمقروء:', error);
+      }
+    }
+
+    // ✅ Aug 2026: تبديل تبويبات صفحة الدخل الشهري — كل بيانات الصفحة بتتحمّل مرة واحدة في
+    // window.onload (loadFinancialSummary بينادي loadExpenses/renderFinancialFilter جواها أصلاً)
+    // زي ما كان قبل التبويبات، فمفيش تحميل كسول لازم هنا
+    function switchFinancialTab(name) {
+      document.querySelectorAll('#financialTabs .tab').forEach(t => t.classList.remove('active'));
+      const tabBtn = document.querySelector('#financialTabs .tab[data-tab="' + name + '"]');
+      if (tabBtn) tabBtn.classList.add('active');
+      document.querySelectorAll('#financialTabsWrap .tab-content').forEach(tc => tc.classList.remove('active'));
+      const content = document.getElementById('tab-' + name);
+      if (content) content.classList.add('active');
+    }
 
     window.onload = function() {
       if (!isTokenValid()) {
@@ -595,9 +1178,31 @@ async function confirmReset() {
         document.getElementById('navResetSystem').style.display = 'flex';
         document.getElementById('navFinancial').style.display = 'flex';
         document.getElementById('navActivityLog').style.display = 'flex';
+      } else {
+        // ✅ Batch 21: القائمة الجانبية للمساعد لازم تعكس صلاحياته الفعلية في كل صفحة يزورها،
+        // مش لوحة التحكم بس — نفس منطق التفعيل المستخدم في assistant-dashboard.html
+        const navSt = document.getElementById('navStudents');
+        const navGr = document.getElementById('navGroups');
+        const navGd = document.getElementById('navGrades');
+        const navPay = document.getElementById('navPayments');
+        const navRep = document.getElementById('navReports');
+        const navMsg = document.getElementById('navMessages');
+        const navF = document.getElementById('navFinancial');
+        const navL = document.getElementById('navActivityLog');
+        const navA = document.getElementById('navManageAssistants');
+        if (navSt) navSt.style.display = assistantPermissions.view_students !== false ? 'flex' : 'none';
+        if (navGr) navGr.style.display = (assistantPermissions.manage_groups === true || assistantPermissions.manage_registration === true) ? 'flex' : 'none';
+        if (navGd) navGd.style.display = assistantPermissions.record_grades === true ? 'flex' : 'none';
+        if (navPay) navPay.style.display = assistantPermissions.record_payments === true ? 'flex' : 'none';
+        if (navRep) navRep.style.display = assistantPermissions.view_reports === true ? 'flex' : 'none';
+        if (navMsg) navMsg.style.display = (assistantPermissions.send_messages === true || assistantPermissions.manage_conversations === true) ? 'flex' : 'none';
+        if (navF) navF.style.display = assistantPermissions.view_financial === true ? 'flex' : 'none';
+        if (navL) navL.style.display = assistantPermissions.view_activity_log === true ? 'flex' : 'none';
+        if (navA) navA.style.display = assistantPermissions.view_staff === true ? 'flex' : 'none';
       }
       populateFinancialMonths();
       loadFinancialSummary();
+      document.getElementById('newExpenseDate').value = new Date().toISOString().split('T')[0];
     };
   </script>
   <script>
@@ -607,6 +1212,7 @@ async function confirmReset() {
       });
     }
   </script>
+<script src="branding.js?v=2"></script>
 <script src="custom-dialogs.js?v=2"></script>
 </body>
 </html>
