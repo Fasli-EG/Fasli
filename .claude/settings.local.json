@@ -4,7 +4,8 @@
       "Bash(node -e ' *)",
       "Bash(supabase --version)",
       "Bash(npx --yes typescript@5.6.3 tsc --noEmit --noResolve --skipLibCheck --target es2020 --module esnext supabase/functions/get-dashboard/index.ts supabase/functions/bulk-import-students/index.ts supabase/functions/generate-report/index.ts supabase/functions/get-payments/index.ts supabase/functions/get-grades/index.ts)",
-      "Bash(npx --yes -p typescript@5.6.3 tsc --noEmit --noResolve --skipLibCheck --target es2020 --module esnext supabase/functions/get-dashboard/index.ts supabase/functions/bulk-import-students/index.ts supabase/functions/generate-report/index.ts supabase/functions/get-payments/index.ts supabase/functions/get-grades/index.ts)"
+      "Bash(npx --yes -p typescript@5.6.3 tsc --noEmit --noResolve --skipLibCheck --target es2020 --module esnext supabase/functions/get-dashboard/index.ts supabase/functions/bulk-import-students/index.ts supabase/functions/generate-report/index.ts supabase/functions/get-payments/index.ts supabase/functions/get-grades/index.ts)",
+      "Bash(npx supabase *)"
     ]
   }
 }

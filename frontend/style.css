@@ -50,10 +50,17 @@
   --space-5: 24px;
   --space-6: 32px;
   --space-7: 48px;
+
+  /* ---------- اتجاه بصري جديد (خط عرض + ظلال ملوّنة + تدرجات) ---------- */
+  --font-display: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
+  --teal-deep: #0A5850;
+  --shadow-primary: 0 14px 30px -14px rgba(184,137,10,0.5);
+  --shadow-teal: 0 14px 30px -14px rgba(10,88,80,0.45);
+  --gradient-primary: linear-gradient(155deg, var(--primary) 0%, var(--primary-dark) 100%);
 }
 
 /* ---------- استيراد خطوط الهوية الجديدة ---------- */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Cairo:wght@700;800;900&display=swap');
 
 /* ---------- إعادة التعيين العامة ---------- */
 * {
@@ -105,7 +112,7 @@ body {
 .header .brand .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
 .header .brand .logo-icon svg { display: none; }
 .header .brand h1 {
-  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-family: var(--font-display);
   font-size: 20px;
   color: var(--gray-900);
   font-weight: 800;
@@ -230,8 +237,8 @@ body {
 .btn:active { transform: scale(0.97); }
 .btn-danger { background: var(--danger); color: white; }
 .btn-danger:hover { background: #C93D3D; transform: translateY(-1px); box-shadow: var(--shadow); }
-.btn-primary { background: var(--primary); color: #0B1C33; }
-.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-primary { background: var(--gradient-primary); color: #0B1C33; box-shadow: var(--shadow-primary); }
+.btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: var(--shadow-primary); }
 .btn-success { background: var(--success); color: white; }
 .btn-success:hover { background: #188F5C; transform: translateY(-1px); box-shadow: var(--shadow); }
 .btn-warning { background: var(--warning); color: white; }
@@ -358,9 +365,9 @@ body {
   gap: 12px;
 }
 .page-header h2 {
-  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-family: var(--font-display);
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--gray-900);
 }
 .page-header h2 .sub {
@@ -603,8 +610,8 @@ tr:hover td { background: var(--gray-50); }
 .stat-trend { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
 
 /* ---------- نسخة مميّزة من stat-card (لأهم رقم في الصفحة، زي صافي الربح) ---------- */
-.stat-card.stat-card-featured { background: linear-gradient(155deg, var(--primary) 0%, var(--primary-dark) 100%); border-color: transparent; border-top-color: transparent; }
-.stat-card.stat-card-featured:hover { border-top-color: transparent; }
+.stat-card.stat-card-featured { background: var(--gradient-primary); border-color: transparent; border-top-color: transparent; box-shadow: var(--shadow-primary); }
+.stat-card.stat-card-featured:hover { border-top-color: transparent; box-shadow: var(--shadow-primary); transform: translateY(-3px); }
 .stat-card.stat-card-featured .stat-label { color: rgba(11,28,51,0.65); }
 .stat-card.stat-card-featured .stat-value { color: #0B1C33; }
 .stat-card.stat-card-featured .stat-card-icon { background: rgba(11,28,51,0.12); color: #0B1C33; }
@@ -1892,7 +1899,7 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
 }
 .sidebar-brand .logo-icon { width: 34px; height: 34px; border-radius: 9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
 .sidebar-brand .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
-.sidebar-brand h1 { font-size: 17px; font-weight: 800; color: #fff; }
+.sidebar-brand h1 { font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #fff; }
 
 .sidebar-nav { flex: 1; overflow-y: auto; padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; scrollbar-width: none; -ms-overflow-style: none; }
 .sidebar-nav::-webkit-scrollbar { display: none; }
@@ -1904,10 +1911,28 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
   font-size: 13.5px; font-weight: 500;
   transition: var(--transition);
   cursor: pointer; border: none; background: transparent; width: 100%; text-align: right;
+  position: relative;
 }
 .sidebar-item i { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
 .sidebar-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
-.sidebar-item.active { background: var(--primary); color: #0B1C33; }
+/* ✅ اتجاه بصري جديد: مؤشر نشاط بشريط متوهج + تدرج خفيف بدل التعبئة المصمتة السابقة */
+.sidebar-item.active {
+  background: linear-gradient(90deg, rgba(242,183,5,0.22), rgba(242,183,5,0.04));
+  color: #fff;
+}
+.sidebar-item.active i { color: var(--primary); }
+.sidebar-item.active::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--primary);
+  box-shadow: 0 0 10px rgba(242,183,5,0.65);
+}
 .sidebar-item .badge-dot { margin-inline-start: auto; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display:flex; align-items:center; justify-content:center; padding: 0 3px; }
 
 .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
