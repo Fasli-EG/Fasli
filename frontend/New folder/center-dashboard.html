@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة السنتر - فَصلي</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B1C33">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css?v=52">
+</head>
+<body>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
+        <h1>فَصلي</h1>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="center-dashboard.html" class="sidebar-item active" id="centerNavDashboard"><i class="fas fa-house"></i> لوحة السنتر</a>
+        <a href="center-messages.html" class="sidebar-item" id="centerNavMessages"><i class="fas fa-paper-plane"></i> رسائل السنتر</a>
+
+        <div class="sidebar-section-label">🏫 الإدارة</div>
+        <a href="center-teachers.html" class="sidebar-item" id="centerNavTeachers"><i class="fas fa-chalkboard-user"></i> المدرسين</a>
+        <a href="center-students.html" class="sidebar-item" id="centerNavStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="center-cards.html" class="sidebar-item" id="centerNavCards"><i class="fas fa-id-card"></i> البطاقات</a>
+        <a href="center-schedule.html" class="sidebar-item" id="centerNavSchedule"><i class="fas fa-calendar-days"></i> جدول الحصص</a>
+
+        <div class="sidebar-section-label">📊 التقارير</div>
+        <a href="center-reports.html" class="sidebar-item" id="centerNavReports"><i class="fas fa-chart-simple"></i> التقارير والمالية</a>
+
+        <div class="sidebar-section-label">⚙️ الإعدادات</div>
+        <a href="center-settings.html" class="sidebar-item" id="centerNavSettings"><i class="fas fa-palette"></i> الشعار واللون</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar" id="userAvatar">س</div>
+          <div class="u-info">
+            <div class="u-name" id="centerNameHeader">مركز فَصلي</div>
+            <div class="u-role">حساب سنتر</div>
+          </div>
+        </div>
+        <div class="sidebar-footer-actions">
+          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
+          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <div class="topbar">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h2>لوحة السنتر</h2>
+      </div>
+
+      <div class="container">
+        <div id="dashboardLoading" style="text-align:center;padding:60px;color:var(--gray-400);">
+          <i class="fas fa-spinner fa-spin" style="font-size:28px;display:block;margin-bottom:10px;"></i>جاري تحميل بيانات السنتر...
+        </div>
+
+        <div id="dashboardContent" style="display:none;">
+          <div class="stats-row">
+            <div class="stat-card"><div class="stat-label">👨‍🏫 عدد المدرسين</div><div class="stat-value primary" id="statTotalTeachers">0</div></div>
+            <div class="stat-card"><div class="stat-label">👥 إجمالي الطلاب</div><div class="stat-value success" id="statTotalStudents">0</div></div>
+            <div class="stat-card"><div class="stat-label">💰 إيراد الشهر الحالي</div><div class="stat-value primary" id="statTotalRevenue">0 ج.م</div></div>
+          </div>
+
+          <div class="card" style="margin-top:24px;">
+            <div class="card-header">
+              <h3><i class="fas fa-chart-column" style="color:var(--primary);"></i> مقارنة أداء المدرسين (متوسط مستوى الطلاب)</h3>
+            </div>
+            <div class="card-body">
+              <p style="color:var(--gray-500);font-size:13px;margin-bottom:14px;">
+                متوسط نسبة درجات طلاب كل مدرس في كل الاختبارات — بيظهر بس للمدرسين اللي سمحوا بمشاركة التفاصيل الأكاديمية.
+              </p>
+              <div id="teacherComparisonList"></div>
+            </div>
+          </div>
+
+          <p style="font-size:12.5px;color:var(--gray-500);margin-top:14px;text-align:center;">
+            💡 لإدارة المدرسين اضغط "المدرسين" في القائمة الجانبية، ولتعديل الشعار واللون اضغط "الشعار واللون".
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    function getToken() { return sessionStorage.getItem(TOKEN_KEY); }
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function showToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'info');
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    const centerClientId = sessionStorage.getItem('clientId');
+    if (!centerClientId) window.location.href = LOGIN_URL;
+
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      showToast('⛔ ' + message, 'error');
+      setTimeout(() => {
+        sessionStorage.clear(); localStorage.clear();
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    async function logout() {
+      sessionStorage.clear(); localStorage.clear();
+      window.location.href = LOGIN_URL;
+    }
+
+    function getThemeKey() { return 'theme_' + centerClientId; }
+    (function() {
+      const savedTheme = localStorage.getItem(getThemeKey());
+      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+      else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+    function toggleDarkMode() {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem(getThemeKey(), next);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (window.innerWidth <= 900) {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+
+    async function loadCenterDashboard() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) { window.location.href = LOGIN_URL; return; }
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-center-dashboard', { method: 'POST', headers, body: '{}' });
+        if (response.status === 401) { handleUnauthorized(); return; }
+        const result = await response.json();
+
+        if (!result.success) {
+          document.getElementById('dashboardLoading').innerHTML = '<p style="color:var(--danger);">❌ ' + escapeHtml(result.message) + '</p>';
+          return;
+        }
+
+        const { center, teachers, summary } = result.data;
+        document.getElementById('centerNameHeader').textContent = center.name;
+        document.getElementById('statTotalTeachers').textContent = summary.totalTeachers;
+        document.getElementById('statTotalStudents').textContent = summary.totalStudents;
+        document.getElementById('statTotalRevenue').textContent = summary.totalRevenueThisMonth.toLocaleString('ar-EG') + ' ج.م';
+
+        renderTeacherComparison(teachers);
+
+        document.getElementById('dashboardLoading').style.display = 'none';
+        document.getElementById('dashboardContent').style.display = 'block';
+      } catch (error) {
+        console.error('❌ خطأ في تحميل لوحة السنتر:', error);
+        document.getElementById('dashboardLoading').innerHTML = '<p style="color:var(--danger);">❌ تعذر تحميل البيانات</p>';
+      }
+    }
+
+    function renderTeacherComparison(teachers) {
+      const container = document.getElementById('teacherComparisonList');
+      if (!teachers || teachers.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;padding:16px;">لا يوجد مدرسين لسه.</p>';
+        return;
+      }
+
+      const withData = teachers.filter(t => t.avgGradePercent !== null).sort((a, b) => b.avgGradePercent - a.avgGradePercent);
+      const withoutData = teachers.filter(t => t.avgGradePercent === null);
+      const maxVal = withData.length > 0 ? Math.max(...withData.map(t => t.avgGradePercent)) : 100;
+
+      let html = '';
+      withData.forEach(t => {
+        const widthPercent = maxVal > 0 ? (t.avgGradePercent / maxVal) * 100 : 0;
+        html += `
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+              <strong>${escapeHtml(t.name)}</strong>
+              <span>${t.avgGradePercent}%</span>
+            </div>
+            <div style="background:var(--gray-100);border-radius:999px;height:10px;overflow:hidden;">
+              <div style="background:var(--primary);height:100%;width:${widthPercent}%;border-radius:999px;"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      if (withoutData.length > 0) {
+        html += `<p style="font-size:12px;color:var(--gray-400);margin-top:10px;">
+          🔒 لم يشارك تفاصيله الأكاديمية: ${withoutData.map(t => escapeHtml(t.name)).join('، ')}
+        </p>`;
+      }
+
+      container.innerHTML = html || '<p style="color:var(--gray-400);font-size:13px;text-align:center;padding:16px;">مفيش مدرس شارك تفاصيله الأكاديمية لسه.</p>';
+    }
+
+    window.onload = function() {
+      loadCenterDashboard();
+    };
+  </script>
+  <script src="branding.js?v=2"></script>
+</body>
+</html>

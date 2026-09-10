@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>أداء الاختبار - فَصلي</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css?v=52">
+  <!-- ✅ (طلب) الصفحة دي كان فيها تنسيقات وضع ليلي في style.css بس محدش كان بيحط خاصية
+       data-theme على الصفحة أصلاً — فالوضع الليلي مكانش بيتفعّل عليها خالص حتى لو المستخدم
+       مفعّله في باقي الصفحات. نفس الطريقة المستخدمة في باقي صفحات النظام (قراءة الاختيار
+       المحفوظ قبل أي رسم للصفحة، عشان مايحصلش "ومضة" لون غلط) -->
+  <script>
+    (function() {
+      try {
+        const studentUid = sessionStorage.getItem('studentUid');
+        const savedTheme = localStorage.getItem('theme_' + (studentUid || 'guest'));
+        if (savedTheme) {
+          document.documentElement.setAttribute('data-theme', savedTheme);
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) { /* تجاهل بهدوء — الوضع الافتراضي فاتح */ }
+    })();
+  </script>
+  <style>
+    .exam-header {
+      position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200);
+    }
+    .exam-timer { font-size: 20px; font-weight: 800; font-family: monospace; color: var(--primary); }
+    .exam-timer.danger { color: var(--danger); }
+    .exam-container { max-width: 800px; margin: 0 auto; padding: 20px 16px 100px; }
+    .question-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    [data-theme="dark"] .question-card { background: var(--gray-100); }
+    .question-card .q-number { font-size: 12px; color: var(--gray-400); font-weight: 600; margin-bottom: 6px; }
+    /* ✅ (طلب) نص السؤال والاختيارات وعنوان الاختبار مكانش ليهم لون محدد، فكانوا بياخدوا اللون
+       الافتراضي (أسود) — ده بيفضل مقروء في الوضع النهاري بس بيختفي في الوضع الليلي لما خلفية
+       الكارت والصفحة تتغيّر للون غامق. دلوقتي كل النصوص دي بلون var(--gray-900) اللي بيتقلب
+       تلقائياً (غامق نهاري / فاتح ليلي) زي باقي صفحات النظام */
+    .question-card .q-text { font-size: 16px; font-weight: 600; margin-bottom: 14px; color: var(--gray-900); }
+    .option-label {
+      display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--gray-200);
+      border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: var(--transition);
+      color: var(--gray-900);
+    }
+    .option-label:hover { background: var(--gray-50); }
+    .option-label input[type="radio"] { width: 18px; height: 18px; }
+    .option-label.selected { border-color: var(--primary); background: rgba(242,183,5,0.08); }
+    .exam-header strong, .exam-progress-wrap strong, #resultTitle { color: var(--gray-900); }
+    .exam-progress-wrap { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .exam-progress-bar { height: 6px; background: var(--gray-200); border-radius: 999px; overflow: hidden; margin-bottom: 24px; }
+    .exam-progress-bar-fill { height: 100%; background: var(--primary); border-radius: 999px; transition: width .25s ease; }
+    .exam-nav-row { display: flex; gap: 10px; justify-content: space-between; margin-top: 8px; }
+    .exam-nav-row .btn { flex: 1; justify-content: center; }
+  </style>
+</head>
+<body>
+
+  <div class="exam-header">
+    <div>
+      <strong id="examTitleHeader">جاري التحميل...</strong>
+      <span id="practiceModeBadge" style="display:none;background:var(--info);color:#fff;border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:700;margin-right:8px;">🏋️ وضع تدريب — بلا وقت، ماتتحسبش في تقريرك</span>
+    </div>
+    <div class="exam-timer" id="examTimer">--:--</div>
+  </div>
+
+  <div class="exam-container">
+    <div id="examLoading" style="text-align:center;padding:60px;color:var(--gray-400);">
+      <i class="fas fa-spinner fa-spin" style="font-size:28px;display:block;margin-bottom:10px;"></i>جاري تحميل الاختبار...
+    </div>
+
+    <div id="examQuestionsContainer" style="display:none;">
+      <div class="exam-progress-wrap">
+        <strong id="questionCounterText">السؤال 1 من 1</strong>
+        <span id="questionPercentText" style="color:var(--primary);font-weight:700;font-size:13px;">0% مكتمل</span>
+      </div>
+      <div class="exam-progress-bar"><div class="exam-progress-bar-fill" id="questionProgressFill" style="width:0%;"></div></div>
+
+      <div id="currentQuestionContainer"></div>
+
+      <div class="exam-nav-row">
+        <button class="btn btn-outline" id="prevQuestionBtn" onclick="goToQuestion(currentQuestionIndex - 1)"><i class="fas fa-arrow-right"></i> السابق</button>
+        <button class="btn btn-primary" id="nextQuestionBtn" onclick="goToQuestion(currentQuestionIndex + 1)">التالي <i class="fas fa-arrow-left"></i></button>
+        <button class="btn btn-primary" id="submitExamBtn" style="display:none;" onclick="submitExam()">
+          <i class="fas fa-paper-plane"></i> تسليم الاختبار
+        </button>
+      </div>
+    </div>
+
+    <div id="examResultContainer" style="display:none;text-align:center;padding:40px 20px;">
+      <div style="font-size:48px;margin-bottom:16px;" id="resultIcon">🎉</div>
+      <h2 id="resultTitle">تم تسليم الاختبار</h2>
+      <div style="font-size:32px;font-weight:800;color:var(--primary);margin:16px 0;" id="resultScore">—</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-outline" id="retryPracticeBtn" style="display:none;" onclick="window.location.reload()"><i class="fas fa-rotate-right"></i> جرّب تاني</button>
+        <button class="btn btn-primary" onclick="window.location.href='student-portal.html'">الرجوع لصفحتي</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    function getToken() { return sessionStorage.getItem(TOKEN_KEY); }
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function showToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'info');
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    const studentUid = sessionStorage.getItem('studentUid');
+    if (!studentUid) window.location.href = LOGIN_URL;
+
+    const params = new URLSearchParams(window.location.search);
+    const examId = params.get('examId');
+    if (!examId) window.location.href = 'student-portal.html';
+    const isPracticeMode = params.get('mode') === 'practice';
+
+    let currentAttemptId = null;
+    let currentQuestions = [];
+    let timerInterval = null;
+    let deadlineTimestamp = null;
+    let hasSubmitted = false;
+    let currentQuestionIndex = 0;
+    const selectedAnswers = {};
+
+    async function startExam() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) { window.location.href = LOGIN_URL; return; }
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/take-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'start', examId: Number(examId), mode: isPracticeMode ? 'practice' : 'official' })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          document.getElementById('examLoading').innerHTML = '<p style="color:var(--danger);">❌ ' + escapeHtml(result.message) + '</p>';
+          return;
+        }
+
+        currentAttemptId = result.attemptId;
+        currentQuestions = result.questions;
+        document.getElementById('examTitleHeader').textContent = result.title;
+
+        if (result.mode === 'practice') {
+          document.getElementById('practiceModeBadge').style.display = 'inline-block';
+          document.getElementById('examTimer').style.display = 'none';
+        } else {
+          deadlineTimestamp = new Date(result.startedAt).getTime() + result.durationMinutes * 60 * 1000;
+          // ✅ (طلب) وقت غلق الاختبار العام (لو المدرس حدده) بيحدّ من الوقت المتاح للطالب برضه —
+          // العدّاد لازم يوقف عند أول حاجة توصلها، وقت المحاولة نفسها أو وقت غلق الاختبار
+          if (result.closesAt) {
+            const closesAtMs = new Date(result.closesAt).getTime();
+            if (closesAtMs < deadlineTimestamp) deadlineTimestamp = closesAtMs;
+          }
+          startTimer();
+        }
+
+        document.getElementById('examLoading').style.display = 'none';
+        document.getElementById('examQuestionsContainer').style.display = 'block';
+        renderCurrentQuestion();
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        document.getElementById('examLoading').innerHTML = '<p style="color:var(--danger);">❌ تعذر تحميل الاختبار</p>';
+      }
+    }
+
+    // ✅ سؤال واحد بس في الشاشة في كل مرة — أوضح للطالب من صفحة طويلة قابلة للسكرول فيها كل الأسئلة مرة واحدة
+    function renderCurrentQuestion() {
+      const total = currentQuestions.length;
+      const q = currentQuestions[currentQuestionIndex];
+      const container = document.getElementById('currentQuestionContainer');
+
+      let optionsHtml = '';
+      if (q.question_type === 'mcq') {
+        optionsHtml = (q.options || []).map(opt => {
+          const isChecked = selectedAnswers[q.id] === opt;
+          return `
+            <label class="option-label${isChecked ? ' selected' : ''}">
+              <input type="radio" name="q_${q.id}" value="${escapeHtml(opt)}" ${isChecked ? 'checked' : ''} onchange="onAnswerSelected(${q.id}, this.value)">
+              <span>${escapeHtml(opt)}</span>
+            </label>
+          `;
+        }).join('');
+      } else {
+        const trueChecked = selectedAnswers[q.id] === 'true';
+        const falseChecked = selectedAnswers[q.id] === 'false';
+        optionsHtml = `
+          <label class="option-label${trueChecked ? ' selected' : ''}">
+            <input type="radio" name="q_${q.id}" value="true" ${trueChecked ? 'checked' : ''} onchange="onAnswerSelected(${q.id}, this.value)"> <span>✅ صح</span>
+          </label>
+          <label class="option-label${falseChecked ? ' selected' : ''}">
+            <input type="radio" name="q_${q.id}" value="false" ${falseChecked ? 'checked' : ''} onchange="onAnswerSelected(${q.id}, this.value)"> <span>❌ خطأ</span>
+          </label>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="question-card">
+          <div class="q-number">سؤال ${currentQuestionIndex + 1} من ${total} — (${q.points} درجة)</div>
+          <div class="q-text">${escapeHtml(q.question_text)}</div>
+          ${optionsHtml}
+        </div>
+      `;
+
+      document.getElementById('questionCounterText').textContent = `السؤال ${currentQuestionIndex + 1} من ${total}`;
+      const percent = Math.round(((currentQuestionIndex + 1) / total) * 100);
+      document.getElementById('questionPercentText').textContent = percent + '% مكتمل';
+      document.getElementById('questionProgressFill').style.width = percent + '%';
+
+      document.getElementById('prevQuestionBtn').style.visibility = currentQuestionIndex === 0 ? 'hidden' : 'visible';
+      const isLast = currentQuestionIndex === total - 1;
+      document.getElementById('nextQuestionBtn').style.display = isLast ? 'none' : 'flex';
+      document.getElementById('submitExamBtn').style.display = isLast ? 'flex' : 'none';
+    }
+
+    function onAnswerSelected(questionId, value) {
+      selectedAnswers[questionId] = value;
+      document.querySelectorAll(`input[name="q_${questionId}"]`).forEach(input => {
+        input.closest('.option-label').classList.toggle('selected', input.checked);
+      });
+    }
+
+    function goToQuestion(index) {
+      if (index < 0 || index >= currentQuestions.length) return;
+      currentQuestionIndex = index;
+      renderCurrentQuestion();
+    }
+
+    function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(updateTimerDisplay, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const remainingMs = deadlineTimestamp - Date.now();
+      const timerEl = document.getElementById('examTimer');
+
+      if (remainingMs <= 0) {
+        timerEl.textContent = '00:00';
+        clearInterval(timerInterval);
+        if (!hasSubmitted) {
+          showToast('⏰ انتهى الوقت! بيتم تسليم الاختبار تلقائياً', 'warning');
+          submitExam(true);
+        }
+        return;
+      }
+
+      const totalSeconds = Math.floor(remainingMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      timerEl.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+      if (totalSeconds <= 60) timerEl.classList.add('danger');
+    }
+
+    async function submitExam(isAutoSubmit) {
+      if (hasSubmitted) return;
+      if (!isAutoSubmit) {
+        if (!(await customConfirm('هل أنت متأكد من تسليم الاختبار؟ مش هتقدر تعدّل إجاباتك بعد كده.'))) return;
+      }
+      hasSubmitted = true;
+      clearInterval(timerInterval);
+
+      const answers = currentQuestions.map(q => ({
+        questionId: q.id, selectedAnswer: selectedAnswers[q.id] ?? null
+      }));
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/take-exam', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'submit', attemptId: currentAttemptId, answers })
+        });
+        const result = await response.json();
+
+        document.getElementById('examQuestionsContainer').style.display = 'none';
+        document.getElementById('submitExamBtn').style.display = 'none';
+        document.getElementById('examResultContainer').style.display = 'block';
+
+        if (result.success) {
+          document.getElementById('resultIcon').textContent = result.isTimedOut ? '⏰' : (result.mode === 'practice' ? '🏋️' : '🎉');
+          document.getElementById('resultTitle').textContent = result.message;
+          document.getElementById('resultScore').textContent = result.score + ' / ' + result.totalPossible;
+          if (result.mode === 'practice') document.getElementById('retryPracticeBtn').style.display = 'inline-flex';
+        } else {
+          document.getElementById('resultIcon').textContent = '⚠️';
+          document.getElementById('resultTitle').textContent = result.message;
+          document.getElementById('resultScore').textContent = '';
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل تسليم الاختبار، حاول تاني', 'error');
+        hasSubmitted = false;
+      }
+    }
+
+    // ✅ (طلب) نافذة تأكيد التسليم كانت بتستخدم confirm() الافتراضية بتاعة المتصفح — نافذة
+    // النظام الرمادية الجاهزة، مش متسقة مع باقي تصميم النظام. custom-dialogs.js (المحمّل تحت)
+    // بيعرّف window.customConfirm بنفسه كمودال بنفس تنسيقات النظام (.modal-overlay/.modal-box)،
+    // فمفيش داعي لتعريفها هنا تاني — نفس الطريقة المستخدمة في dashboard.html وgrades.html
+
+    // ✅ تحذير لو حاول يقفل الصفحة أو يرجع لصفحة تانية والاختبار لسه شغّال، عشان مايضيّعش إجاباته بالغلط
+    window.addEventListener('beforeunload', function(e) {
+      if (!hasSubmitted && currentAttemptId) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
+    window.onload = function() {
+      startExam();
+    };
+  </script>
+<!-- ✅ (طلب) لون العلامة التجارية المخصص (لو المدرس غيّره) ونافذة التأكيد الموحّدة، زي باقي صفحات النظام -->
+<script src="branding.js?v=2"></script>
+<script src="custom-dialogs.js?v=2"></script>
+</body>
+</html>

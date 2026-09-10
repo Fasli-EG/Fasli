@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تسجيل الدخول - فَصلي</title>
+  <meta name="description" content="تسجيل الدخول إلى نظام فَصلي لإدارة الدروس الخصوصية">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B1C33">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo:#0B1C33;
+    --indigo-deep:#0A0C10;
+    --indigo-soft:#E3F1EC;
+    --coral:#F2B705;
+    --coral-deep:#B8890A;
+    --ink:#0B1C33;
+    --muted:#6B7280;
+    --surface:#FFFFFF;
+    --surface-soft:#F7F8FA;
+    --line:#E1E4E9;
+    --danger:#E5484D;
+    --danger-soft:#FDEEEE;
+    --success:#1FAA6D;
+    --success-soft:#E3F1EC;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; overflow:hidden; }
+  body{
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    background:var(--indigo-deep);
+    color:var(--ink);
+    height:100vh;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* ===================== خلفية ملء الشاشة (صورة/فيديو) ===================== */
+  /* ✅ Batch 24 (بند 2): كانت الصورة/الفيديو بتتعرض كإطار مصغّر (78% من الشاشة) مايل ومقصوص
+     بحواف مدوّرة وظل وبردر — "كومة صور مكدّسة". اتشالت خاصية التصغير والميلان والحواف بالكامل،
+     وبقت الصورة/الفيديو بيغطّوا الشاشة بالكامل طولاً وعرضاً (100% × 100%، من غير أي تدوير أو
+     تصغير) مع الحفاظ على نسبة العرض إلى الارتفاع الأصلية بمنطق object-fit:cover */
+  /* ✅ (طلب): اتشال "الإطار" اللي كان حوالين الصورة/الفيديو بالكامل (الحد/المسافة الثابتة،
+     البردر الذهبي، الظل، والحواف المدوّرة) — الصورة/الفيديو دلوقتي بيغطّوا الشاشة بالكامل من
+     غير أي إطار حواليهم. اتحافظ على object-fit:contain عشان المحتوى يفضل ظاهر بالكامل ومتغيّر
+     حجمه تلقائي حسب حجم الشاشة (لابتوب / تابلت / موبايل) من غير أي قص أو خروج بره الشاشة. */
+  #imageShowcase{
+    position:fixed; inset:0; z-index:0; overflow:hidden;
+    background:var(--indigo-deep);
+  }
+  #imageShowcase img,
+  #imageShowcase video{
+    position:absolute; inset:0; z-index:1;
+    width:100%; height:100%;
+    object-fit:contain;
+    opacity:0; transition:opacity 1.4s ease;
+  }
+  #imageShowcase img.active,
+  #imageShowcase video.active{ opacity:1; }
+  #imageShowcase::after{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
+    background:radial-gradient(circle at 30% 30%, rgba(242,183,5,0.08), transparent 60%);
+  }
+  /* ✅ تدرج غامق خلف منطقة النصوص (يمين الشاشة) عشان الكلام يفضل واضح مهما كان لون الصورة تحته */
+  #readabilityOverlay{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:linear-gradient(to left, rgba(5,8,15,0.88) 0%, rgba(5,8,15,0.6) 22%, transparent 42%);
+  }
+  /* ===================== الثلث الأيمن: الشعار + كروت التحميل + النصوص + الإعلانات ===================== */
+  .right-third{
+    position:fixed; top:0; bottom:0; right:0;
+    width:min(420px, 34vw); min-width:300px;
+    z-index:2;
+    background:transparent;
+    display:flex; flex-direction:column;
+    padding:22px 24px 16px;
+    overflow:hidden;
+    justify-content:space-evenly;
+    gap:10px;
+  }
+  @media (max-width:860px){
+    .right-third{ position:relative; top:auto; bottom:auto; right:auto; width:100%; min-width:0; height:auto; }
+  }
+
+  .lockup{ display:flex; align-items:center; gap:10px; }
+  .mark{ width:46px; height:46px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.4); box-shadow:0 4px 14px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+  .mark img{ width:82%; height:82%; object-fit:contain; }
+  .wordmark{ font-family:'IBM Plex Sans Arabic', sans-serif; font-weight:800; font-size:32px; line-height:1; direction:rtl; color:#fff; }
+  .wordmark span{ color:#5FBF9A; }
+  .tagline{
+    font-size:14px; color:rgba(255,255,255,0.9); margin-bottom:6px; font-weight:700;
+  }
+
+  .brand-copy h1{
+    font-family:'IBM Plex Sans Arabic', sans-serif; font-weight:800; color:#fff;
+    font-size:22px; line-height:1.3; margin-bottom:8px;
+  }
+  .brand-copy p{ color:rgba(255,255,255,0.8); font-size:13.5px; line-height:1.6; font-weight:500; }
+
+  .features{ list-style:none; display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+  .features li{ display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; color:#fff; }
+  .features .chk{
+    width:18px; height:18px; border-radius:5px; background:rgba(255,255,255,0.14);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .features .chk svg{ width:10px; height:10px; }
+
+  /* ===================== الكارت الزجاجي العائم في منتصف الصفحة ===================== */
+  .glass-card-wrapper{
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    z-index:20; width:min(360px, 90vw); max-height:92vh; overflow-y:auto;
+    scrollbar-width:none; -ms-overflow-style:none;
+  }
+  .glass-card-wrapper::-webkit-scrollbar{ display:none; }
+  @media (max-width:860px){ .glass-card-wrapper{ position:relative; top:auto; left:auto; transform:none; margin:0 auto; } }
+
+  .form-box{
+    width:100%;
+    background:rgba(11,28,51,0.6);
+    backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:20px;
+    padding:26px 24px;
+    box-shadow:0 40px 90px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(242,183,5,0.1);
+  }
+  .form-box h2{ font-family:'IBM Plex Sans Arabic',sans-serif; font-weight:800; font-size:22px; margin-bottom:6px; color:#fff; }
+  .form-box .lede{ color:rgba(255,255,255,0.65); font-size:13.5px; margin-bottom:24px; }
+
+  .tabs{
+    display:flex; gap:8px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1);
+    border-radius:14px; padding:6px; margin-bottom:24px;
+  }
+  .tab{
+    flex:1; border:none; background:transparent; border-radius:10px;
+    padding:10px 4px; font-family:'IBM Plex Sans Arabic',sans-serif; font-weight:700;
+    font-size:13px; color:rgba(255,255,255,0.6); cursor:pointer; transition:all .18s ease;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+  }
+  .tab .tab-emoji{ font-size:18px; }
+  .tab.active{ background:var(--coral); color:var(--indigo); box-shadow:0 4px 14px rgba(242,183,5,0.35); transform:translateY(-1px); }
+
+  form{ display:flex; flex-direction:column; gap:16px; }
+  .field label{ display:block; font-size:12.5px; font-weight:600; color:rgba(255,255,255,0.85); margin-bottom:7px; }
+  .field input{
+    width:100%; border:1.5px solid rgba(255,255,255,0.16); border-radius:10px;
+    padding:11px 13px; font-family:'IBM Plex Mono', monospace; font-size:14.5px;
+    color:#fff; background:rgba(255,255,255,0.06); transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .field input::placeholder{ font-family:'IBM Plex Sans Arabic',sans-serif; color:rgba(255,255,255,0.35); font-size:13.5px; }
+  .field input:focus{ outline:none; border-color:var(--coral); box-shadow:0 0 0 3px rgba(242,183,5,0.15); }
+  .hint{ font-size:11.5px; color:rgba(255,255,255,0.5); margin-top:6px; }
+  .hint strong{ color:var(--coral); }
+
+  .submit{
+    margin-top:6px; background:var(--coral); color:#0B1C33; border:none; border-radius:10px;
+    padding:13px; font-family:'IBM Plex Sans Arabic',sans-serif; font-weight:700; font-size:15px;
+    cursor:pointer; transition:background .15s ease, transform .1s ease;
+    box-shadow:0 10px 20px -8px rgba(242,183,5,0.5);
+  }
+  .submit:hover{ background:var(--coral-deep); }
+  .submit:active{ transform:scale(.98); }
+  .submit:disabled{ opacity:.6; cursor:not-allowed; }
+
+  .spinner{
+    display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; margin-left:6px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .message{ margin-top:16px; font-size:13px; line-height:1.8; padding:11px 13px; border-radius:10px; display:none; }
+  .message.error{ display:block; background:rgba(229,72,77,0.15); color:#FF8A8D; }
+  .message.success{ display:block; background:rgba(31,170,109,0.15); color:#6FE0A8; }
+  .message.warning{ display:block; background:rgba(229,72,77,0.15); color:#F2B8A0; }
+
+  .foot-note{ margin-top:24px; text-align:center; font-size:12px; color:rgba(255,255,255,0.5); }
+  .social-links{ display:flex; justify-content:center; gap:14px; margin-top:14px; }
+  .social-links a{
+    width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    color:#fff; transition:all .15s ease; box-shadow:0 2px 8px rgba(0,0,0,0.25);
+  }
+  .social-links a:hover{ transform:translateY(-2px) scale(1.05); filter:brightness(1.1); }
+  .social-links a svg{ width:18px; height:18px; }
+  .credit-note{ margin-top:18px; text-align:center; font-size:11.5px; color:rgba(255,255,255,0.45); }
+  .credit-note a{ color:var(--coral); font-weight:600; text-decoration:none; }
+  .credit-note a:hover{ text-decoration:underline; }
+
+  @media (max-width:860px){
+    html,body{ overflow-y:auto; height:auto; min-height:100%; }
+    body{ flex-direction:column; height:auto; }
+    .right-third{ max-height:none; overflow:visible; padding:24px 20px; }
+    .extra-content{ display:none; }
+    .lockup{ margin-bottom:6px; justify-content:center; }
+    .download-cards{ max-width:none; }
+    .login-ads{ order:99; margin:16px auto 0; max-width:320px; }
+  }
+  @media (max-width:520px){ .download-cards{ flex-direction:column; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+  :focus-visible{ outline:2px solid var(--indigo); outline-offset:2px; }
+
+  .download-cards{ display:flex; gap:12px; justify-content:center; }
+  .login-ads{ width:100%; max-width:none; display:none; }
+  .login-ads-viewport{ position:relative; }
+  .login-ads-track{
+    display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
+    scroll-behavior:smooth; padding-bottom:4px;
+    -ms-overflow-style:none; scrollbar-width:none;
+  }
+  .login-ads-track::-webkit-scrollbar{ display:none; }
+  .login-ad-slide{
+    flex:0 0 auto; width:min(260px, 68%); aspect-ratio:4/3; scroll-snap-align:start;
+    border-radius:12px; overflow:hidden; background:rgba(255,255,255,0.04); display:block;
+  }
+  .login-ad-slide img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .login-ads-arrow{
+    position:absolute; top:50%; transform:translateY(-50%); z-index:3;
+    width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.25);
+    background:rgba(15,17,23,0.65); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:20px; line-height:1; transition:background .2s; padding:0; padding-bottom:3px;
+  }
+  .login-ads-arrow:hover{ background:rgba(15,17,23,0.9); }
+  .login-ads-arrow.prev{ right:-6px; }
+  .login-ads-arrow.next{ left:-6px; }
+
+
+  .download-section{ flex-direction:column; }
+  .download-section-title{ font-size:12px; font-weight:700; color:rgba(255,255,255,0.65); margin-bottom:8px; text-align:center; }
+  .download-icon-btn{
+    width:64px; height:64px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16);
+    border-radius:16px; text-decoration:none; transition:all 0.2s;
+  }
+  .download-icon-btn:hover{ background:var(--coral); border-color:var(--coral); transform:translateY(-2px); }
+  .download-icon-btn .dc-icon{ font-size:30px; }
+
+  .hero-card{
+    position:relative; z-index:1;
+  }
+</style>
+</head>
+<body>
+
+<div class="right-third">
+  <div class="lockup">
+    <div class="mark"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
+    <div class="wordmark">فَصلي</div>
+  </div>
+
+  <div class="download-section" id="downloadCards" style="display:none;">
+    <div class="download-section-title">حمّله دلوقتي</div>
+    <div class="download-cards">
+      <a href="#" id="desktopDownloadCard" class="download-icon-btn" style="display:none;" target="_blank" rel="noopener" title="تحميل للكمبيوتر" aria-label="تحميل للكمبيوتر">
+        <span class="dc-icon">💻</span>
+      </a>
+      <a href="#" id="mobileDownloadCard" class="download-icon-btn" style="display:none;" target="_blank" rel="noopener" title="تطبيق الهاتف" aria-label="تطبيق الهاتف">
+        <span class="dc-icon">📱</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-card extra-content">
+    <div class="tagline">إدارة دقيقة لسنترك، بلا فوضى</div>
+    <div class="brand-copy">
+      <h1>وداعاً لدفاتر الحضور والدرجات الورقية.</h1>
+      <p>فَصلي بيجمّعلك كل حاجة عن سنترك في مكان واحد — وبتوفّر وقتك عشان تركّز في التدريس، مش في الأوراق.</p>
+      <!-- ✅ Batch 23 (بند 11): قائمة المميزات كانت 3 بنود بس (حضور/درجات/متابعة أولياء الأمور)
+           من أيام أول إصدار، ومكانتش بتعكس أي حاجة اتضافت بعد كده (كروت NFC، الاختبارات
+           الإلكترونية، فريق العمل بصلاحيات مفصّلة، المحادثات المباشرة مع أولياء الأمور، إدارة
+           سنتر بمدرسين متعددين). بقت 6 بنود بتغطي أهم المميزات الفعلية للنظام دلوقتي -->
+      <ul class="features">
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> تسجيل الحضور بكارت NFC في ثانية واحدة</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> اختبارات إلكترونية وتصحيح ودرجات أوتوماتيك</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> إدارة سنتر بمدرسين ومجموعات متعددة من حساب واحد</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> فريق عمل بصلاحيات مفصّلة تتحكم فيها إنت</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> محادثة مباشرة مع أولياء الأمور من غير واتساب</li>
+        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> أولياء الأمور يتابعوا الدرجات والحضور والمدفوعات لحظياً</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hero-card login-ads" id="loginAds">
+    <div class="login-ads-viewport">
+      <button class="login-ads-arrow prev" id="loginAdsPrev" aria-label="السابق" onclick="scrollLoginAds(1)">›</button>
+      <div class="login-ads-track" id="loginAdsTrack"></div>
+      <button class="login-ads-arrow next" id="loginAdsNext" aria-label="التالي" onclick="scrollLoginAds(-1)">‹</button>
+    </div>
+  </div>
+</div>
+
+<div id="imageShowcase" aria-hidden="true"></div>
+<div id="readabilityOverlay" aria-hidden="true"></div>
+
+<div class="glass-card-wrapper">
+  <div class="form-box">
+    <h2>تسجيل الدخول</h2>
+    <p class="lede">ادخل بياناتك للمتابعة إلى حسابك</p>
+
+    <div class="tabs" role="tablist" aria-label="نوع الحساب">
+      <button type="button" class="tab active" data-group="staff" onclick="selectGroup('staff')" role="tab" aria-selected="true"><span class="tab-emoji">👥</span> الطاقم (سنتر / مدرس / مساعد)</button>
+      <button type="button" class="tab" data-group="family" onclick="selectGroup('family')" role="tab" aria-selected="false"><span class="tab-emoji">👨‍👩‍👧</span> الأسرة (ولي أمر / طالب)</button>
+    </div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label id="usernameLabel">كود المدرس (Client ID)</label>
+        <input type="text" id="username" placeholder="مثال: teacher_001" autocomplete="username" required>
+        <div class="hint" id="usernameHint">أدخل الكود الخاص بك من الإدارة</div>
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+        <div class="hint" id="passwordHint">لأول مرة، استخدم <strong>نفس الكود</strong> ككلمة مرور</div>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,0.75);cursor:pointer;margin-bottom:4px;">
+        <input type="checkbox" id="rememberMe" checked style="width:16px;height:16px;cursor:pointer;">
+        تذكرني (متطلبش تسجيل دخول تاني على الجهاز ده)
+      </label>
+
+      <button type="submit" class="submit" id="loginBtn">
+        <span id="loginText">تسجيل الدخول</span>
+      </button>
+    </form>
+
+    <div id="message" class="message"></div>
+
+    <p class="foot-note">بتسجيل الدخول أنت توافق على استخدام النظام لإدارة بيانات فصلك</p>
+    <div class="social-links" id="socialLinks"></div>
+    <p class="credit-note" id="creditNote">تم تصميم هذه المنصة بكل حب من <a href="https://wa.me/201007702434" target="_blank" rel="noopener">Sabry Elgammal</a></p>
+  </div>
+</div>
+
+<!-- ديالوج احترافي مخصص لطلب إذن الإشعارات قبل ما نطلب من نظام التشغيل -->
+<div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:28px 24px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+    <div style="width:64px;height:64px;background:#E7F8F0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">🔔</div>
+    <h3 style="font-size:17px;font-weight:800;color:#0B1C33;margin-bottom:8px;">تفعيل الإشعارات الفورية</h3>
+    <p style="font-size:13.5px;color:#6b7280;line-height:1.7;margin-bottom:22px;">
+      عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
+    </p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="declinePermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #E1E4E9;background:#fff;color:#4A5568;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;">مش دلوقتي</button>
+      <button onclick="acceptPermissionDialog()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#F2B705;color:#0B1C33;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">فعّل الإشعارات</button>
+    </div>
+  </div>
+</div>
+
+<script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+      // ============================================
+  // CONFIG
+  // ============================================
+  const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+  let selectedGroup = 'staff';
+  let systemContactInfo = {};
+
+  async function loadContactInfo() {
+    try {
+      const res = await fetch(PROJECT_URL + '/functions/v1/get-system-settings');
+      const result = await res.json();
+      systemContactInfo = result.data || {};
+      const el = document.getElementById('socialLinks');
+      if (!el) return;
+      let html = '';
+      if (systemContactInfo.whatsapp_number) {
+        html += `<a href="https://wa.me/${systemContactInfo.whatsapp_number}" target="_blank" rel="noopener" title="واتساب" style="background:#25D366;">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.6 6.3A8.9 8.9 0 0 0 12 4a8.9 8.9 0 0 0-7.7 13.4L3 21l3.7-1.3A8.9 8.9 0 0 0 12 21a8.9 8.9 0 0 0 8.9-8.9c0-2.4-1-4.6-2.6-6.3zM12 19.3c-1.4 0-2.8-.4-4-1.1l-.3-.2-2.7 1 .9-2.6-.2-.3A7.2 7.2 0 1 1 19.2 12 7.2 7.2 0 0 1 12 19.3z"/></svg>
+        </a>`;
+      }
+      if (systemContactInfo.facebook_url) {
+        html += `<a href="${systemContactInfo.facebook_url}" target="_blank" rel="noopener" title="فيسبوك" style="background:#1877F2;">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M13.5 21v-7.5H16l.4-3H13.5V8.4c0-.9.2-1.5 1.5-1.5H16.5V4.2C16.2 4.1 15.2 4 14 4c-2.3 0-4 1.4-4 4v2.5H7.5v3H10V21h3.5z"/></svg>
+        </a>`;
+      }
+      if (systemContactInfo.tiktok_url) {
+        html += `<a href="${systemContactInfo.tiktok_url}" target="_blank" rel="noopener" title="تيك توك" style="background:#000000;">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M16.6 5.82c-.9-.88-1.4-2.08-1.4-3.32h-3.12v13.4c0 1.53-1.24 2.77-2.77 2.77a2.77 2.77 0 0 1-2.77-2.77 2.77 2.77 0 0 1 2.77-2.77c.29 0 .56.05.82.13V9.9a5.9 5.9 0 0 0-.82-.06A5.9 5.9 0 0 0 3.4 15.72a5.9 5.9 0 0 0 5.91 5.91 5.9 5.9 0 0 0 5.91-5.91V9.01a8.35 8.35 0 0 0 4.88 1.56V7.46a4.85 4.85 0 0 1-3.5-1.64z"/></svg>
+        </a>`;
+      }
+      if (systemContactInfo.youtube_url) {
+        html += `<a href="${systemContactInfo.youtube_url}" target="_blank" rel="noopener noreferrer" title="يوتيوب" style="background:#FF0000;">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M22 12c0-2.4-.2-4-.5-4.9-.3-.8-.9-1.4-1.7-1.7C18.5 5 12 5 12 5s-6.5 0-7.8.4c-.8.3-1.4.9-1.7 1.7C2.2 8 2 9.6 2 12s.2 4 .5 4.9c.3.8.9 1.4 1.7 1.7C5.5 19 12 19 12 19s6.5 0 7.8-.4c.8-.3 1.4-.9 1.7-1.7.3-.9.5-2.5.5-4.9zM10 15.3V8.7l6 3.3-6 3.3z"/></svg>
+        </a>`;
+      }
+      if (systemContactInfo.phone_number) {
+        html += `<a href="tel:${systemContactInfo.phone_number}" title="اتصال" style="background:#22c55e;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.2a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/></svg>
+        </a>`;
+      }
+      el.innerHTML = html;
+
+      // ✅ تذييل "تم تصميم هذه المنصة بكل حب من..." بيتبني ديناميكياً من اسم ورقم واتساب المشرف الحقيقي
+      // ✅ (طلب) الماستر بقى يقدر يخفي النص ده بالكامل (login_credit_show)، أو يستبدله بنص
+      // مخصص كامل (login_credit_text) بدل الشكل الافتراضي — لو مفيش نص مخصص، يفضل السلوك
+      // الأصلي (مبني من admin_name/admin_whatsapp) زي ما هو
+      const creditEl = document.getElementById('creditNote');
+      if (creditEl) {
+        if (systemContactInfo.login_credit_show === false) {
+          creditEl.style.display = 'none';
+        } else if (systemContactInfo.login_credit_text) {
+          // نص مخصص من الماستر — بيتحط كنص خام (مش HTML) تفاديًا لأي خطر حقن كود
+          creditEl.textContent = systemContactInfo.login_credit_text;
+        } else if (systemContactInfo.admin_name) {
+          const adminLink = systemContactInfo.admin_whatsapp
+            ? `<a href="https://wa.me/${systemContactInfo.admin_whatsapp}" target="_blank" rel="noopener">${systemContactInfo.admin_name}</a>`
+            : systemContactInfo.admin_name;
+          creditEl.innerHTML = `تم تصميم هذه المنصة بكل حب من ${adminLink}`;
+        }
+      }
+
+      // ✅ (طلب) تحكم مستقل للماستر في إظهار/إخفاء القسم بالكامل، مش بس الاعتماد على وجود الروابط
+      let anyCard = false;
+      if (systemContactInfo.show_download_section !== false) {
+        if (systemContactInfo.desktop_download_url) {
+          const card = document.getElementById('desktopDownloadCard');
+          card.href = systemContactInfo.desktop_download_url;
+          card.style.display = 'flex';
+          anyCard = true;
+        }
+        if (systemContactInfo.mobile_app_url) {
+          const card = document.getElementById('mobileDownloadCard');
+          card.href = systemContactInfo.mobile_app_url;
+          card.style.display = 'flex';
+          anyCard = true;
+        }
+      }
+      if (anyCard) document.getElementById('downloadCards').style.display = 'flex';
+    } catch (e) { /* تجاهل - العناصر مش أساسية لتسجيل الدخول */ }
+  }
+  loadContactInfo();
+
+  // ============================================
+  // الصور الإعلانية في صفحة تسجيل الدخول
+  // ============================================
+  async function loadLoginAds() {
+    try {
+      const res = await fetch(PROJECT_URL + '/functions/v1/get-login-ads');
+      const result = await res.json();
+      const ads = result.data || [];
+
+      renderBgCollage(result.backgroundImages || []);
+
+      if (!ads.length) return; // نسيب المساحة مخفية زي ما هي (display:none افتراضياً)
+
+      const track = document.getElementById('loginAdsTrack');
+
+      ads.forEach((ad) => {
+        const slide = document.createElement(ad.link_url ? 'a' : 'div');
+        slide.className = 'login-ad-slide';
+        if (ad.link_url) { slide.href = ad.link_url; slide.target = '_blank'; slide.rel = 'noopener noreferrer'; }
+
+        const img = document.createElement('img');
+        img.src = ad.image_url;
+        img.alt = 'إعلان';
+        img.loading = 'lazy';
+        slide.appendChild(img);
+        track.appendChild(slide);
+      });
+
+      // الأسهم مالهاش لزمة لو الصور قليلة ومش هتحتاج تمرير خالص
+      if (ads.length <= 1) {
+        document.getElementById('loginAdsPrev').style.display = 'none';
+        document.getElementById('loginAdsNext').style.display = 'none';
+      }
+
+      loginAdsCount = ads.length;
+      document.getElementById('loginAds').style.display = 'block';
+      startLoginAdsAutoplay();
+    } catch (e) { /* تجاهل - المساحة مش أساسية لتسجيل الدخول */ }
+  }
+  loadLoginAds();
+
+  // ✅ خلفية اللوحة المتحركة — لو الأدمن رفع صور أو فيديوهات فعلية من قسم الألبومات (كـ"خلفية")
+  // لو مفيش صور خالص، الخلفية بتفضل تدرّج غامق عادي (الشكل الافتراضي) من غير أي مشكلة
+  function isVideoUrl(url) {
+    return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+  }
+
+  function renderBgCollage(images) {
+    if (!images.length) return;
+    const container = document.getElementById('imageShowcase');
+    let current = 0;
+
+    const imgEls = images.map((src) => {
+      let el;
+      if (isVideoUrl(src)) {
+        el = document.createElement('video');
+        el.src = src;
+        el.autoplay = true;
+        el.muted = true;
+        el.loop = true;
+        el.playsInline = true;
+      } else {
+        el = document.createElement('img');
+        el.src = src;
+        el.alt = '';
+      }
+      container.appendChild(el);
+      return el;
+    });
+
+    imgEls[0].classList.add('active');
+    if (imgEls.length <= 1) return;
+
+    setInterval(() => {
+      imgEls[current].classList.remove('active');
+      current = (current + 1) % imgEls.length;
+      imgEls[current].classList.add('active');
+    }, 8000);
+  }
+
+  let loginAdsIndex = 0;
+  let loginAdsCount = 0;
+
+  function goToLoginAd(index) {
+    const track = document.getElementById('loginAdsTrack');
+    const slides = track.querySelectorAll('.login-ad-slide');
+    if (!slides.length) return;
+    loginAdsIndex = ((index % slides.length) + slides.length) % slides.length; // نضمن الرقم دايماً موجب وداخل النطاق (تأثير الحلقة)
+    const targetSlide = slides[loginAdsIndex];
+    // ✅ بنحسب المسافة بالنسبة لموقع العناصر الحالي على الشاشة (مش scrollLeft المباشر، عشان نتجنب فرق سلوك RTL بين المتصفحات)
+    // وده بيضمن كمان إن التمرير بيأثر على شريط الصور نفسه بس، من غير ما يحرك الصفحة كلها
+    const trackRect = track.getBoundingClientRect();
+    const slideRect = targetSlide.getBoundingClientRect();
+    const delta = slideRect.left - trackRect.left;
+    track.scrollBy({ left: delta, behavior: 'smooth' });
+  }
+
+  function scrollLoginAds(direction) {
+    goToLoginAd(loginAdsIndex + direction);
+  }
+
+  function startLoginAdsAutoplay() {
+    if (loginAdsCount <= 1) return;
+    setInterval(() => { goToLoginAd(loginAdsIndex + 1); }, 4000);
+  }
+
+  const messageDiv = document.getElementById('message');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginText = document.getElementById('loginText');
+
+  // ============================================
+  // TOKEN HELPERS
+  // ============================================
+  function getToken() { return sessionStorage.getItem('jwtToken'); }
+
+  function isTokenValid() {
+    const token = getToken();
+    if (!token) return false;
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return false;
+      const payload = JSON.parse(atob(parts[1]));
+      const exp = payload.exp;
+      if (exp) {
+        const now = Math.floor(Date.now() / 1000);
+        if (exp < now) return false;
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ============================================
+  // اختيار الدور
+  // ============================================
+  function selectGroup(group) {
+    selectedGroup = group;
+    document.querySelectorAll('.tab').forEach(btn => {
+      const active = btn.dataset.group === group;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+
+    const usernameLabel = document.getElementById('usernameLabel');
+    const usernameInput = document.getElementById('username');
+    const usernameHint = document.getElementById('usernameHint');
+    const passwordHint = document.getElementById('passwordHint');
+
+    // ✅ النظام بيكتشف نوع الحساب بالظبط (سنتر/مدرس/مساعد أو ولي أمر/طالب) تلقائياً بعد إدخال البيانات،
+    // مش لازم تحددي بنفسك
+    if (group === 'staff') {
+      usernameLabel.textContent = 'كود الدخول';
+      usernameInput.placeholder = 'كود السنتر أو كود المدرس أو اسم مستخدم المساعد';
+      usernameInput.removeAttribute('dir');
+      usernameHint.textContent = 'أدخل الكود أو اسم المستخدم اللي معاكِ، والنظام هيتعرّف على نوع حسابك تلقائياً';
+      passwordHint.innerHTML = 'لأول مرة، استخدمي <strong>نفس الكود</strong> ككلمة مرور (أو الكلمة المؤقتة لو إنتِ مساعدة)';
+    } else {
+      usernameLabel.textContent = 'رقم الهاتف أو كود الكارت';
+      usernameInput.placeholder = 'رقم هاتفك (ولي أمر) أو كود كارت ابنك (طالب)';
+      usernameInput.setAttribute('dir', 'ltr');
+      usernameHint.textContent = 'ولي الأمر: رقم الهاتف المسجّل. الطالب: كود الكارت — والنظام هيتعرّف على نوع حسابك تلقائياً';
+      passwordHint.innerHTML = 'لأول مرة، استخدمي <strong>نفس القيمة اللي كتبتيها فوق</strong> ككلمة مرور';
+    }
+
+    hideMessage();
+    usernameInput.value = '';
+    document.getElementById('password').value = '';
+  }
+
+  function showMessage(text, type = 'info') {
+    messageDiv.innerHTML = text;
+    messageDiv.className = 'message ' + type;
+  }
+  function hideMessage() { messageDiv.className = 'message'; messageDiv.textContent = ''; }
+
+  function setLoading(isLoading) {
+    loginBtn.disabled = isLoading;
+    loginText.innerHTML = isLoading ? '<span class="spinner"></span> جاري التحقق...' : 'تسجيل الدخول';
+  }
+
+  // ============================================
+  // رسالة المستخدم غير المسجل
+  // ============================================
+  function showUnregisteredMessage(role, username) {
+    let roleName = role === 'teacher' ? 'المدرس' : role === 'assistant' ? 'المساعد' : role === 'student' ? 'الطالب' : 'ولي الأمر';
+    let idName = role === 'teacher' ? 'كود' : role === 'assistant' ? 'اسم المستخدم' : role === 'student' ? 'كود الكارت' : 'رقم الهاتف';
+    const contactLine = systemContactInfo.phone_number
+      ? `يرجى التواصل مع ${role === 'student' ? 'مدرستك' : 'الإدارة'} على الرقم: <strong>${systemContactInfo.phone_number}</strong> لتسجيل بياناتك`
+      : `يرجى التواصل مع ${role === 'student' ? 'مدرستك' : 'الإدارة'} لتسجيل بياناتك`;
+    showMessage(
+      `عذراً، ${roleName} غير مسجل في المنظومة (${idName}: ${username})<br><br>` + contactLine,
+      'warning'
+    );
+  }
+
+  // ============================================
+  // توجيه المستخدم حسب صلاحياته
+  // ============================================
+  async function saveAuth(key, value) {
+    // ✅ مهم جداً: نضمن إن القيمة نص دايماً — Preferences.set() في التطبيق بيرفض القيم الرقمية بصمت
+    // من غير أي خطأ ظاهر، فأي رقم (زي ID من قاعدة البيانات) لازم يتحول لنص هنا قبل أي حفظ
+    value = String(value);
+    sessionStorage.setItem(key, value);
+    if (document.getElementById('rememberMe')?.checked) {
+      localStorage.setItem(key, value);
+      localStorage.setItem('fasliRememberMe', 'true');
+      // ✅ في تطبيق الموبايل (Capacitor)، بنحفظ كمان في تخزين النظام الحقيقي (SharedPreferences)
+      // ده بيفضل موجود حتى بعد Force Stop أو إعادة تشغيل الموبايل، عكس تخزين المتصفح العادي
+      // مهم: لازم نستنى (await) الكتابة دي تخلص فعلياً قبل أي تنقل لصفحة تانية، وإلا ممكن تتقطع نص الطريق
+      const Preferences = window.Capacitor?.Plugins?.Preferences;
+      if (Preferences) {
+        await Preferences.set({ key, value }).catch(() => {});
+        await Preferences.set({ key: 'fasliRememberMe', value: 'true' }).catch(() => {});
+      }
+      // ✅ نفس الفكرة بالظبط لتطبيق سطح المكتب (Electron) — تخزين حقيقي على القرص، مش تخزين متصفح
+      if (window.electronStore) {
+        await window.electronStore.set(key, value).catch(() => {});
+        await window.electronStore.set('fasliRememberMe', 'true').catch(() => {});
+      }
+    }
+  }
+
+  // ============================================
+  // تسجيل جهاز الموبايل للإشعارات (بس لو التطبيق شغّال كتطبيق حقيقي مش موقع عادي)
+  // ============================================
+  let pendingPushNotifications = null;
+
+  async function registerPushIfNative() {
+    try {
+      const Capacitor = window.Capacitor;
+      if (!Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
+      const PushNotifications = Capacitor.Plugins?.PushNotifications;
+      if (!PushNotifications) return;
+
+      const permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'granted') {
+        finishPushRegistration(PushNotifications);
+        return;
+      }
+      if (permStatus.receive === 'denied') {
+        // ✅ النظام مش هيعرض المربع تاني بنفسه بعد الرفض، فلازم نوجّه المستخدم يدوي بنفسه من إعدادات الموبايل
+        showDeniedPermissionDialog();
+        return;
+      }
+
+      // ✅ نعرض الديالوج الاحترافي بتاعنا الأول، وبس لو وافق نطلب إذن النظام الفعلي
+      pendingPushNotifications = PushNotifications;
+      document.getElementById('permissionDialogTitle').textContent = 'تفعيل الإشعارات الفورية';
+      document.getElementById('permissionDialogText').textContent = 'عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.';
+      document.getElementById('permissionDialogAccept').textContent = 'فعّل الإشعارات';
+      document.getElementById('permissionDialogAccept').onclick = acceptPermissionDialog;
+      document.getElementById('permissionDialog').style.display = 'flex';
+    } catch (e) { /* تجاهل - التطبيق ممكن يكون بيشتغل كموقع عادي مش تطبيق */ }
+  }
+
+  function showDeniedPermissionDialog() {
+    document.getElementById('permissionDialogTitle').textContent = 'الإشعارات متوقفة حالياً';
+    document.getElementById('permissionDialogText').textContent = 'يبدو إنك رفضت إذن الإشعارات قبل كده. عشان تفعّلها: روح إعدادات الموبايل ← التطبيقات ← فَصلي ← الإشعارات ← فعّلها من هناك.';
+    document.getElementById('permissionDialogAccept').textContent = 'تمام';
+    document.getElementById('permissionDialogAccept').onclick = declinePermissionDialog;
+    document.getElementById('permissionDialog').style.display = 'flex';
+  }
+
+  function declinePermissionDialog() {
+    document.getElementById('permissionDialog').style.display = 'none';
+    pendingPushNotifications = null;
+  }
+
+  async function acceptPermissionDialog() {
+    document.getElementById('permissionDialog').style.display = 'none';
+    const PushNotifications = pendingPushNotifications;
+    pendingPushNotifications = null;
+    if (!PushNotifications) return;
+    try {
+      const req = await PushNotifications.requestPermissions();
+      if (req.receive === 'granted') finishPushRegistration(PushNotifications);
+    } catch (e) { /* تجاهل */ }
+  }
+
+  async function finishPushRegistration(PushNotifications) {
+    try {
+      await PushNotifications.register();
+      PushNotifications.addListener('registration', async (token) => {
+        try {
+          const jwt = sessionStorage.getItem('jwtToken');
+          if (!jwt || !token?.value) return;
+
+          // ✅ نحفظ التوكن محلياً (دايم + مؤقت) عشان نقدر نلغيه وقت تسجيل الخروج الصريح
+          localStorage.setItem('fasliPushToken', token.value);
+          const Preferences = window.Capacitor?.Plugins?.Preferences;
+          if (Preferences) Preferences.set({ key: 'fasliPushToken', value: token.value }).catch(() => {});
+
+          await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ action: 'register', token: token.value, platform: 'android' })
+          });
+        } catch (e) { /* تجاهل - مش أساسي لتسجيل الدخول */ }
+      });
+    } catch (e) { /* تجاهل */ }
+  }
+
+  async function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience) {
+    // ملحوظة: تسجيل جهاز الإشعارات بيحصل في صفحة اللوحة نفسها بعد التنقل (dashboard.html/assistant-dashboard.html/parent-dashboard.html)
+    // مش هنا، لأن الصفحة دي هتتنقل فوراً وأي كود async هنا ممكن ينقطع نص الطريق قبل ما يخلص
+    if (forceChange) {
+      let redirectUrl = 'change-password.html?';
+      if (role === 'teacher') {
+        redirectUrl += 'clientId=' + username + '&role=teacher';
+        sessionStorage.setItem('tempClientId', username);
+      } else if (role === 'assistant') {
+        redirectUrl += 'username=' + username + '&role=assistant';
+        sessionStorage.setItem('tempAssistantId', username);
+      } else if (role === 'parent') {
+        redirectUrl += 'phone=' + username + '&role=parent';
+        sessionStorage.setItem('tempParentPhone', username);
+      } else {
+        redirectUrl += 'studentUid=' + username + '&role=student';
+        sessionStorage.setItem('tempStudentUid', username);
+      }
+      window.location.href = redirectUrl;
+      return;
+    }
+
+    // ✅ الترخيص منتهي/الحساب معطّل: نوجّه لصفحة قفل مخصصة بدل الدخول العادي
+    if (licenseExpired && role !== 'parent') {
+      sessionStorage.setItem('lockReason', licenseReason || 'انتهت صلاحية الترخيص');
+      sessionStorage.setItem('lockWhatsapp', contactWhatsapp || '');
+      sessionStorage.setItem('lockPhone', contactPhone || '');
+      sessionStorage.setItem('lockAudience', contactAudience || 'admin');
+      window.location.href = 'license-locked.html';
+      return;
+    }
+
+    // ✅ مهم جداً: كل استدعاءات saveAuth هنا لازم تُستنى (await) بالترتيب قبل أي تنقل،
+    // لأن الكتابة في التخزين الدائم (Preferences) عملية async، ولو الصفحة اتنقلت قبل ما تخلص، البيانات ممكن تضيع جزئياً
+    if (role === 'teacher' && username === 'master_admin') {
+      await saveAuth('clientId', username);
+      await saveAuth('teacherName', 'المشرف الرئيسي');
+      await saveAuth('isAdmin', 'true');
+      window.location.href = 'admin-teachers.html';
+      return;
+    }
+    if (role === 'teacher') {
+      await saveAuth('clientId', username);
+      await saveAuth('teacherName', data?.name || 'مدرس');
+      await saveAuth('isAdmin', 'false');
+      await saveAuth('userRole', 'teacher');
+      await saveAuth('brandLogoUrl', data?.brandLogoUrl || '');
+      await saveAuth('brandColor', data?.brandColor || '');
+      await saveAuth('isCenter', data?.isCenter ? 'true' : 'false');
+      window.location.href = 'dashboard.html';
+      return;
+    }
+    if (role === 'assistant') {
+      await saveAuth('assistantId', String(data?.id || username));
+      await saveAuth('assistantName', data?.name || 'مساعد');
+      await saveAuth('assistantPermissions', JSON.stringify(data?.permissions || {}));
+      await saveAuth('teacherClientId', data?.teacherId || '');
+      await saveAuth('teacherName', data?.teacherName || 'مدرس');
+      await saveAuth('userRole', 'assistant');
+      await saveAuth('brandLogoUrl', data?.brandLogoUrl || '');
+      await saveAuth('brandColor', data?.brandColor || '');
+      // ✅ Batch 22: كانت isCenter بتتحفظ للمدرس بس — المساعد كان بيدخل staff.html وتبويب
+      // "مدرّسو السنتر" يفضل مختفي دايماً حتى لو معاه صلاحية كاملة، لأن isCenterAccount في
+      // كل الصفحات بتقرأ sessionStorage.isCenter اللي مكانش بيتحط للمساعد خالص
+      await saveAuth('isCenter', data?.isCenter ? 'true' : 'false');
+      window.location.href = 'assistant-dashboard.html';
+      return;
+    }
+    if (role === 'parent') {
+      await saveAuth('parentPhone', username);
+      await saveAuth('parentName', data?.name || 'ولي أمر');
+      await saveAuth('userRole', 'parent');
+      window.location.href = 'parent-dashboard.html';
+      return;
+    }
+    if (role === 'student') {
+      await saveAuth('studentUid', username);
+      await saveAuth('studentName', data?.name || 'طالب');
+      await saveAuth('studentGroup', data?.groupName || '');
+      await saveAuth('studentTeacherId', data?.teacherId || '');
+      await saveAuth('userRole', 'student');
+      window.location.href = 'student-portal.html';
+      return;
+    }
+  }
+
+  // ============================================
+  // معالجة تسجيل الدخول
+  // ============================================
+  async function handleLogin(event) {
+    event.preventDefault();
+    hideMessage();
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!username || !password) {
+      showMessage('الرجاء إدخال اسم المستخدم وكلمة المرور', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(PROJECT_URL + '/functions/v1/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, group: selectedGroup })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        if (data.token) saveAuth('jwtToken', data.token);
+        showMessage(data.message, 'success');
+        setTimeout(() => redirectUser(data.role, username, data.data, data.forceChange, data.licenseExpired, data.licenseReason, data.contactWhatsapp, data.contactPhone, data.contactAudience), 900);
+      } else {
+        const errorMsg = data.message || '';
+        if (errorMsg.includes('غير موجود') || errorMsg.includes('لا يوجد') || errorMsg.includes('not found') || errorMsg.includes('غير مسجّل')) {
+          showUnregisteredMessage(selectedGroup === 'staff' ? 'teacher' : 'parent', username);
+        } else if (errorMsg.includes('غير مفعل') && (data.contactWhatsapp || data.contactPhone)) {
+          const who = data.contactAudience === 'teacher' ? 'المدرس الخاص بك' : 'الإدارة';
+          let contactHtml = `${errorMsg}<br><br>تواصل مع ${who}: `;
+          const parts = [];
+          if (data.contactWhatsapp) parts.push(`<a href="https://wa.me/${data.contactWhatsapp}" target="_blank" style="color:inherit;text-decoration:underline;">واتساب</a>`);
+          if (data.contactPhone) parts.push(`<a href="tel:${data.contactPhone}" style="color:inherit;text-decoration:underline;">${data.contactPhone}</a>`);
+          contactHtml += parts.join(' — ');
+          showMessage(contactHtml, 'warning');
+        } else {
+          showMessage(errorMsg, 'error');
+        }
+      }
+    } catch (error) {
+      console.error('❌ خطأ:', error);
+      showMessage('حدث خطأ في الاتصال بالخادم: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ============================================
+  // التحقق من الجلسة عند فتح الصفحة (بما فيها الجلسة المحفوظة "تذكرني")
+  // ============================================
+  async function restoreAndCheckSession() {
+    // ✅ لو التطبيق (Capacitor) وعنده جلسة محفوظة في التخزين الحقيقي، نسترجعها الأول
+    const Preferences = window.Capacitor?.Plugins?.Preferences;
+    if (Preferences && !sessionStorage.getItem('jwtToken')) {
+      try {
+        const remembered = await Preferences.get({ key: 'fasliRememberMe' });
+        if (remembered?.value === 'true') {
+          const { keys } = await Preferences.keys();
+          for (const key of keys) {
+            const { value } = await Preferences.get({ key });
+            if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
+          }
+        }
+      } catch (e) { /* تجاهل */ }
+    }
+    // ✅ نفس الفكرة بالظبط لتطبيق سطح المكتب (Electron)
+    if (window.electronStore && !sessionStorage.getItem('jwtToken')) {
+      try {
+        const remembered = await window.electronStore.get('fasliRememberMe');
+        if (remembered === 'true') {
+          const keys = await window.electronStore.keys();
+          for (const key of keys) {
+            const value = await window.electronStore.get(key);
+            if (value !== null && value !== undefined) sessionStorage.setItem(key, value);
+          }
+        }
+      } catch (e) { /* تجاهل */ }
+    }
+    // ✅ نفس الفكرة لنسخة الموقع العادية (localStorage)
+    if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key === 'fasliRememberMe') continue;
+        sessionStorage.setItem(key, localStorage.getItem(key));
+      }
+    }
+
+    if (isTokenValid()) {
+      const token = getToken();
+      let payload = null;
+      try { payload = JSON.parse(atob(token.split('.')[1])); } catch (e) {}
+
+      const role = payload?.role || sessionStorage.getItem('userRole');
+      const clientId = payload?.clientId || sessionStorage.getItem('clientId');
+      const assistantId = sessionStorage.getItem('assistantId');
+      const parentPhone = sessionStorage.getItem('parentPhone');
+
+      if (role === 'teacher') {
+        if (clientId === 'master_admin') { window.location.href = 'admin-teachers.html'; return; }
+        else if (clientId) { window.location.href = 'dashboard.html'; return; }
+      } else if (role === 'assistant' && assistantId) {
+        window.location.href = 'assistant-dashboard.html'; return;
+      } else if (role === 'parent' && parentPhone) {
+        window.location.href = 'parent-dashboard.html'; return;
+      }
+    }
+  }
+  window.onload = function () {
+    // ✅ إجراء وقائي: نتأكد إن أي نافذة منبثقة (زي ديالوج الإشعارات) مقفولة، وإن حقول الفورم شغّالة
+    // فعلياً، عشان نمنع أي حالة "تجمّد" لو حصل أي تعليق في حالة الصفحة القديمة (خصوصاً في تطبيق سطح المكتب)
+    const dlg = document.getElementById('permissionDialog');
+    if (dlg) dlg.style.display = 'none';
+    ['username', 'password'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) { el.disabled = false; el.readOnly = false; }
+    });
+    restoreAndCheckSession();
+  };
+</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

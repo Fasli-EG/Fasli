@@ -1,0 +1,3595 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة التحكم - فَصلي</title>
+  <meta name="description" content="لوحة تحكم المدرس في نظام فَصلي لإدارة الدروس الخصوصية">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B1C33">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css?v=52">
+  <script src="activity-format.js?v=6"></script>
+</head>
+<body>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
+        <h1>فَصلي</h1>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item active"><i class="fas fa-house"></i> الرئيسية</a>
+        <a href="messages.html" class="sidebar-item "><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
+
+        <div class="sidebar-section-label">🎓 الأكاديمية</div>
+        <a href="students.html" class="sidebar-item "><i class="fas fa-user-graduate"></i> الطلاب</a>
+        <a href="groups.html" class="sidebar-item "><i class="fas fa-layer-group"></i> المجموعات</a>
+        <a href="grades.html" class="sidebar-item "><i class="fas fa-file-pen"></i> الاختبارات</a>
+
+        <div class="sidebar-section-label">💰 المالية</div>
+        <a href="payments.html" class="sidebar-item "><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
+        <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
+
+        <div class="sidebar-section-label">📊 التقارير</div>
+        <a href="reports.html" class="sidebar-item "><i class="fas fa-chart-simple"></i> التقارير</a>
+
+        <div class="sidebar-section-label">⚙️ الإعدادات</div>
+        <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
+        <a href="staff.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
+        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar" id="userAvatar">م</div>
+          <div class="u-info">
+            <div class="u-name" id="userDisplayName">مرحباً، مدرس</div>
+            <div class="u-role" id="teacherBadge">حساب مدرس</div>
+            <span class="permission-badge" id="permissionBadge" style="display:none;font-size:10px;margin-top:4px;"></span>
+          </div>
+        </div>
+        <button class="sidebar-item" id="navResetSystem" onclick="openResetConfirm()" style="color:#FCA5A5;display:none;">
+          <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
+        </button>
+        <div class="sidebar-footer-actions">
+          <div class="notif-wrap" id="notifWrap" style="display:none;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+              <i class="fas fa-bell"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-panel-header">
+                <span>الإشعارات</span>
+                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
+          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
+          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <div class="topbar">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h2>لوحة المتابعة</h2>
+      </div>
+
+      <!-- ✅ (طلب) لافتة إعلانية خاصة بلوحة المدرس، يتحكم فيها الماستر من إعدادات النظام -->
+      <a id="portalAdBanner" href="#" target="_blank" rel="noopener" style="display:none;width:100%;overflow:hidden;">
+        <img id="portalAdBannerImg" style="width:100%;height:auto;max-height:320px;object-fit:contain;display:block;">
+      </a>
+
+  <div class="container">
+    <!-- License Banner -->
+    <div class="license-banner" id="licenseBanner" style="display:none;">
+      <div class="license-status">
+        <div class="license-icon" id="licenseIcon">✅</div>
+        <div class="license-info">
+          <div class="title" id="licenseTitle">الترخيص ساري</div>
+          <div class="details" id="licenseDetails">صلاحية غير محدودة</div>
+        </div>
+        <span class="status-badge status-active" id="licenseBadge">✅ مفعل</span>
+      </div>
+      <div style="font-size:14px;color:var(--gray-600);">
+        👨‍🎓 <strong id="studentCountDisplay">0</strong> / <span id="maxStudentsDisplay">0</span> طالب
+      </div>
+    </div>
+
+    <div class="page-header">
+      <div><h2>📊 لوحة المتابعة</h2></div>
+      <span id="roleIndicator" style="font-size:13px;color:var(--gray-500);"><i class="fas fa-user-tag"></i> دور: <strong id="userRoleDisplay">مدرس</strong></span>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-card-icon badge-info"><i class="fas fa-user-graduate"></i></div>
+        </div>
+        <div class="stat-value primary" id="statTotal">0</div>
+        <div class="stat-label">إجمالي الطلاب</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-card-icon badge-success"><i class="fas fa-calendar-check"></i></div>
+        </div>
+        <div class="stat-value success" id="statToday">0</div>
+        <div class="stat-label">حضور اليوم</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-card-icon badge-warning"><i class="fas fa-layer-group"></i></div>
+        </div>
+        <div class="stat-value warning" id="statGroups">0</div>
+        <div class="stat-label">عدد المجموعات</div>
+      </div>
+      <!-- ✅ Aug 2026 (Phase I follow-up 3): كارتين إضافيين لحسابات السنتر بس — جوه نفس صف الإحصائيات
+           الأصلي بدل صف منفصل مكرر (كان بيكرر "إجمالي الطلاب"/"عدد المجموعات" اللي أصلاً موجودين هنا) -->
+      <div class="stat-card center-only-stat" id="statInstructorsCard" style="display:none;">
+        <div class="stat-card-top">
+          <div class="stat-card-icon" style="background:#EEE9FB;color:#6b46c1;"><i class="fas fa-chalkboard-user"></i></div>
+        </div>
+        <div class="stat-value" style="color:#6b46c1;" id="statInstructors">0</div>
+        <div class="stat-label">عدد المدرسين</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions" id="quickActions">
+      <div class="quick-card" onclick="openAddStudentModal()" id="cardAddStudent">
+        <div class="card-icon green"><i class="fas fa-user-plus"></i></div>
+        <div class="card-title">➕ تسجيل طالب</div>
+        <div class="card-desc">إضافة طالب جديد (مع قراءة الكارت)</div>
+      </div>
+      <div class="quick-card" onclick="openAttendanceModal()" id="cardAttendance">
+        <div class="card-icon info"><i class="fas fa-fingerprint"></i></div>
+        <div class="card-title">✅ حضور يدوي</div>
+        <div class="card-desc">تسجيل حضور لطالب نسي الكارت</div>
+      </div>
+      <div class="quick-card" onclick="openCardModeModal()" id="cardModeCard">
+        <div class="card-icon" style="background:#FDF1CC;color:#8A6300;"><i class="fas fa-id-card"></i></div>
+        <div class="card-title">🪪 وضع الكارت</div>
+        <div class="card-desc" id="cardModeDesc">جاري التحميل...</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-box">
+        <h4>📊 الحضور الأسبوعي</h4>
+        <canvas id="attendanceChart" height="150"></canvas>
+      </div>
+      <div class="chart-box">
+        <h4>🎯 توزيع الطلاب</h4>
+        <canvas id="groupsChart" height="150"></canvas>
+      </div>
+    </div>
+
+    <!-- Grade Stats -->
+    <div class="section-title">
+      <span>📊 متوسط المستوي الدراسي</span>
+      <span><i class="fas fa-sync-alt fa-fw"></i> يتم التحديث تلقائياً</span>
+    </div>
+
+    <div class="stats-grade-container">
+      <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <!-- ✅ Aug 2026 (Phase I follow-up 3): فلتر إضافي حسب المدرس (سنتر بس) — بيضيّق فلتر المجموعة
+               اللي تحته، عشان تقدر تشوف رسومات الدرجات لمدرس معيّن بسرعة -->
+          <label for="chartsInstructorFilter" id="chartsInstructorFilterLabel" style="display:none;font-weight: 600; color: var(--gray-700); font-size: 14px;">
+            <i class="fas fa-chalkboard-user"></i> حسب المدرس:
+          </label>
+          <select id="chartsInstructorFilter" onchange="onChartsInstructorFilterChange()" style="display:none;padding: 8px 16px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; background: white; color: var(--gray-800); font-family: inherit; min-width: 160px;">
+            <option value="">-- كل المدرسين --</option>
+          </select>
+          <label for="gradeFilterGroup" style="font-weight: 600; color: var(--gray-700); font-size: 14px;">
+            <i class="fas fa-filter"></i> تصفية حسب المجموعة:
+          </label>
+          <select id="gradeFilterGroup" onchange="loadGradeStats()" style="padding: 8px 16px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; background: white; color: var(--gray-800); font-family: inherit; min-width: 180px;">
+            <option value="ALL">📚 جميع المجموعات</option>
+          </select>
+          <span id="studentsCountLabel" style="font-size: 13px; color: var(--gray-500); background: var(--gray-100); padding: 2px 14px; border-radius: 20px;">0 طالب</span>
+        </div>
+      </div>
+
+      <!-- ✅ (طلب) متوسط مستوى المجموعات + مخطط النمو عبر الوقت جنب بعض كمخططين متوازيين،
+           بنفس أسلوب "الحضور الأسبوعي" و"توزيع الطلاب" فوق -->
+      <div class="charts-row charts-row-grades">
+        <div class="grade-chart-wrapper" id="groupsChartWrapper">
+          <div class="chart-header">
+            <h5><i class="fas fa-layer-group" style="color: var(--primary);"></i> متوسط المجموعات</h5>
+            <span class="chart-badge" id="groupsChartBadge">جميع المجموعات</span>
+          </div>
+          <canvas id="gradeGroupsChart"></canvas>
+        </div>
+
+        <div class="grade-chart-wrapper" id="growthTrendWrapper">
+          <div class="chart-header">
+            <h5><i class="fas fa-chart-line" style="color: var(--success);"></i> مخطط نمو المستوى عبر الوقت</h5>
+            <span class="chart-badge" id="growthTrendBadge">حسب ترتيب الامتحانات زمنياً</span>
+          </div>
+          <canvas id="growthTrendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="grade-chart-wrapper" id="studentsChartWrapper" style="display: none;">
+        <div class="chart-header">
+          <h5><i class="fas fa-trophy" style="color: var(--warning);"></i> ترتيب الطلاب حسب المتوسط</h5>
+          <span class="chart-badge" id="studentsChartBadge">اختر مجموعة</span>
+        </div>
+        <canvas id="studentRankChart"></canvas>
+      </div>
+    </div>
+
+    <!-- ✅ Aug 2026 (Phase I follow-up 3): تنبيه لو فيه مجموعات من غير مدرس محدد — أول حاجة تحتاج قرار،
+         فتفضل في الأعلى دايماً — عشان القارئ يرفض يشتغل على المجموعة دي لحد ما تتظبط -->
+    <div class="card" id="ungroupedInstructorAlert" style="display:none;border:1px solid var(--warning);margin-bottom:20px;">
+      <div class="card-body" style="display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-triangle-exclamation" style="color:var(--warning);font-size:20px;"></i>
+        <span id="ungroupedInstructorAlertText" style="font-size:13.5px;"></span>
+      </div>
+    </div>
+
+    <!-- ✅ حصص اليوم — قابلة للطي، مقفولة افتراضياً عشان متطولش الصفحة -->
+    <details class="card" id="todaySessionsCard" style="display:none;padding:0;">
+      <summary class="card-header" style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="margin:0;"><i class="fas fa-calendar-day" style="color:var(--info);"></i> حصص اليوم</h3>
+        <span style="font-size:12px;color:var(--gray-500);">مرتبة بالوقت — اضغط للعرض</span>
+      </summary>
+      <div class="card-body" id="todaySessionsBody">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin" style="font-size:20px;"></i></div>
+      </div>
+    </details>
+
+    <!-- ✅ Aug 2026 (Phase I follow-up 3): بدل الجدول الكامل (7 أعمدة لكل المدرسين)، ملخص قصير بس
+         بالمدرسين اللي محتاجين انتباه (أقل نسبة تحصيل أو حضور أو درجات) — التفاصيل الكاملة انتقلت
+         بالكامل لصفحة "إدارة فريق العمل" (staff.html) اللي أصلاً فيها جدول المدرسين -->
+    <div class="card" id="centerOverviewCard" style="display:none;">
+      <div class="card-header">
+        <h3><i class="fas fa-people-roof" style="color:var(--primary);"></i> مدرسين محتاجين انتباه</h3>
+      </div>
+      <div class="card-body" id="centerOverviewBody">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin" style="font-size:20px;"></i></div>
+      </div>
+    </div>
+
+    <!-- ✅ إنذار مبكر للتسرّب — بيحلل نمط الحضور والسداد ويكتشف الطلاب المعرّضين للانسحاب -->
+    <div class="card" id="atRiskCard" style="display:none;">
+      <div class="card-header">
+        <h3><i class="fas fa-triangle-exclamation" style="color:var(--danger);"></i> طلاب محتاجين متابعة</h3>
+        <span style="font-size:12px;color:var(--gray-500);">بناءً على نمط الحضور والسداد الأخير</span>
+      </div>
+      <div class="card-body" id="atRiskContainer"></div>
+    </div>
+
+    <!-- Today's Attendance -->
+    <details class="card" id="attendanceCard" open>
+      <summary class="card-header" style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="margin:0;"><i class="fas fa-calendar-check" style="color:var(--success);"></i> سجل الحضور اليوم</h3>
+        <span style="font-size:12px;color:var(--gray-400);"><i class="fas fa-sync"></i> يتم التحديث تلقائياً</span>
+      </summary>
+      <div class="card-body" style="padding:0;">
+        <div style="padding:12px 16px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <label for="attendanceSessionFilter" style="font-size:13px;color:var(--gray-500);">🔎 عرض حصة معينة:</label>
+          <select id="attendanceSessionFilter" onchange="filterTodayAttendanceBySession()" style="max-width:280px;">
+            <option value="ALL">كل الحصص</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>الطالب</th>
+                <th>المجموعة</th>
+                <th>الحصة</th>
+                <th>الوقت</th>
+                <th>الحالة</th>
+                <th>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceBody">
+              <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">
+                <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                جاري تحميل سجلات الحضور...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+
+    <!-- Activities -->
+    <details class="card activities-box" id="activitiesCard">
+      <summary class="card-header" style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+        <h4 style="margin:0;">🔄 آخر النشاطات (آخر ساعة)</h4>
+      </summary>
+      <div id="activitiesContainer">
+        <div class="empty-state">
+          <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
+          <h4>جاري التحميل...</h4>
+        </div>
+      </div>
+    </details>
+
+  </div>
+
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="cardModeModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🪪 وضع الكارت</h3>
+        <button class="modal-close" onclick="closeCardModeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
+          حدد إيه اللي هيحصل لما أي طالب يمرّغ كارته على البورد.
+        </p>
+
+        <div class="field" style="padding:12px;background:var(--gray-50);border-radius:10px;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+            <span style="font-weight:600;">⚡ تشغيل جهاز القارئ</span>
+            <input type="checkbox" id="cardReaderEnabledCb" onchange="onReaderEnabledChange()" style="width:20px;height:20px;">
+          </label>
+          <p style="font-size:12px;color:var(--gray-500);margin-top:6px;">
+            القارئ متوقف افتراضياً. لازم تفعّله هنا الأول قبل ما أي كارت يقدر يسجّل حضور أو أي عملية.
+          </p>
+        </div>
+
+        <div id="cardModeSettingsBody" style="display:none;">
+        <div class="field" id="cardModeCenterContext" style="padding:12px;background:var(--gray-50);border-radius:10px;margin-bottom:14px;">
+          <label style="font-weight:600;">🧑‍🏫 سياق الحصة (مجموعة + حصة النهاردة)</label>
+          <p style="font-size:12px;color:var(--gray-500);margin:4px 0 10px;">
+            لازم تحدد المجموعة والحصة اللي القارئ هيسجّل حضورهم دلوقتي — الحصص اللي بتظهر هنا هي بس اللي اتنشأت النهاردة.
+          </p>
+          <label id="cardModeInstructorLabel" style="margin-top:8px;display:none;">المدرس</label>
+          <select id="cardModeInstructorSelect" onchange="onCardModeInstructorChange()" style="display:none;">
+            <option value="">-- اختر المدرس --</option>
+          </select>
+          <label style="margin-top:8px;">المجموعة</label>
+          <select id="cardModeGroupSelect" onchange="onCardModeGroupChange()" disabled>
+            <option value="">-- اختر المدرس الأول --</option>
+          </select>
+          <label style="margin-top:8px;">الحصة</label>
+          <select id="cardModeSessionSelect" onchange="onCardModeSessionChange()" disabled>
+            <option value="">-- اختر المجموعة الأول --</option>
+          </select>
+          <div id="cardModeNewSessionBox" style="display:none;margin-top:8px;">
+            <label>اسم الحصة</label>
+            <input type="text" id="cardModeNewSessionLabel" placeholder="مثال: حصة 1، حصة مراجعة">
+            <label style="margin-top:6px;">مدة الحصة (بالدقايق) — اختياري</label>
+            <input type="number" id="cardModeNewSessionDuration" placeholder="مثال: 60">
+            <label style="margin-top:6px;">مدة احتساب الغياب (بالدقايق)</label>
+            <input type="number" id="cardModeNewSessionThreshold" placeholder="افتراضي 30" value="30">
+          </div>
+        </div>
+        <div class="field">
+          <label>المدة اللي هيفضل شغال بيها الوضع المحدد (بالدقايق)</label>
+          <input type="number" id="cardModeDurationInput" placeholder="مثال: 30" value="30">
+          <p style="font-size:12px;color:var(--gray-500);margin-top:4px;">بعد المدة دي، الوضع بيرجع تلقائياً لـ"حضور بس" (لو كان فيه دفع أو سداد مذكرة مفعّل).</p>
+        </div>
+        <div class="field">
+          <label>الأوضاع المفعّلة (تقدر تختار أكتر من وضع مع بعض)</label>
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;">
+            <input type="checkbox" id="cardModeAttendance" checked disabled> ✅ تسجيل الحضور (مفعّل دايماً)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;">
+            <input type="checkbox" id="cardModePaymentCb" onchange="onCardModeTypeChange()"> 💰 دفع اشتراك
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;">
+            <input type="checkbox" id="cardModeBookCb" onchange="onCardModeTypeChange()"> 📖 سداد مذكرة
+          </label>
+        </div>
+        <div class="field" id="cardModePaymentField" style="display:none;">
+          <label>بند السداد</label>
+          <select id="cardModePaymentTitle" onchange="onCardModePaymentTitleChange()">
+            <option value="">-- اختر البند --</option>
+            <option value="__new__">➕ إضافة بند جديد...</option>
+          </select>
+          <div id="cardModeNewPaymentTitleBox" style="display:none;margin-top:8px;">
+            <input type="text" id="cardModeNewPaymentTitleName" placeholder="اسم البند الجديد">
+            <input type="number" id="cardModeNewPaymentTitlePrice" placeholder="السعر الافتراضي" style="margin-top:6px;">
+            <button class="btn btn-outline btn-sm" style="margin-top:6px;width:100%;justify-content:center;" onclick="createCardModePaymentTitle()">➕ إنشاء البند دلوقتي</button>
+          </div>
+          <label style="margin-top:8px;">المبلغ اللي هيتسجّل مدفوع دلوقتي (سعر البند الكامل ثابت زي ما هو، ولو حطيت أقل هيتسجّل دفعة جزئية)</label>
+          <input type="number" id="cardModePaymentAmount" placeholder="المبلغ">
+        </div>
+        <div class="field" id="cardModeBookField" style="display:none;">
+          <label>المذكرة</label>
+          <select id="cardModeBookSelect" onchange="fillCardModeBookAmount()">
+            <option value="">-- اختر المذكرة --</option>
+          </select>
+          <label style="margin-top:8px;">المبلغ اللي هيتسجّل مدفوع دلوقتي (سعر المذكرة الأصلي ثابت زي ما هو، ولو حطيت أقل هيتسجّل دفعة جزئية)</label>
+          <input type="number" id="cardModeBookAmount" placeholder="المبلغ">
+        </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px;" onclick="saveCardMode()">حفظ الوضع</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="addStudentModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fas fa-user-plus" style="color:var(--success);"></i> تسجيل طالب جديد</h3>
+        <button class="modal-close" onclick="closeAddStudentModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-toast-container" id="modalToastContainer"></div>
+        <div class="modal-status-bar" id="modalStatusBar">
+          <span class="status-dot idle" id="modalStatusDot"></span>
+          <span class="status-text" id="modalStatusText">⏸ في انتظار التفعيل</span>
+        </div>
+        <div class="form-grid">
+          <!-- ✅ (طلب) لحسابات السنتر: نفس منطق تسجيل الطالب في صفحة الطلاب — المدرس الأول، وبعدين مجموعاته بس -->
+          <div class="form-group full" id="modalAddStudentInstructorField" style="display:none;">
+            <label>👤 المدرس <span class="required">*</span></label>
+            <select id="modalAddStudentInstructor" onchange="onModalAddStudentInstructorChange()">
+              <option value="">-- اختر المدرس --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>المجموعة <span class="required">*</span></label>
+            <select id="modalAddGroup"><option value="">-- اختر المجموعة --</option></select>
+          </div>
+          <div class="form-group">
+            <label>UID (رقم الكارت) <span class="required">*</span></label>
+            <div class="uid-input-wrapper">
+              <input type="text" id="modalAddUid" placeholder="اضغط تفعيل القراءة ثم امسح الكارت..." dir="ltr" autofocus>
+              <button class="btn-read" id="modalToggleReadBtn" onclick="toggleModalReading()">
+                <i class="fas fa-fingerprint"></i> <span id="modalReadBtnText">تفعيل القراءة</span>
+              </button>
+            </div>
+            <span class="hint" id="modalReadHint">💡 اضغط "تفعيل القراءة" ثم امسح الكارت على القارئ</span>
+          </div>
+          <div class="form-group full">
+            <label>اسم الطالب <span class="required">*</span></label>
+            <input type="text" id="modalAddName" placeholder="أدخل اسم الطالب بالكامل">
+          </div>
+          <div class="form-group">
+            <label>هاتف الطالب</label>
+            <input type="tel" id="modalAddPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr">
+          </div>
+          <div class="form-group">
+            <label>هاتف ولي الأمر <span class="required">*</span></label>
+            <input type="tel" id="modalAddParentPhone" placeholder="01xxxxxxxxx" maxlength="11" dir="ltr">
+            <span class="hint">📱 سيتم ربط ولي الأمر بهذا الرقم</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAddStudentModal()">إلغاء</button>
+        <button class="btn btn-success" onclick="submitModalStudent()">
+          <i class="fas fa-save"></i> تسجيل الطالب
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="attendanceModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fas fa-fingerprint" style="color:var(--info);"></i> تسجيل حضور يدوي</h3>
+        <button class="modal-close" onclick="closeAttendanceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-toast-container" id="attendanceModalToastContainer"></div>
+        <div class="form-grid">
+          <!-- ✅ (طلب) لحسابات السنتر: المدرس الأول، بعدين مجموعاته بس، بعدين حصص المجموعة دي — بالترتيب وإجباري -->
+          <div class="form-group full" id="attendanceInstructorField" style="display:none;">
+            <label>👤 المدرس <span class="required">*</span></label>
+            <select id="attendanceInstructorName" onchange="onAttendanceInstructorChange()">
+              <option value="">-- اختر المدرس --</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>المجموعة <span class="required">*</span></label>
+            <select id="attendanceGroup" onchange="onAttendanceGroupChange()">
+              <option value="">-- اختر المجموعة --</option>
+            </select>
+          </div>
+          <div class="form-group full" id="attendanceSessionField" style="display:none;">
+            <label>الحصة (النهاردة) <span class="required">*</span></label>
+            <select id="attendanceSession" onchange="onAttendanceSessionChange()">
+              <option value="">-- اختر الحصة --</option>
+            </select>
+            <div id="attendanceNewSessionBox" style="display:none;margin-top:8px;">
+              <input type="text" id="attendanceNewSessionLabel" placeholder="اسم الحصة الجديدة (مثال: حصة 1)">
+              <!-- ✅ Batch 23 (بند 10): مدة الحصة الفعلية — بتستخدم لتحديد هل الحصة "شغالة دلوقتي"
+                   في ودجت "حصص اليوم"، بدل الاعتماد على مدة احتساب الغياب بس (غرضها مختلف).
+                   اختيارية — لو سيبتها فاضية، بيترجع للاعتماد على مدة احتساب الغياب زي ما كان -->
+              <input type="number" id="attendanceNewSessionDuration" placeholder="مدة الحصة بالدقايق (اختياري، مثال: 60)" style="margin-top:6px;">
+              <input type="number" id="attendanceNewSessionThreshold" placeholder="مدة احتساب الغياب بالدقايق (افتراضي 30)" value="30" style="margin-top:6px;">
+            </div>
+          </div>
+          <div class="form-group full field-with-suggestions">
+            <label>البحث عن طالب <span class="required">*</span></label>
+            <input type="text" id="attendanceStudentSearch" placeholder="اكتب اسم الطالب أو UID..." autocomplete="off" oninput="filterAttendanceStudents()">
+            <input type="hidden" id="attendanceSelectedUid">
+            <input type="hidden" id="attendanceSelectedName">
+            <div id="attendanceSuggestions" class="suggestions-box"></div>
+            <span class="hint">💡 ابدأ بكتابة اسم الطالب أو UID للبحث</span>
+          </div>
+          <div class="form-group full">
+            <label>ملاحظات (اختياري)</label>
+            <input type="text" id="attendanceNotes" placeholder="سبب الحضور اليدوي (مثل: نسي الكارت)">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAttendanceModal()">إلغاء</button>
+        <button class="btn btn-primary" onclick="submitAttendance()">
+          <i class="fas fa-check"></i> تسجيل الحضور
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            // ============================================
+    // CONFIG
+    // ============================================
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
+
+  // ⏱️ حماية زمنية عامة: أي طلب لدوال النظام مفروض ياخد رد خلال 15 ثانية، وإلا يتلغى تلقائياً
+  // (بدل ما البرنامج يستنى دقيقة أو أكتر لو الاتصال اتعلّق فجأة)
+  (function() {
+    if (window.__fetchTimeoutInstalled) return;
+    window.__fetchTimeoutInstalled = true;
+    const _origFetch = window.fetch;
+    window.fetch = function(...args) {
+      const urlStr = String(args[0] || '');
+      if (!urlStr.includes('/functions/v1/')) return _origFetch.apply(this, args);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const opts = args[1] ? { ...args[1], signal: controller.signal } : { signal: controller.signal };
+      return _origFetch(args[0], opts).finally(() => clearTimeout(timeoutId));
+    };
+  })();
+
+  // 🔒 اعتراض تلقائي: أي استجابة "402 ترخيص منتهي/معطّل" من أي دالة، نحوّل المستخدم فوراً لصفحة القفل
+  (function() {
+    if (window.__licenseInterceptorInstalled) return;
+    window.__licenseInterceptorInstalled = true;
+    const _origFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const res = await _origFetch.apply(this, args);
+      try {
+        const urlStr = String(args[0]);
+        if (res.status === 402 && urlStr.includes('/functions/v1/')) {
+          const clone = res.clone();
+          const data = await clone.json();
+          if (data && data.code === 'LICENSE_EXPIRED') {
+            // ✅ بنحط الرسالة الحقيقية + اسم الدالة اللي رجّعت الخطأ في sessionStorage
+            // (مش URL parameter) عشان صفحة القفل تقدر تقراها وتعرضها صح للتشخيص
+            sessionStorage.setItem('lockReason', data.message || 'انتهت صلاحية الترخيص');
+            sessionStorage.setItem('lockSourceFunction', urlStr);
+            window.location.href = 'license-locked.html';
+          }
+        }
+      } catch (e) { /* تجاهل */ }
+      return res;
+    };
+  })();
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    // ============================================
+    // TOKEN HELPERS
+    // ============================================
+    function getToken() {
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const exp = payload.exp;
+          if (exp) {
+            const now = Math.floor(Date.now() / 1000);
+            if (exp < now) {
+              return token;
+            }
+          }
+        }
+      } catch (e) {
+      }
+      return token;
+    }
+
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      };
+    }
+
+    function isTokenValid() {
+      const token = getToken();
+      if (!token) return false;
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1]));
+        const exp = payload.exp;
+        if (exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (exp < now) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // ============================================
+    // HANDLE UNAUTHORIZED
+    // ============================================
+    let isLoggingOut = false;
+
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      if (isTokenValid()) {
+        showToast('⛔ ليس لديك صلاحية للوصول إلى هذه البيانات.', 'error');
+        return;
+      }
+
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+
+      showToast('⛔ ' + message + '، يرجى تسجيل الدخول مرة أخرى', 'error');
+
+      setTimeout(() => {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem('clientId');
+        sessionStorage.removeItem('teacherClientId');
+        sessionStorage.removeItem('userRole');
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    // ============================================
+    // SESSION
+    // ============================================
+    const clientId = sessionStorage.getItem('clientId') || sessionStorage.getItem('teacherClientId');
+    const userRole = sessionStorage.getItem('userRole') || 'teacher';
+    const teacherName = sessionStorage.getItem('teacherName') || 'مدرس';
+    const assistantName = sessionStorage.getItem('assistantName') || null;
+    const assistantId = sessionStorage.getItem('assistantId') || null;
+
+    if (!clientId) {
+      sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
+      window.location.href = LOGIN_URL;
+    }
+
+    const isAssistant = userRole === 'assistant';
+    document.getElementById('userRoleDisplay').textContent = isAssistant ? 'مساعد' : 'مدرس';
+
+    // ============================================
+    // DISPLAY USER
+    // ============================================
+    const displayName = isAssistant && assistantName ? assistantName : teacherName;
+    document.getElementById('userDisplayName').textContent = 'مرحباً، ' + displayName;
+    document.getElementById('userAvatar').textContent = displayName.charAt(0);
+
+    if (!isAssistant) {
+      document.getElementById('navManageAssistants').style.display = 'flex';
+      document.getElementById('navActivityLog') && (document.getElementById('navActivityLog').style.display = 'flex');
+      document.getElementById('navSettings').style.display = 'flex';
+      document.getElementById('navResetSystem').style.display = 'flex';
+      document.getElementById('navFinancial').style.display = 'flex';
+    }
+
+    // ✅ جرس الإشعارات — للمدرس والمساعد الاتنين (Aug 2026)
+    {
+      const notifWrap = document.getElementById('notifWrap');
+      if (notifWrap) {
+        notifWrap.style.display = 'block';
+        loadNotifications();
+        // ✅ (طلب) تقصير فترة تحديث الإشعارات عشان تكون أقرب للحظية
+        setInterval(loadNotifications, 10000);
+      }
+    }
+
+    // ============================================
+    // TOAST SYSTEM
+    // ============================================
+    function showToast(message, type = 'info', target = 'screen') {
+      let container;
+      if (target === 'modal') {
+        container = document.getElementById('modalToastContainer');
+      } else if (target === 'attendance') {
+        container = document.getElementById('attendanceModalToastContainer');
+      } else {
+        container = document.getElementById('toastContainer');
+      }
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'modal-toast ' + type;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    function showModalToast(message, type = 'info') {
+      showToast(message, type, 'modal');
+    }
+
+    function showAttendanceToast(message, type = 'info') {
+      showToast(message, type, 'attendance');
+    }
+
+    // ============================================
+    // CHARTS
+    // ============================================
+    let attendanceChart = null;
+    let groupsChart = null;
+    let gradeGroupsChartInstance = null;
+    let studentRankChartInstance = null;
+    let growthTrendChartInstance = null;
+
+    function updateAttendanceChart(data) {
+      const labels = data.map(d => new Date(d.date).toLocaleDateString('ar-EG', { weekday: 'short' }));
+      const values = data.map(d => d.count);
+      if (attendanceChart) {
+        // ✅ نحدّث بيانات الرسم الموجود بدل ما نهدمه ونبنيه من الصفر — أخف وأسرع بكتير
+        attendanceChart.data.labels = labels;
+        attendanceChart.data.datasets[0].data = values;
+        attendanceChart.update();
+        return;
+      }
+      const ctx = document.getElementById('attendanceChart').getContext('2d');
+      attendanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'عدد الحضور', data: values, backgroundColor: '#4f46e5', borderRadius: 6, borderSkipped: false }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+      });
+    }
+
+    function updateGroupsChart(labels, data) {
+      const finalLabels = labels.length ? labels : ['لا توجد مجموعات'];
+      const finalData = data.length ? data : [1];
+      const colors = ['#4f46e5', '#22c55e', '#f59e0b', '#ef4444', '#9f7aea', '#ec4899'];
+      if (groupsChart) {
+        groupsChart.data.labels = finalLabels;
+        groupsChart.data.datasets[0].data = finalData;
+        groupsChart.data.datasets[0].backgroundColor = colors.slice(0, finalData.length || 1);
+        groupsChart.update();
+        return;
+      }
+      const ctx = document.getElementById('groupsChart').getContext('2d');
+      groupsChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: finalLabels,
+          datasets: [{ data: finalData, backgroundColor: colors.slice(0, finalData.length || 1), borderWidth: 0 }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } } }, cutout: '60%' }
+      });
+    }
+
+    // ============================================
+    // ACTIVITIES
+    // ============================================
+    function renderActivities(activities) {
+      const container = document.getElementById('activitiesContainer');
+      if (!activities || !activities.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-clock" style="font-size:40px;opacity:0.5;"></i><h4>لا توجد نشاطات في آخر ساعة</h4></div>';
+        return;
+      }
+      let html = '<div class="activity-feed">';
+      activities.forEach(log => {
+        const date = new Date(log.created_at);
+        const dateStr = date.toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit' });
+        const f = formatActivity(log);
+        const detailsHtml = f.detailParts.length ? f.detailParts.map(p => `<span>${p}</span>`).join('') : '<span>—</span>';
+        const changesHtml = f.changesText ? `<div class="ac-changes"><i class="fas fa-clock-rotate-left"></i> ${f.changesText}</div>` : '';
+        html += `
+          <div class="activity-card">
+            <div class="ac-top">
+              <span class="badge ${f.badgeClass}">${f.label}</span>
+              <span class="ac-performer">${f.performerText}</span>
+              <span class="ac-date">${dateStr}</span>
+            </div>
+            <div class="ac-details">${detailsHtml}</div>
+            ${changesHtml}
+          </div>`;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // ============================================
+    // LOAD GRADE STATS
+    // ============================================
+    // ✅ مخطط نمو المستوى عبر الوقت — بيجمّع متوسط نسبة كل امتحان بترتيب زمني، عشان يوضّح هل المستوى
+    // بيرتفع ولا بينخفض مع الوقت. لو المجموعة المختارة "الكل"، بنرسم خط منفصل لكل مجموعة بلون مختلف
+    // (طلب) بدل خط إجمالي واحد بيخلط كل المجموعات مع بعض — عشان تقدر تقارن مستوى كل مجموعة لوحدها
+    const GROWTH_LINE_COLORS = ['#4f46e5', '#22c55e', '#f59e0b', '#ef4444', '#9f7aea', '#ec4899', '#0ea5e9', '#84cc16', '#f97316', '#14b8a6'];
+
+    // ✅ يقرأ اللون الأساسي المخصص (--primary) وقت التشغيل، عشان الرسوم البيانية تتلوّن بلون المدرس
+    // المخصص بدل ما تفضل عالقة على اللون الافتراضي دايماً
+    function getBrandPrimaryColor() {
+      try {
+        const v = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+        return v || '#F2B705';
+      } catch (e) { return '#F2B705'; }
+    }
+    function hexToRgba(hex, alpha) {
+      try {
+        let h = hex.replace('#', '');
+        if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        const r = parseInt(h.substring(0, 2), 16);
+        const g = parseInt(h.substring(2, 4), 16);
+        const b = parseInt(h.substring(4, 6), 16);
+        return `rgba(${r},${g},${b},${alpha})`;
+      } catch (e) { return `rgba(242,183,5,${alpha})`; }
+    }
+
+    function buildExamSeries(grades) {
+      // نجمع الدرجات حسب اسم الامتحان، ونحسب متوسط النسبة لكل امتحان + أقدم تاريخ ظهر بيه
+      const examMap = {};
+      grades.forEach(g => {
+        const name = g.exam_name;
+        if (!name) return;
+        const score = parseFloat(g.score) || 0;
+        const maxScore = parseFloat(g.max_score) || 1;
+        const percent = maxScore > 0 ? (score / maxScore) * 100 : 0;
+        if (!examMap[name]) examMap[name] = { totalPercent: 0, count: 0, earliestDate: g.created_at };
+        examMap[name].totalPercent += percent;
+        examMap[name].count += 1;
+        if (g.created_at && (!examMap[name].earliestDate || g.created_at < examMap[name].earliestDate)) {
+          examMap[name].earliestDate = g.created_at;
+        }
+      });
+      return Object.entries(examMap)
+        .map(([name, v]) => ({ name, avg: Math.round(v.totalPercent / v.count), date: v.earliestDate }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    function renderGrowthTrendChart(grades, filterGroup) {
+      const canvas = document.getElementById('growthTrendChart');
+      if (!canvas) return;
+
+      if (growthTrendChartInstance) { growthTrendChartInstance.destroy(); growthTrendChartInstance = null; }
+      const ctx = canvas.getContext('2d');
+
+      if (grades.length === 0) {
+        growthTrendChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: { labels: ['لا توجد امتحانات'], datasets: [{ label: 'المتوسط', data: [0], borderColor: '#94a3b8' }] },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+        return;
+      }
+
+      // ✅ (طلب) "كل المجموعات" مختارة: خط منفصل بلون مختلف لكل مجموعة بدل خط إجمالي واحد يخلط بينهم
+      if (!filterGroup || filterGroup === 'ALL') {
+        const groupNames = [...new Set(grades.map(g => g.group_name || 'بدون مجموعة'))];
+        // ✅ محور الوقت (أسماء الامتحانات) بيتبني من كل البيانات مجمّعة، عشان كل الخطوط تتقارن على نفس المحور
+        const allExamsSorted = buildExamSeries(grades);
+        const examOrder = allExamsSorted.map(e => e.name);
+
+        if (groupNames.length <= 1) {
+          // مجموعة واحدة بس أو مفيش تصنيف — نفس السلوك القديم (خط إجمالي واحد)
+          growthTrendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: examOrder,
+              datasets: [{
+                label: 'متوسط المستوى (%)',
+                data: allExamsSorted.map(e => e.avg),
+                borderColor: getBrandPrimaryColor(), backgroundColor: hexToRgba(getBrandPrimaryColor(), 0.15),
+                fill: true, tension: 0.3, pointBackgroundColor: getBrandPrimaryColor(), pointRadius: 5,
+              }]
+            },
+            options: {
+              responsive: true, plugins: { legend: { display: false } },
+              scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+            }
+          });
+          return;
+        }
+
+        const datasets = groupNames.map((groupName, idx) => {
+          const groupSeries = buildExamSeries(grades.filter(g => (g.group_name || 'بدون مجموعة') === groupName));
+          const avgByExam = {};
+          groupSeries.forEach(e => { avgByExam[e.name] = e.avg; });
+          const color = GROWTH_LINE_COLORS[idx % GROWTH_LINE_COLORS.length];
+          return {
+            label: groupName,
+            data: examOrder.map(name => (name in avgByExam) ? avgByExam[name] : null),
+            borderColor: color, backgroundColor: color + '26',
+            fill: false, tension: 0.3, pointBackgroundColor: color, pointRadius: 4,
+            spanGaps: true,
+          };
+        });
+
+        growthTrendChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: { labels: examOrder, datasets },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+          }
+        });
+        return;
+      }
+
+      // مجموعة محددة (مش "الكل") — خط إجمالي واحد زي ما كان
+      const examsSorted = buildExamSeries(grades);
+      if (examsSorted.length === 0) {
+        growthTrendChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: { labels: ['لا توجد امتحانات'], datasets: [{ label: 'المتوسط', data: [0], borderColor: '#94a3b8' }] },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+        return;
+      }
+
+      growthTrendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: examsSorted.map(e => e.name),
+          datasets: [{
+            label: 'متوسط المستوى (%)',
+            data: examsSorted.map(e => e.avg),
+            borderColor: getBrandPrimaryColor(),
+            backgroundColor: hexToRgba(getBrandPrimaryColor(), 0.15),
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: getBrandPrimaryColor(),
+            pointRadius: 5,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+        }
+      });
+    }
+
+    async function loadGradeStats() {
+      const filterGroup = document.getElementById('gradeFilterGroup').value;
+      const groupsChartWrapper = document.getElementById('groupsChartWrapper');
+      const studentsChartWrapper = document.getElementById('studentsChartWrapper');
+      const groupsChartBadge = document.getElementById('groupsChartBadge');
+      const studentsChartBadge = document.getElementById('studentsChartBadge');
+
+      groupsChartWrapper.style.display = 'block';
+      studentsChartWrapper.style.display = 'none';
+
+      try {
+        if (!isTokenValid()) return;
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const studentsRes = await fetch(PROJECT_URL + '/functions/v1/get-students', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
+        });
+
+        if (studentsRes.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const studentsResult = await studentsRes.json();
+        let students = studentsResult.success ? studentsResult.data : [];
+
+        // ✅ (طلب) لو فيه فلتر مدرس شغال والمجموعة المختارة لسه "الكل"، نقصر الإحصائيات على مجموعات المدرس ده بس
+        const chartsInstructorFilterEl = document.getElementById('chartsInstructorFilter');
+        const activeInstructorFilter = chartsInstructorFilterEl ? chartsInstructorFilterEl.value : '';
+        if (filterGroup === 'ALL' && activeInstructorFilter) {
+          students = students.filter(s => chartsGroupInstructorMap[s.group_name || 'بدون مجموعة'] === activeInstructorFilter);
+        }
+
+        if (students.length === 0) {
+          if (gradeGroupsChartInstance) { gradeGroupsChartInstance.destroy(); gradeGroupsChartInstance = null; }
+          if (studentRankChartInstance) { studentRankChartInstance.destroy(); studentRankChartInstance = null; }
+          
+          const ctxGroups = document.getElementById('gradeGroupsChart').getContext('2d');
+          if (gradeGroupsChartInstance) gradeGroupsChartInstance.destroy();
+          gradeGroupsChartInstance = new Chart(ctxGroups, {
+            type: 'bar',
+            data: { labels: ['لا يوجد طلاب'], datasets: [{ label: 'المتوسط', data: [0], backgroundColor: ['#94a3b8'] }] },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
+          document.getElementById('studentsCountLabel').textContent = '0 طالب';
+          groupsChartBadge.textContent = 'لا توجد بيانات';
+          groupsChartWrapper.style.display = 'block';
+          studentsChartWrapper.style.display = 'none';
+          return;
+        }
+
+        const gradesRes = await fetch(PROJECT_URL + '/functions/v1/get-grades', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId, groupName: null })
+        });
+
+        if (gradesRes.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const gradesResult = await gradesRes.json();
+        let grades = gradesResult.success ? gradesResult.data : [];
+
+        // ✅ (طلب) لازم مخطط "نمو المستوى عبر الوقت" ياخد نفس تقييد المجموعة المختارة (أو فلتر المدرس)
+        // اللي بيتطبق على قايمة الطلاب students — من غير كده كان بيعرض درجات كل المجموعات حتى لو
+        // فيه مجموعة محددة مختارة في الفلتر. students هنا أصلاً مقيّدة بنفس شرط الفلتر (استعلام get-students
+        // فوق)، فتقييد الدرجات على uids الطلاب دول يغطي حالة "مجموعة محددة" وحالة "فلتر المدرس" مع بعض.
+        const allowedUids = new Set(students.map(s => s.uid));
+        grades = grades.filter(g => allowedUids.has(g.student_uid || g.uid));
+
+        renderGrowthTrendChart(grades, filterGroup);
+
+        const studentMap = {};
+        students.forEach(s => {
+          studentMap[s.uid] = {
+            name: s.name,
+            group: s.group_name || 'بدون مجموعة',
+            totalScore: 0,
+            totalMax: 0,
+            count: 0
+          };
+        });
+
+        grades.forEach(g => {
+          const uid = g.student_uid || g.uid;
+          if (studentMap[uid]) {
+            const score = parseFloat(g.score) || 0;
+            const maxScore = parseFloat(g.max_score) || 1;
+            studentMap[uid].totalScore += score;
+            studentMap[uid].totalMax += maxScore;
+            studentMap[uid].count += 1;
+          }
+        });
+
+        const studentAverages = [];
+        Object.keys(studentMap).forEach(uid => {
+          const s = studentMap[uid];
+          const avg = s.totalMax > 0 ? (s.totalScore / s.totalMax) * 100 : 0;
+          studentAverages.push({
+            uid: uid,
+            name: s.name,
+            group: s.group,
+            avg: Math.round(avg),
+            examCount: s.count
+          });
+        });
+
+        studentAverages.sort((a, b) => b.avg - a.avg);
+
+        const groupMap = {};
+        studentAverages.forEach(s => {
+          if (!groupMap[s.group]) groupMap[s.group] = { total: 0, count: 0 };
+          groupMap[s.group].total += s.avg;
+          groupMap[s.group].count += 1;
+        });
+
+        const groupAverages = Object.keys(groupMap).map(group => ({
+          group: group,
+          avg: Math.round(groupMap[group].total / groupMap[group].count),
+          count: groupMap[group].count
+        }));
+        groupAverages.sort((a, b) => b.avg - a.avg);
+
+        document.getElementById('studentsCountLabel').textContent = studentAverages.length + ' طالب';
+
+        if (filterGroup === 'ALL') {
+          groupsChartWrapper.style.display = 'block';
+          studentsChartWrapper.style.display = 'none';
+          groupsChartBadge.textContent = groupAverages.length + ' مجموعة';
+
+          const labels = groupAverages.map(g => g.group);
+          const data = groupAverages.map(g => g.avg);
+          const colors = data.map(v => v >= 80 ? '#22c55e' : (v >= 60 ? '#f59e0b' : '#ef4444'));
+          const finalLabels = labels.length ? labels : ['لا توجد مجموعات'];
+          const finalData = data.length ? data : [0];
+          const finalColors = colors.length ? colors : ['#94a3b8'];
+
+          // ✅ (طلب) تحديث بيانات الرسم الموجود بدل هدمه وبناءه من الصفر — بيلغي وميض التحديث الدوري
+          if (gradeGroupsChartInstance) {
+            gradeGroupsChartInstance.data.labels = finalLabels;
+            gradeGroupsChartInstance.data.datasets[0].data = finalData;
+            gradeGroupsChartInstance.data.datasets[0].backgroundColor = finalColors;
+            gradeGroupsChartInstance.update();
+          } else {
+            const ctxGroups = document.getElementById('gradeGroupsChart').getContext('2d');
+            gradeGroupsChartInstance = new Chart(ctxGroups, {
+              type: 'bar',
+              data: {
+                labels: finalLabels,
+                datasets: [{
+                  label: 'المتوسط %',
+                  data: finalData,
+                  backgroundColor: finalColors,
+                  borderRadius: 6,
+                  borderSkipped: false
+                }]
+              },
+              options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(value) { return value + '%'; } } } }
+              }
+            });
+          }
+        } else {
+          groupsChartWrapper.style.display = 'none';
+          studentsChartWrapper.style.display = 'block';
+          studentsChartBadge.textContent = 'مجموعة "' + filterGroup + '" - ' + studentAverages.length + ' طالب';
+
+          const labels = studentAverages.map(s => s.name);
+          const data = studentAverages.map(s => s.avg);
+          const colors = data.map(v => v >= 85 ? '#22c55e' : (v >= 70 ? '#3b82f6' : (v >= 50 ? '#f59e0b' : '#ef4444')));
+
+          // ✅ (طلب) نفس مبدأ التحديث في مكانه بدل الهدم والبناء
+          if (studentRankChartInstance) {
+            studentRankChartInstance.data.labels = labels;
+            studentRankChartInstance.data.datasets[0].data = data;
+            studentRankChartInstance.data.datasets[0].backgroundColor = colors;
+            studentRankChartInstance.update();
+          } else {
+            const ctxStudents = document.getElementById('studentRankChart').getContext('2d');
+            studentRankChartInstance = new Chart(ctxStudents, {
+              type: 'bar',
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: 'المتوسط %',
+                  data: data,
+                  backgroundColor: colors,
+                  borderRadius: 4,
+                  borderSkipped: false
+                }]
+              },
+              options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        return 'المتوسط: ' + context.parsed.x + '%';
+                      }
+                    }
+                  }
+                },
+                scales: { x: { beginAtZero: true, max: 100, ticks: { callback: function(value) { return value + '%'; } } } }
+              }
+            });
+          }
+        }
+
+      } catch (error) {
+        console.error('❌ خطأ في تحميل إحصائيات الدرجات:', error);
+        if (gradeGroupsChartInstance) { gradeGroupsChartInstance.destroy(); gradeGroupsChartInstance = null; }
+        if (studentRankChartInstance) { studentRankChartInstance.destroy(); studentRankChartInstance = null; }
+      }
+    }
+
+    // ============================================
+    // POPULATE GROUP FILTER
+    // ============================================
+    async function populateGroupFilter() {
+      try {
+        if (!isTokenValid()) return;
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const select = document.getElementById('gradeFilterGroup');
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة أو عدم صلاحية');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          const groups = result.data || [];
+          const currentValue = select.value;
+          select.innerHTML = '<option value="ALL">📚 جميع المجموعات</option>';
+          groups.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.textContent = g;
+            select.appendChild(opt);
+          });
+          if (currentValue && groups.includes(currentValue)) {
+            select.value = currentValue;
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تعبئة فلتر المجموعات:', error);
+      }
+    }
+
+    // ============================================
+    // UPDATE LICENSE BANNER
+    // ============================================
+    function updateLicenseBanner(teacher) {
+      if (!teacher) return;
+
+      const currentCount = teacher.student_count ?? teacher.studentCount ?? teacher.total_students ?? teacher.totalStudents ?? 0;
+      const maxCount = teacher.max_students ?? teacher.maxStudents ?? teacher.student_limit ?? teacher.studentLimit ?? 0;
+
+      document.getElementById('studentCountDisplay').textContent = currentCount;
+      document.getElementById('maxStudentsDisplay').textContent = maxCount === 0 ? '∞' : maxCount;
+
+      let status = teacher.licenseStatus || 'active';
+      let days = teacher.daysRemaining;
+
+      if (!teacher.licenseStatus) {
+        if (!teacher.is_active) {
+          status = 'inactive';
+        } else if (teacher.expiry_date) {
+          // ✅ مقارنة تاريخ بتاريخ بس (بدون وقت)، عشان المدرس يفضل له اليوم كامل لحد آخره
+          const todayStr = new Date().toISOString().split('T')[0];
+          const expiryStr = String(teacher.expiry_date).split('T')[0];
+          days = Math.ceil((new Date(expiryStr + 'T00:00:00Z').getTime() - new Date(todayStr + 'T00:00:00Z').getTime()) / (1000 * 60 * 60 * 24));
+          if (expiryStr < todayStr) status = 'expired';
+          else if (days <= 10) status = 'expiring_soon';
+          else status = 'active';
+        } else {
+          status = 'active';
+          days = null;
+        }
+      }
+
+      const icon = document.getElementById('licenseIcon');
+      const title = document.getElementById('licenseTitle');
+      const details = document.getElementById('licenseDetails');
+      const badge = document.getElementById('licenseBadge');
+      const banner = document.getElementById('licenseBanner');
+
+      // ✅ (طلب) إخفاء شريط الترخيص طول ما الحالة سليمة، وإظهاره فقط عند الاقتراب من الانتهاء (10 أيام) أو وجود مشكلة
+      if (banner) {
+        banner.style.display = (status === 'active') ? 'none' : '';
+      }
+
+      if (status === 'active') {
+        icon.textContent = '✅';
+        title.textContent = 'الترخيص ساري';
+        details.textContent = days !== null && days !== undefined ? `متبقي ${days} يوم` : 'صلاحية غير محدودة';
+        badge.textContent = '✅ مفعل';
+        badge.className = 'status-badge status-active';
+      } else if (status === 'expiring_soon') {
+        icon.textContent = '⚠️';
+        title.textContent = 'الترخيص على وشك الانتهاء';
+        details.textContent = `متبقي ${days} يوم فقط!`;
+        badge.textContent = '⚠️ على وشك الانتهاء';
+        badge.className = 'status-badge status-expiring';
+      } else if (status === 'expired') {
+        icon.textContent = '❌';
+        title.textContent = 'انتهت صلاحية الترخيص';
+        details.textContent = 'يرجى التواصل مع الإدارة';
+        badge.textContent = '❌ منتهي';
+        badge.className = 'status-badge status-expired';
+      } else if (status === 'inactive') {
+        icon.textContent = '⛔';
+        title.textContent = 'الحساب غير مفعل';
+        details.textContent = 'يرجى التواصل مع الإدارة';
+        badge.textContent = '⛔ غير مفعل';
+        badge.className = 'status-badge status-inactive';
+      } else {
+        icon.textContent = '❓';
+        title.textContent = 'حالة غير معروفة';
+        details.textContent = 'يرجى التواصل مع الإدارة';
+        badge.textContent = '❓ غير معروف';
+        badge.className = 'status-badge';
+      }
+    }
+
+    // ============================================
+    // LOAD DASHBOARD
+    // ============================================
+    async function loadDashboard() {
+      try {
+        if (!isTokenValid()) {
+          handleUnauthorized('التوكن غير صالح');
+          return;
+        }
+
+        const headers = getAuthHeaders();
+        if (!headers) {
+          handleUnauthorized('لا يوجد توكن');
+          return;
+        }
+
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-dashboard', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        if (!response.ok) {
+          console.error('❌ loadDashboard: خطأ HTTP', response.status);
+          throw new Error('HTTP ' + response.status);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          const data = result.data;
+          updateLicenseBanner(data.teacher);
+
+          let currentCount = 0;
+          let maxCount = 0;
+
+          if (data.teacher) {
+            const t = data.teacher;
+            currentCount = t.student_count ?? t.studentCount ?? t.total_students ?? t.totalStudents ?? 0;
+            maxCount = t.max_students ?? t.maxStudents ?? t.student_limit ?? t.studentLimit ?? 0;
+          }
+
+          document.getElementById('studentCountDisplay').textContent = currentCount;
+          document.getElementById('maxStudentsDisplay').textContent = maxCount === 0 ? '∞' : maxCount;
+
+          document.getElementById('statTotal').textContent = data.totalStudents || 0;
+          document.getElementById('statToday').textContent = data.todayAttendance || 0;
+          document.getElementById('statGroups').textContent = data.groupsCount || 0;
+
+          await populateGroupFilter();
+          // ✅ Aug 2026 (Phase I follow-up 3): populateGroupFilter بيعيد بناء خيارات المجموعة بالكامل كل تحديث،
+          // فلازم نطبّق فلتر المدرس تاني عشان الإخفاء ميترجعش يظهر كل الخيارات من جديد
+          if (sessionStorage.getItem('isCenter') === 'true') applyChartsInstructorFilter();
+          await loadGradeStats();
+
+          updateAttendanceChart(data.weeklyAttendance || []);
+          updateGroupsChart(data.groups || [], data.groupCounts || []);
+          renderActivities(data.recentActivities || []);
+        } else {
+          console.error('❌ loadDashboard: فشل في الاستجابة', result.message);
+          showToast('❌ ' + (result.message || 'فشل تحميل البيانات'), 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في loadDashboard:', error);
+        if (error.message && error.message.includes('401')) {
+          handleUnauthorized('خطأ في المصادقة');
+        } else {
+          showToast('❌ فشل تحميل لوحة التحكم: ' + error.message, 'error');
+        }
+      }
+    }
+
+    // ============================================
+    // ✅ (طلب) فلتر "عرض حصة معينة فقط" فوق سجل الحضور اليوم — بيتخزن آخر سجلات محملة
+    // عشان تغيير الفلتر يعرض فوراً من غير أي نداء جديد للسيرفر
+    // ============================================
+    let lastAttendanceRecords = [];
+    let selectedAttendanceSessionId = 'ALL';
+
+    /** مفتاح فريد لكل حصة — session_id لو موجود، غير كده مجموعة+اسم الحصة كبديل للسجلات اليدوية القديمة اللي من غير session_id */
+    function attendanceSessionKey(record) {
+      if (record.session_id !== null && record.session_id !== undefined) return 'sid:' + record.session_id;
+      return 'grp:' + (record.group_name || '') + '|' + (record.session_label || '');
+    }
+
+    function updateAttendanceSessionFilterOptions(records) {
+      const select = document.getElementById('attendanceSessionFilter');
+      if (!select) return;
+      const seen = new Map();
+      records.forEach(r => {
+        const key = attendanceSessionKey(r);
+        if (!seen.has(key)) {
+          const label = (r.group_name || r.session_label) ? `${r.group_name || '—'} — ${r.session_label || '—'}` : 'بدون حصة محددة';
+          seen.set(key, label);
+        }
+      });
+      const previousValue = select.value || 'ALL';
+      let optionsHtml = '<option value="ALL">كل الحصص</option>';
+      seen.forEach((label, key) => { optionsHtml += `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`; });
+      select.innerHTML = optionsHtml;
+      // نحافظ على اختيار المستخدم لو الحصة اللي مختارها لسه ظاهرة، غير كده نرجع لـ"كل الحصص"
+      select.value = (previousValue === 'ALL' || seen.has(previousValue)) ? previousValue : 'ALL';
+      selectedAttendanceSessionId = select.value;
+    }
+
+    function filterTodayAttendanceBySession() {
+      const select = document.getElementById('attendanceSessionFilter');
+      selectedAttendanceSessionId = select ? select.value : 'ALL';
+      const filtered = selectedAttendanceSessionId === 'ALL'
+        ? lastAttendanceRecords
+        : lastAttendanceRecords.filter(r => attendanceSessionKey(r) === selectedAttendanceSessionId);
+      renderAttendanceRows(filtered);
+    }
+
+    function renderAttendanceRows(records) {
+      const tbody = document.getElementById('attendanceBody');
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-400);">
+          <i class="fas fa-info-circle" style="font-size:24px;display:block;margin-bottom:8px;opacity:0.5;"></i>
+          لا توجد سجلات حضور مطابقة
+        </td></tr>`;
+        tbody.dataset.loaded = 'true';
+        return;
+      }
+
+      let html = '';
+      records.forEach(record => {
+        const statusClass = record.status === 'present' ? 'status-present' : 'status-absent';
+        const statusText = record.status === 'present' ? '✅ حاضر' : '❌ غائب';
+
+        let displayTime = '—';
+        if (record.created_at) {
+          const date = new Date(record.created_at);
+          displayTime = date.toLocaleTimeString('ar-EG', {
+            timeZone: 'Africa/Cairo',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } else if (record.time) {
+          displayTime = record.time;
+        }
+
+        html += `
+          <tr>
+            <td><strong>${escapeHtml(record.student_name || 'غير معروف')}</strong></td>
+            <td>${escapeHtml(record.group_name || '—')}</td>
+            <td>${escapeHtml(record.session_label || '—')}</td>
+            <td>${escapeHtml(displayTime)}</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td>${escapeHtml(record.notes || '—')}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+      tbody.dataset.loaded = 'true';
+    }
+
+    // ============================================
+    // LOAD TODAY'S ATTENDANCE
+    // ============================================
+    async function loadTodayAttendance() {
+      const tbody = document.getElementById('attendanceBody');
+      // ✅ (طلب) نعرض سبينر التحميل أول مرة بس (لسه معندناش صفوف حقيقية)، مش في كل تحديث دوري
+      // عشان الصفحة ميحصلهاش "هدم وبناء" ووميض كل شوية ثواني بينما المستخدم بيقرأ الجدول
+      const isFirstLoad = !tbody.dataset.loaded;
+      if (isFirstLoad) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400);">
+          <i class="fas fa-spinner fa-spin" style="font-size:20px;display:block;margin-bottom:8px;"></i>
+          جاري التحميل...
+        </td></tr>`;
+      }
+
+      try {
+        const token = getToken();
+        if (!token) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-today-attendance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ clientId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة أو عدم صلاحية');
+          return;
+        }
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        
+        const result = await response.json();
+        
+        // ✅ التحقق من هيكل البيانات
+        let data = [];
+        if (result.success && result.data) {
+          if (Array.isArray(result.data)) {
+            data = result.data;
+          } else if (typeof result.data === 'object') {
+            if (Array.isArray(result.data.attendance)) {
+              data = result.data.attendance;
+            } else if (Array.isArray(result.data.records)) {
+              data = result.data.records;
+            } else {
+              data = [];
+            }
+          }
+        }
+
+        if (!Array.isArray(data)) {
+          data = [];
+        }
+
+        const presentCount = data.filter(r => r.status === 'present').length;
+        document.getElementById('statToday').textContent = presentCount;
+
+        // ✅ (طلب) "سجل الحضور اليوم" ده سجل لمين فعلاً حضر بس — الغياب التلقائي ليه دوره في
+        // مراجعة الحصص (roster جوه المجموعات) وفي الإحصائيات، لكن مايتعرضش هنا كأنه "حضور"
+        const presentRecords = data.filter(r => r.status === 'present');
+        lastAttendanceRecords = presentRecords;
+        updateAttendanceSessionFilterOptions(presentRecords);
+
+        const filteredRecords = selectedAttendanceSessionId === 'ALL'
+          ? presentRecords
+          : presentRecords.filter(r => attendanceSessionKey(r) === selectedAttendanceSessionId);
+        renderAttendanceRows(filteredRecords);
+
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الحضور:', error);
+        // ✅ لو كان فيه بيانات ظاهرة قبل كده، سيبها زي ما هي بدل ما نمسحها برسالة خطأ (تجربة مستخدم أهدأ)
+        if (!tbody.dataset.loaded) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--danger);">
+            ❌ تعذر تحميل سجلات الحضور: ${escapeHtml(error.message)}
+          </td></tr>`;
+        }
+      }
+    }
+
+    // ============================================
+    // LOGOUT
+    // ============================================
+    async function logout() {
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
+      try {
+        const jwt = sessionStorage.getItem('jwtToken');
+        let pushToken = localStorage.getItem('fasliPushToken');
+        const Preferences = window.Capacitor?.Plugins?.Preferences;
+        if (!pushToken && Preferences) {
+          const stored = await Preferences.get({ key: 'fasliPushToken' }).catch(() => null);
+          pushToken = stored?.value || null;
+        }
+        if (jwt && pushToken) {
+          // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
+          }).catch(() => {});
+        }
+      } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
+      {
+        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
+        window.location.href = LOGIN_URL;
+      }
+    }
+
+    // ============================================
+    // DARK MODE
+    // ============================================
+    function getThemeKey() {
+      return 'theme_' + clientId;
+    }
+
+    (function() {
+      const savedTheme = localStorage.getItem(getThemeKey());
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      }
+      setTimeout(() => {
+        const theme = document.documentElement.getAttribute('data-theme') || 'light';
+        updateThemeIcon(theme);
+      }, 100);
+    })();
+
+    function goBackToDashboard() {
+      window.location.href = isAssistant ? 'assistant-dashboard.html' : 'dashboard.html';
+    }
+
+    
+    let pendingPushNotifications = null;
+
+    async function registerPushIfNative() {
+      try {
+        const Capacitor = window.Capacitor;
+        if (!Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
+        const PushNotifications = Capacitor.Plugins?.PushNotifications;
+        if (!PushNotifications) return;
+
+        const permStatus = await PushNotifications.checkPermissions();
+        if (permStatus.receive === 'granted') { finishPushRegistration(PushNotifications); return; }
+        if (permStatus.receive === 'denied') return;
+
+        pendingPushNotifications = PushNotifications;
+        document.getElementById('permissionDialog').style.display = 'flex';
+      } catch (e) { /* تجاهل */ }
+    }
+
+    function declinePermissionDialog() {
+      document.getElementById('permissionDialog').style.display = 'none';
+      pendingPushNotifications = null;
+    }
+
+    async function acceptPermissionDialog() {
+      document.getElementById('permissionDialog').style.display = 'none';
+      const PushNotifications = pendingPushNotifications;
+      pendingPushNotifications = null;
+      if (!PushNotifications) return;
+      try {
+        const req = await PushNotifications.requestPermissions();
+        if (req.receive === 'granted') finishPushRegistration(PushNotifications);
+      } catch (e) { /* تجاهل */ }
+    }
+
+    async function finishPushRegistration(PushNotifications) {
+      try {
+        await PushNotifications.register();
+        PushNotifications.addListener('registration', async (token) => {
+          try {
+            const jwt = sessionStorage.getItem('jwtToken');
+            if (!jwt || !token?.value) return;
+            localStorage.setItem('fasliPushToken', token.value);
+            const Preferences = window.Capacitor?.Plugins?.Preferences;
+            if (Preferences) Preferences.set({ key: 'fasliPushToken', value: token.value }).catch(() => {});
+            await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+              body: JSON.stringify({ action: 'register', token: token.value, platform: 'android' })
+            });
+          } catch (e) { /* تجاهل */ }
+        });
+      } catch (e) { /* تجاهل */ }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (window.innerWidth <= 900) {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem(getThemeKey(), newTheme);
+      updateThemeIcon(newTheme);
+    }
+
+    function updateThemeIcon(theme) {
+      const btn = document.getElementById('themeToggle');
+      if (!btn) return;
+      const icon = btn.querySelector('i');
+      if (!icon) return;
+      if (theme === 'dark') {
+        icon.className = 'fas fa-sun';
+        btn.title = 'الوضع النهاري';
+      } else {
+        icon.className = 'fas fa-moon';
+        btn.title = 'الوضع الليلي';
+      }
+    }
+
+   // ============================================
+// MODAL FUNCTIONS - نسخة كاملة
+// ============================================
+
+// ============================================
+// ADD STUDENT MODAL
+// ============================================
+let modalPollingInterval = null;
+let modalIsReadingActive = false;
+let modalLastUID = '';
+let isProcessingUID = false;           // ✅ منع التنفيذ المتزامن
+let lastProcessedUID = '';             // ✅ تتبع آخر UID تم معالجته
+let lastProcessedTime = 0;             // ✅ وقت آخر معالجة
+const MIN_TIME_BETWEEN_SCANS = 3000;   // ✅ 3 ثواني بين كل قراءة
+
+const modalStatusDot = document.getElementById('modalStatusDot');
+const modalStatusText = document.getElementById('modalStatusText');
+const modalToggleBtn = document.getElementById('modalToggleReadBtn');
+const modalReadHint = document.getElementById('modalReadHint');
+const modalUidField = document.getElementById('modalAddUid');
+
+function updateModalStatus(status, text) {
+  modalStatusDot.className = 'status-dot ' + status;
+  modalStatusText.textContent = text;
+  if (status === 'online') {
+    modalReadHint.textContent = '⏳ امسح الكارت الآن... سيظهر UID تلقائياً';
+  } else if (status === 'reading') {
+    modalReadHint.textContent = '⏳ جاري قراءة الكارت...';
+  } else if (status === 'idle') {
+    modalReadHint.textContent = '💡 اضغط "تفعيل القراءة" ثم امسح الكارت على القارئ';
+  }
+}
+
+// ✅ (طلب) اسم المجموعة -> بيانات المجموعة (فيها instructorNameId) — لتضييق مودال "تسجيل طالب" السريع على مجموعات المدرس المختار
+let modalAddStudentGroupsCache = [];
+
+async function loadModalGroups() {
+  try {
+    if (!isTokenValid()) {
+      return;
+    }
+
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ clientId })
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      return;
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      const groups = result.data || [];
+      const select = document.getElementById('modalAddGroup');
+      select.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        select.appendChild(opt);
+      });
+    }
+  } catch (error) {
+    console.error('❌ خطأ في تحميل المجموعات:', error);
+  }
+}
+
+// ✅ (طلب) لحسابات السنتر: تحميل قائمة المدرسين لمودال "تسجيل طالب" السريع، واختيار المدرس يحدد مجموعاته المتاحة
+async function loadInstructorsForModalAddStudent() {
+  document.getElementById('modalAddStudentInstructorField').style.display = 'block';
+  const groupSelect = document.getElementById('modalAddGroup');
+  groupSelect.innerHTML = '<option value="">-- اختر المدرس أولاً --</option>';
+  groupSelect.disabled = true;
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const [instructorsRes, groupsRes] = await Promise.all([
+      fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', { method: 'POST', headers, body: JSON.stringify({ action: 'list' }) }),
+      fetch(PROJECT_URL + '/functions/v1/manage-group', { method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed' }) }),
+    ]);
+    const instructorsResult = await instructorsRes.json();
+    const groupsResult = await groupsRes.json();
+    modalAddStudentGroupsCache = groupsResult.success ? (groupsResult.data || []) : [];
+
+    const select = document.getElementById('modalAddStudentInstructor');
+    select.innerHTML = '<option value="">-- اختر المدرس --</option>';
+    if (instructorsResult.success) {
+      (instructorsResult.data || []).filter(n => n.is_active).forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n.id; opt.textContent = n.name;
+        select.appendChild(opt);
+      });
+    }
+  } catch (error) {
+    console.error('❌ خطأ في تحميل المدرسين:', error);
+  }
+}
+
+function onModalAddStudentInstructorChange() {
+  const instructorId = document.getElementById('modalAddStudentInstructor').value;
+  const groupSelect = document.getElementById('modalAddGroup');
+  if (!instructorId) {
+    groupSelect.innerHTML = '<option value="">-- اختر المدرس أولاً --</option>';
+    groupSelect.disabled = true;
+    return;
+  }
+  const matchingGroups = modalAddStudentGroupsCache.filter(g => String(g.instructorNameId) === String(instructorId));
+  groupSelect.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+  matchingGroups.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.name; opt.textContent = g.name;
+    groupSelect.appendChild(opt);
+  });
+  if (matchingGroups.length === 0) {
+    groupSelect.innerHTML = '<option value="">-- لا توجد مجموعات مربوطة بهذا المدرس --</option>';
+    groupSelect.disabled = true;
+  } else {
+    groupSelect.disabled = false;
+  }
+}
+
+function openAddStudentModal() {
+  document.getElementById('addStudentModal').classList.add('open');
+  document.getElementById('modalToastContainer').innerHTML = '';
+  if (sessionStorage.getItem('isCenter') === 'true') {
+    document.getElementById('modalAddStudentInstructor').value = '';
+    loadInstructorsForModalAddStudent();
+  } else {
+    document.getElementById('modalAddStudentInstructorField').style.display = 'none';
+    document.getElementById('modalAddGroup').disabled = false;
+    loadModalGroups();
+  }
+  if (modalIsReadingActive) toggleModalReading();
+  modalUidField.value = '';
+  document.getElementById('modalAddName').value = '';
+  document.getElementById('modalAddPhone').value = '';
+  document.getElementById('modalAddParentPhone').value = '';
+  modalUidField.focus();
+  updateModalStatus('idle', '⏸ في انتظار التفعيل');
+}
+
+function closeAddStudentModal() {
+  document.getElementById('addStudentModal').classList.remove('open');
+  if (modalIsReadingActive) toggleModalReading();
+}
+
+function toggleModalReading() {
+  if (modalIsReadingActive) {
+    stopModalCardScan();
+    modalIsReadingActive = false;
+    modalToggleBtn.classList.remove('active');
+    modalToggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="modalReadBtnText">تفعيل القراءة</span>';
+    updateModalStatus('idle', '⏸ في انتظار التفعيل');
+    return;
+  }
+
+  (async () => {
+    try {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const response = await fetch(PROJECT_URL + '/functions/v1/teacher-start-new-student-scan', {
+        method: 'POST', headers, body: '{}'
+      });
+      if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+      const result = await response.json();
+      if (!result.success) { showModalToast('❌ ' + result.message, 'error'); return; }
+
+      modalIsReadingActive = true;
+      modalToggleBtn.classList.add('active');
+      modalToggleBtn.innerHTML = '<i class="fas fa-stop"></i> <span id="modalReadBtnText">إيقاف القراءة</span>';
+      updateModalStatus('online', '🟢 جاهز للقراءة');
+      modalPollingInterval = setInterval(pollModalCardScan, 3000);
+    } catch (error) {
+      console.error('❌ خطأ:', error);
+      showModalToast('❌ فشل بدء القراءة', 'error');
+    }
+  })();
+}
+
+async function pollModalCardScan() {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-card-registration', {
+      method: 'POST', headers, body: JSON.stringify({ action: 'status' })
+    });
+    const result = await response.json();
+    if (result.status === 'done' && result.cardUid) {
+      modalUidField.value = result.cardUid;
+      modalUidField.style.borderColor = 'var(--success)';
+      modalUidField.dispatchEvent(new Event('input', { bubbles: true }));
+
+      stopModalCardScan();
+      modalIsReadingActive = false;
+      modalToggleBtn.classList.remove('active');
+      modalToggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="modalReadBtnText">تفعيل القراءة</span>';
+      updateModalStatus('online', '✅ تم قراءة الكارت');
+      modalReadHint.textContent = `📇 رقم الكارت: ${result.cardUid}`;
+      showModalToast(`📇 تم قراءة الكارت: ${result.cardUid}`, 'success');
+    } else if (result.status === 'error') {
+      stopModalCardScan();
+      modalIsReadingActive = false;
+      modalToggleBtn.classList.remove('active');
+      modalToggleBtn.innerHTML = '<i class="fas fa-fingerprint"></i> <span id="modalReadBtnText">تفعيل القراءة</span>';
+      updateModalStatus('idle', '⚠️ الكارت مرفوض');
+      modalReadHint.textContent = result.message;
+      showModalToast('❌ ' + result.message, 'error');
+    }
+  } catch (error) { /* تجاهل */ }
+}
+
+async function stopModalCardScan() {
+  if (modalPollingInterval) { clearInterval(modalPollingInterval); modalPollingInterval = null; }
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    await fetch(PROJECT_URL + '/functions/v1/manage-card-registration', { method: 'POST', headers, body: JSON.stringify({ action: 'cancel' }) });
+  } catch (error) { /* تجاهل */ }
+}
+
+let modalCheckTimeout = null;
+
+// ✅ تعديل checkModalUID لتكون async
+async function checkModalUID(uid) {
+  if (!uid || uid.length < 4) return;
+  
+  // ✅ إلغاء أي timeout سابق
+  if (modalCheckTimeout) {
+    clearTimeout(modalCheckTimeout);
+    modalCheckTimeout = null;
+  }
+
+  try {
+    if (!isTokenValid()) {
+      return;
+    }
+
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/check-student-uid', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ clientId, uid })
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      return;
+    }
+
+    const result = await response.json();
+    
+    if (result.success && result.exists) {
+      const studentName = result.student?.name || 'غير معروف';
+      modalUidField.style.borderColor = 'var(--danger)';
+      showModalToast(`⚠️ هذا الكارت مسجل بالفعل للطالب: ${studentName}`, 'warning');
+    } else {
+      modalUidField.style.borderColor = 'var(--success)';
+    }
+  } catch (error) {
+    console.error('❌ خطأ في التحقق من UID:', error);
+  }
+}
+
+modalUidField.addEventListener('input', function() {
+  const uid = this.value.trim();
+  if (uid.length >= 4) checkModalUID(uid);
+});
+
+async function submitModalStudent() {
+  const group = document.getElementById('modalAddGroup').value;
+  const uid = document.getElementById('modalAddUid').value.trim();
+  const name = document.getElementById('modalAddName').value.trim();
+  const phone = document.getElementById('modalAddPhone').value.trim();
+  const parentPhone = document.getElementById('modalAddParentPhone').value.trim();
+
+  // ✅ (طلب) لحسابات السنتر: لازم يكون فيه مدرس مختار قبل ما يتقدر يحدد مجموعة الطالب
+  if (sessionStorage.getItem('isCenter') === 'true' && !document.getElementById('modalAddStudentInstructor').value) {
+    showModalToast('⚠️ اختر المدرس أولاً', 'warning');
+    return;
+  }
+  if (!group) {
+    showModalToast('⚠️ اختر المجموعة', 'warning');
+    return;
+  }
+  if (!uid) {
+    showModalToast('⚠️ أدخل UID الطالب', 'warning');
+    return;
+  }
+  if (!name) {
+    showModalToast('⚠️ أدخل اسم الطالب', 'warning');
+    return;
+  }
+  if (!parentPhone) {
+    showModalToast('⚠️ أدخل رقم ولي الأمر', 'warning');
+    return;
+  }
+
+  const phoneRegex = /^01[0125][0-9]{8}$/;
+  if (phone && !phoneRegex.test(phone)) {
+    showModalToast('⚠️ رقم هاتف الطالب غير صحيح', 'warning');
+    return;
+  }
+  if (!phoneRegex.test(parentPhone)) {
+    showModalToast('⚠️ رقم هاتف ولي الأمر غير صحيح', 'warning');
+    return;
+  }
+
+  try {
+    if (!isTokenValid()) {
+      showModalToast('⚠️ انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+      handleUnauthorized();
+      return;
+    }
+
+    const headers = getAuthHeaders();
+    if (!headers) {
+      showModalToast('⚠️ لا يوجد توكن، يرجى تسجيل الدخول مرة أخرى', 'error');
+      handleUnauthorized();
+      return;
+    }
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-student', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        action: 'add',
+        clientId,
+        groupName: group,
+        uid,
+        name,
+        phone,
+        parentPhone,
+        assistantId: assistantId || null
+      })
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      return;
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      showModalToast('✅ ' + result.message, 'success');
+      setTimeout(() => {
+        closeAddStudentModal();
+        loadDashboard();
+      }, 1000);
+    } else {
+      showModalToast('❌ ' + result.message, 'error');
+    }
+  } catch (error) {
+    console.error('❌ خطأ:', error);
+    showModalToast('❌ فشل تسجيل الطالب', 'error');
+  }
+}
+
+// ============================================
+// ATTENDANCE MODAL
+// ============================================
+let allStudents = [];
+
+// ============================================
+// وضع الكارت
+// ============================================
+let cardModeStatusInterval = null;
+
+async function openCardModeModal() {
+  document.getElementById('cardModeModal').classList.add('open');
+  loadPaymentTitlesForCardMode();
+  loadBooksForCardMode();
+  const isCenter = sessionStorage.getItem('isCenter') === 'true';
+  document.getElementById('cardModeInstructorLabel').style.display = isCenter ? 'block' : 'none';
+  document.getElementById('cardModeInstructorSelect').style.display = isCenter ? 'block' : 'none';
+  // ✅ Aug 2026 (Phase I follow-up 10): سياق مجموعة+حصة مطلوب لكل الحسابات دلوقتي، مش السنتر بس
+  await loadCardModeInstructors(isCenter);
+  refreshCardModeStatus();
+}
+
+// ============================================
+// ✅ Aug 2026 (Phase I follow-up 10): سياق الحصة (مجموعة ← حصص النهاردة) عند تفعيل القارئ —
+// لكل الحسابات. لحسابات السنتر بس، فيه خطوة إضافية قبلها لاختيار المدرس (مدرس ← مجموعاته)
+// ============================================
+let cardModeGroupsCache = [];
+
+async function loadCardModeInstructors(isCenter) {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const groupSelect = document.getElementById('cardModeGroupSelect');
+    const sessionSelect = document.getElementById('cardModeSessionSelect');
+
+    if (isCenter) {
+      const [instructorsRes, groupsRes] = await Promise.all([
+        fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', { method: 'POST', headers, body: JSON.stringify({ action: 'list' }) }),
+        fetch(PROJECT_URL + '/functions/v1/manage-group', { method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed' }) }),
+      ]);
+      const instructorsResult = await instructorsRes.json();
+      const groupsResult = await groupsRes.json();
+      cardModeGroupsCache = groupsResult.success ? (groupsResult.data || []) : [];
+
+      const select = document.getElementById('cardModeInstructorSelect');
+      select.innerHTML = '<option value="">-- اختر المدرس --</option>';
+      if (instructorsResult.success) {
+        (instructorsResult.data || []).filter(n => n.is_active).forEach(n => {
+          const opt = document.createElement('option');
+          opt.value = n.id; opt.textContent = n.name;
+          select.appendChild(opt);
+        });
+      }
+      groupSelect.innerHTML = '<option value="">-- اختر المدرس الأول --</option>';
+      groupSelect.disabled = true;
+    } else {
+      // ✅ حساب عادي (مش سنتر) — مفيش خطوة مدرس، المجموعات بتتحمّل مباشرة
+      const groupsRes = await fetch(PROJECT_URL + '/functions/v1/manage-group', { method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed' }) });
+      const groupsResult = await groupsRes.json();
+      const groups = groupsResult.success ? (groupsResult.data || []) : [];
+      groupSelect.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.name; opt.textContent = g.name;
+        groupSelect.appendChild(opt);
+      });
+      groupSelect.disabled = false;
+    }
+    sessionSelect.innerHTML = '<option value="">-- اختر المجموعة الأول --</option>';
+    sessionSelect.disabled = true;
+    document.getElementById('cardModeNewSessionBox').style.display = 'none';
+  } catch (error) { console.error('❌ خطأ في تحميل المدرسين/المجموعات:', error); }
+}
+
+function onCardModeInstructorChange() {
+  const instructorId = document.getElementById('cardModeInstructorSelect').value;
+  const groupSelect = document.getElementById('cardModeGroupSelect');
+  const sessionSelect = document.getElementById('cardModeSessionSelect');
+  sessionSelect.innerHTML = '<option value="">-- اختر المجموعة الأول --</option>';
+  sessionSelect.disabled = true;
+  document.getElementById('cardModeNewSessionBox').style.display = 'none';
+
+  if (!instructorId) {
+    groupSelect.innerHTML = '<option value="">-- اختر المدرس الأول --</option>';
+    groupSelect.disabled = true;
+    return;
+  }
+  const matchingGroups = cardModeGroupsCache.filter(g => String(g.instructorNameId) === String(instructorId));
+  groupSelect.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+  matchingGroups.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.name; opt.textContent = g.name;
+    groupSelect.appendChild(opt);
+  });
+  groupSelect.disabled = matchingGroups.length === 0;
+  if (matchingGroups.length === 0) groupSelect.innerHTML = '<option value="">-- لا توجد مجموعات مربوطة بهذا المدرس --</option>';
+}
+
+async function onCardModeGroupChange() {
+  const groupName = document.getElementById('cardModeGroupSelect').value;
+  const sessionSelect = document.getElementById('cardModeSessionSelect');
+  document.getElementById('cardModeNewSessionBox').style.display = 'none';
+  if (!groupName) {
+    sessionSelect.innerHTML = '<option value="">-- اختر المجموعة الأول --</option>';
+    sessionSelect.disabled = true;
+    return;
+  }
+  sessionSelect.innerHTML = '<option value="">جاري التحميل...</option>';
+  sessionSelect.disabled = true;
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    // ✅ Aug 2026 (Phase I follow-up 10): بس حصص النهاردة (اتنشأت فعلياً اليوم) لهذه المجموعة
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-group-sessions', {
+      method: 'POST', headers, body: JSON.stringify({ action: 'listToday', groupName })
+    });
+    const result = await response.json();
+    const sessions = result.success ? (result.data || []) : [];
+    sessionSelect.innerHTML = '<option value="">-- اختر الحصة --</option>';
+    sessions.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.session_label;
+      sessionSelect.appendChild(opt);
+    });
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__'; newOpt.textContent = '➕ إنشاء حصة جديدة...';
+    sessionSelect.appendChild(newOpt);
+    sessionSelect.disabled = false;
+    if (sessions.length === 0) sessionSelect.value = '__new__';
+    onCardModeSessionChange();
+  } catch (error) {
+    console.error('❌ خطأ في تحميل الحصص:', error);
+    sessionSelect.innerHTML = '<option value="">-- تعذر تحميل الحصص --</option>';
+  }
+}
+
+function onCardModeSessionChange() {
+  const sessionValue = document.getElementById('cardModeSessionSelect').value;
+  document.getElementById('cardModeNewSessionBox').style.display = sessionValue === '__new__' ? 'block' : 'none';
+}
+function closeCardModeModal() {
+  document.getElementById('cardModeModal').classList.remove('open');
+}
+function onCardModeTypeChange() {
+  const paymentChecked = document.getElementById('cardModePaymentCb').checked;
+  const bookChecked = document.getElementById('cardModeBookCb').checked;
+  document.getElementById('cardModePaymentField').style.display = paymentChecked ? 'block' : 'none';
+  document.getElementById('cardModeBookField').style.display = bookChecked ? 'block' : 'none';
+}
+
+function onCardModePaymentTitleChange() {
+  const select = document.getElementById('cardModePaymentTitle');
+  const newBox = document.getElementById('cardModeNewPaymentTitleBox');
+  if (select.value === '__new__') {
+    newBox.style.display = 'block';
+    document.getElementById('cardModePaymentAmount').value = '';
+  } else {
+    newBox.style.display = 'none';
+    fillCardModePaymentAmount();
+  }
+}
+
+// ✅ إنشاء بند سداد جديد فوراً من جوه شاشة إعداد الكارت نفسها، من غير ما تحتاجي تروحي لصفحة المدفوعات
+async function createCardModePaymentTitle() {
+  const name = document.getElementById('cardModeNewPaymentTitleName').value.trim();
+  const price = document.getElementById('cardModeNewPaymentTitlePrice').value.trim();
+  if (!name) { showToast('⚠️ أدخل اسم البند', 'warning'); return; }
+  if (price === '' || isNaN(price) || Number(price) < 0) { showToast('⚠️ أدخل سعراً صحيحاً', 'warning'); return; }
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/create-payment-title', {
+      method: 'POST', headers, body: JSON.stringify({ title: name, defaultAmount: Number(price) })
+    });
+    const result = await response.json();
+    if (result.success) {
+      showToast('✅ ' + result.message, 'success');
+      await loadPaymentTitlesForCardMode();
+      const select = document.getElementById('cardModePaymentTitle');
+      select.value = name;
+      document.getElementById('cardModeNewPaymentTitleBox').style.display = 'none';
+      document.getElementById('cardModePaymentAmount').value = price;
+    } else {
+      showToast('❌ ' + result.message, 'error');
+    }
+  } catch (error) {
+    console.error('❌ خطأ:', error);
+    showToast('❌ فشل إنشاء البند', 'error');
+  }
+}
+
+async function loadPaymentTitlesForCardMode() {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-titles', {
+      method: 'POST', headers, body: JSON.stringify({ clientId , type: 'payment' })
+    });
+    const result = await response.json();
+    const select = document.getElementById('cardModePaymentTitle');
+    select.innerHTML = '<option value="">-- اختر البند --</option><option value="__new__">➕ إضافة بند جديد...</option>';
+    if (result.success) {
+      (result.data || []).forEach(t => {
+        const title = (typeof t === 'object' && t !== null) ? t.title : t;
+        const defaultAmount = (typeof t === 'object' && t !== null) ? t.defaultAmount : null;
+        const opt = document.createElement('option');
+        opt.value = title; opt.textContent = title;
+        if (defaultAmount) opt.dataset.amount = defaultAmount;
+        select.appendChild(opt);
+      });
+    }
+  } catch (error) { console.error('❌ خطأ:', error); }
+}
+
+async function loadBooksForCardMode() {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-books', {
+      method: 'POST', headers, body: JSON.stringify({ teacherId: clientId })
+    });
+    const result = await response.json();
+    const select = document.getElementById('cardModeBookSelect');
+    select.innerHTML = '<option value="">-- اختر المذكرة --</option>';
+    if (result.success) {
+      (result.data || []).forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id; opt.textContent = b.name;
+        opt.dataset.amount = b.price;
+        select.appendChild(opt);
+      });
+    }
+  } catch (error) { console.error('❌ خطأ:', error); }
+}
+
+function fillCardModePaymentAmount() {
+  const select = document.getElementById('cardModePaymentTitle');
+  const opt = select.options[select.selectedIndex];
+  if (opt && opt.dataset.amount) document.getElementById('cardModePaymentAmount').value = opt.dataset.amount;
+}
+function fillCardModeBookAmount() {
+  const select = document.getElementById('cardModeBookSelect');
+  const opt = select.options[select.selectedIndex];
+  if (opt && opt.dataset.amount) document.getElementById('cardModeBookAmount').value = opt.dataset.amount;
+}
+
+function onReaderEnabledChange() {
+  const enabled = document.getElementById('cardReaderEnabledCb').checked;
+  document.getElementById('cardModeSettingsBody').style.display = enabled ? 'block' : 'none';
+}
+
+async function saveCardMode() {
+  const readerEnabled = document.getElementById('cardReaderEnabledCb').checked;
+
+  // ✅ لو المستخدم عطّل القارئ، نبعت طلب إيقاف بسيط من غير أي تحقق تاني
+  if (!readerEnabled) {
+    try {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const response = await fetch(PROJECT_URL + '/functions/v1/card-action-mode', {
+        method: 'POST', headers, body: JSON.stringify({ action: 'set', isEnabled: false })
+      });
+      const result = await response.json();
+      showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+      if (result.success) { closeCardModeModal(); refreshCardModeStatus(); }
+    } catch (error) {
+      console.error('❌ خطأ:', error);
+      showToast('❌ فشل إيقاف القارئ', 'error');
+    }
+    return;
+  }
+
+  const paymentChecked = document.getElementById('cardModePaymentCb').checked;
+  const bookChecked = document.getElementById('cardModeBookCb').checked;
+  const durationMinutes = document.getElementById('cardModeDurationInput').value;
+
+  if (!durationMinutes || Number(durationMinutes) <= 0) { showToast('⚠️ حدد مدة صحيحة بالدقايق', 'error'); return; }
+
+  const modes = ['attendance']; // الحضور دايماً مفعّل
+  if (paymentChecked) modes.push('payment');
+  if (bookChecked) modes.push('book_payment');
+
+  const body = { isEnabled: true, modes, durationMinutes: Number(durationMinutes) };
+  if (paymentChecked) {
+    body.paymentTitle = document.getElementById('cardModePaymentTitle').value;
+    body.paymentAmount = document.getElementById('cardModePaymentAmount').value;
+    if (!body.paymentTitle || body.paymentTitle === '__new__' || !body.paymentAmount) { showToast('⚠️ اختر البند والمبلغ (أو أنشئ البند الجديد الأول)', 'error'); return; }
+  }
+  if (bookChecked) {
+    body.bookId = document.getElementById('cardModeBookSelect').value;
+    body.bookAmount = document.getElementById('cardModeBookAmount').value;
+    if (!body.bookId || !body.bookAmount) { showToast('⚠️ اختر المذكرة والمبلغ', 'error'); return; }
+  }
+
+  // ✅ Aug 2026 (Phase I follow-up 10): مجموعة+حصة النهاردة مطلوبة لكل الحسابات قبل التفعيل —
+  // المدرس مطلوب لحسابات السنتر بس
+  const isCenterAccount = sessionStorage.getItem('isCenter') === 'true';
+  if (isCenterAccount) {
+    const instructorId = document.getElementById('cardModeInstructorSelect').value;
+    if (!instructorId) { showToast('⚠️ حدد المدرس قبل تفعيل القارئ', 'error'); return; }
+    body.instructorNameId = Number(instructorId);
+  }
+  const groupName = document.getElementById('cardModeGroupSelect').value;
+  const sessionValue = document.getElementById('cardModeSessionSelect').value;
+  if (!groupName || !sessionValue) {
+    showToast('⚠️ حدد المجموعة والحصة قبل تفعيل القارئ', 'error'); return;
+  }
+  body.groupName = groupName;
+  if (sessionValue === '__new__') {
+    const newSessionLabel = document.getElementById('cardModeNewSessionLabel').value.trim();
+    if (!newSessionLabel) { showToast('⚠️ حدد اسم الحصة الجديدة', 'error'); return; }
+    body.newSessionLabel = newSessionLabel;
+    body.newSessionThresholdMinutes = Number(document.getElementById('cardModeNewSessionThreshold').value) || 30;
+    const cardModeSessionDurationVal = document.getElementById('cardModeNewSessionDuration').value;
+    if (cardModeSessionDurationVal && Number(cardModeSessionDurationVal) > 0) {
+      body.newSessionDurationMinutes = Number(cardModeSessionDurationVal);
+    }
+  } else {
+    body.sessionId = Number(sessionValue);
+  }
+
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/card-action-mode', {
+      method: 'POST', headers, body: JSON.stringify({ ...body, action: 'set' })
+    });
+    const result = await response.json();
+    showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+    if (result.success) {
+      closeCardModeModal();
+      refreshCardModeStatus();
+    }
+  } catch (error) {
+    console.error('❌ خطأ:', error);
+    showToast('❌ فشل حفظ الوضع', 'error');
+  }
+}
+
+// ✅ بتتنادى دورياً كل ما لوحة التحكم مفتوحة — بتفحص لو فيه حصص فات وقتها ولسه محدش سجّل حضور فيها،
+// وتسجّلهم غايبين تلقائياً وتبعت إشعار لأولياء أمورهم (بديل عن جدولة سيرفر مخصصة)
+// ✅ إنذار مبكر للتسرّب — بيتحمّل مرة عند فتح اللوحة (مش محتاج تكرار كل شوية زي الحضور)
+async function loadAtRiskStudents() {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-at-risk-students', { method: 'POST', headers, body: '{}' });
+    const result = await response.json();
+    if (!result.success || (result.data || []).length === 0) return;
+
+    document.getElementById('atRiskCard').style.display = 'block';
+    const container = document.getElementById('atRiskContainer');
+    container.innerHTML = result.data.map(s => {
+      const severityColor = s.riskScore >= 4 ? 'var(--danger)' : 'var(--warning)';
+      const severityLabel = s.riskScore >= 4 ? '🔴 خطر مرتفع' : '🟡 يستاهل متابعة';
+      return `
+        <div style="padding:12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;border-right:3px solid ${severityColor};">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <strong>${escapeHtml(s.studentName)}</strong>
+            <span style="font-size:12px;color:${severityColor};font-weight:600;">${severityLabel}</span>
+          </div>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:2px;">${escapeHtml(s.groupName)}</div>
+          <ul style="margin:8px 0 0;padding-right:18px;font-size:12.5px;color:var(--gray-600);">
+            ${s.reasons.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }).join('');
+  } catch (error) { console.error('❌ خطأ في تحميل قائمة المتابعة:', error); }
+}
+
+// ✅ Aug 2026 (Phase I follow-up): تفاصيل أكتر عن كل مدرس (مجموعاته، طلابه، تحصيله المالي والأكاديمي
+// ونسبة حضوره)، بالإضافة لأرقام سريعة على مستوى السنتر كله، تنبيه للمجموعات من غير مدرس، وحصص اليوم
+function centerPercentBadge(value, goodAt, warnAt) {
+  if (value === null || value === undefined) return '<span style="color:var(--gray-400);">—</span>';
+  const color = value >= goodAt ? 'var(--success)' : (value >= warnAt ? 'var(--warning)' : 'var(--danger)');
+  return `<span style="color:${color};font-weight:600;">${value}%</span>`;
+}
+
+// ✅ Aug 2026 (Phase I follow-up 3): مجموعات/مدرسين — بيانات مخزّنة عشان فلتر الرسومات يستخدمها من غير ما يعيد الجلب
+let centerGroupsCache = [];
+
+async function loadCenterOverview() {
+  if (sessionStorage.getItem('isCenter') !== 'true') return;
+  const overviewCard = document.getElementById('centerOverviewCard');
+  const overviewBody = document.getElementById('centerOverviewBody');
+  overviewCard.style.display = 'block';
+  document.getElementById('todaySessionsCard').style.display = 'block';
+  // ✅ عدد المدرسين بقى كارت جوه صف الإحصائيات الأصلي بدل صف منفصل مكرر
+  document.getElementById('statInstructorsCard').style.display = '';
+
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    const [statsRes, groupsRes, sessionsRes] = await Promise.all([
+      fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', { method: 'POST', headers, body: JSON.stringify({ action: 'stats' }) }),
+      fetch(PROJECT_URL + '/functions/v1/manage-group', { method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed' }) }),
+      fetch(PROJECT_URL + '/functions/v1/manage-group-sessions', { method: 'POST', headers, body: JSON.stringify({ action: 'listToday' }) }),
+    ]);
+    const statsResult = await statsRes.json();
+    const groupsResult = await groupsRes.json();
+    const sessionsResult = await sessionsRes.json();
+
+    const names = statsResult.success ? (statsResult.data || []) : [];
+    const groups = groupsResult.success ? (groupsResult.data || []) : [];
+    const sessions = sessionsResult.success ? (sessionsResult.data || []) : [];
+    centerGroupsCache = groups;
+
+    // ---- كارت المدرسين جوه صف الإحصائيات الأصلي ----
+    document.getElementById('statInstructors').textContent = names.length;
+
+    // ---- تنبيه المجموعات من غير مدرس ----
+    const ungrouped = groups.filter(g => !g.instructorNameId);
+    const alertCard = document.getElementById('ungroupedInstructorAlert');
+    if (ungrouped.length > 0) {
+      alertCard.style.display = 'block';
+      document.getElementById('ungroupedInstructorAlertText').innerHTML =
+        `عندك <strong>${ungrouped.length}</strong> مجموعة من غير مدرس محدد: ${ungrouped.map(g => escapeHtml(g.name)).join('، ')} — القارئ مش هيقدر يشتغل عليها في وضع السنتر لحد ما تحدد المدرس من صفحة المجموعات.`;
+    } else {
+      alertCard.style.display = 'none';
+    }
+
+    // ---- حصص اليوم ----
+    renderTodaySessions(sessions, groups);
+
+    // ---- فلتر الرسومات حسب المدرس ----
+    populateChartsInstructorFilter(names);
+
+    // ---- ملخص "مدرسين محتاجين انتباه" — أسوأ 4 بالنسبة لأقل مقياس عندهم (تحصيل/درجات/حضور) ----
+    if (names.length === 0) {
+      overviewBody.innerHTML = '<p style="text-align:center;padding:16px;color:var(--gray-400);">لا يوجد أسماء مدرسين بعد — ضيفهم من صفحة "إدارة فريق العمل"</p>';
+      return;
+    }
+    const withMetric = names.map(n => {
+      const metrics = [n.collectionRate, n.avgGradePercent, n.attendanceRatePercent].filter(v => v !== null && v !== undefined);
+      const worst = metrics.length > 0 ? Math.min(...metrics) : null;
+      return { ...n, worstMetric: worst };
+    });
+    const needsAttention = withMetric.filter(n => n.worstMetric !== null && n.worstMetric < 60).sort((a, b) => a.worstMetric - b.worstMetric).slice(0, 4);
+
+    if (needsAttention.length === 0) {
+      overviewBody.innerHTML = '<p style="text-align:center;padding:16px;color:var(--success);"><i class="fas fa-circle-check"></i> كل المدرسين في وضع جيد حالياً (تحصيل/درجات/حضور فوق 60%)</p>';
+      return;
+    }
+    overviewBody.innerHTML = needsAttention.map(n => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">
+        <div>
+          <strong style="color:var(--gray-900);">${escapeHtml(n.name)}</strong>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:2px;">
+            نسبة التحصيل: ${centerPercentBadge(n.collectionRate, 80, 50)} —
+            متوسط الدرجات: ${centerPercentBadge(n.avgGradePercent, 70, 50)} —
+            نسبة الحضور: ${centerPercentBadge(n.attendanceRatePercent, 85, 60)}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('❌ خطأ في تحميل نظرة عامة على المدرسين:', error);
+    overviewBody.innerHTML = '<p style="text-align:center;padding:16px;color:var(--gray-400);">❌ خطأ في الاتصال بالخادم</p>';
+  }
+}
+
+// ✅ Aug 2026 (Phase I follow-up 3): فلتر الرسومات حسب المدرس — بيضيّق فلتر المجموعة الموجود أصلاً
+// (gradeFilterGroup)، بنفس أسلوب الفلترة المستخدم في messages.html
+let chartsGroupInstructorMap = {};
+
+function populateChartsInstructorFilter(instructorNames) {
+  document.getElementById('chartsInstructorFilterLabel').style.display = 'inline-flex';
+  const select = document.getElementById('chartsInstructorFilter');
+  select.style.display = 'inline-block';
+  const currentValue = select.value;
+  select.innerHTML = '<option value="">-- كل المدرسين --</option>';
+  instructorNames.filter(n => n.is_active).forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n.id; opt.textContent = n.name;
+    select.appendChild(opt);
+  });
+  select.value = currentValue || '';
+
+  chartsGroupInstructorMap = {};
+  centerGroupsCache.forEach(g => { if (g.instructorNameId) chartsGroupInstructorMap[g.name] = String(g.instructorNameId); });
+
+  applyChartsInstructorFilter();
+}
+
+function onChartsInstructorFilterChange() {
+  applyChartsInstructorFilter();
+  loadGradeStats();
+}
+
+function applyChartsInstructorFilter() {
+  const filterValue = document.getElementById('chartsInstructorFilter').value;
+  const groupSelect = document.getElementById('gradeFilterGroup');
+  let visibleCount = 0;
+  let firstVisibleValue = 'ALL';
+  Array.from(groupSelect.options).forEach(opt => {
+    if (opt.value === 'ALL') { opt.hidden = false; return; }
+    const matches = !filterValue || chartsGroupInstructorMap[opt.value] === filterValue;
+    opt.hidden = !matches;
+    if (matches) { visibleCount++; if (firstVisibleValue === 'ALL') firstVisibleValue = opt.value; }
+  });
+  const currentValue = groupSelect.value;
+  if (filterValue && currentValue !== 'ALL' && chartsGroupInstructorMap[currentValue] !== filterValue) {
+    groupSelect.value = visibleCount === 1 ? firstVisibleValue : 'ALL';
+  }
+}
+
+// ✅ Aug 2026 (Phase I follow-up 10): حصص "النهاردة" الفعلية (اتنشأت فعلاً اليوم)، مرتبة بوقت
+// الإنشاء، مع حالة كل حصة (شغّالة دلوقتي / فات وقت احتساب غيابها) بناءً على عتبتها الخاصة
+function renderTodaySessions(sessions, groups) {
+  const container = document.getElementById('todaySessionsBody');
+  const groupInstructorName = {};
+  groups.forEach(g => { groupInstructorName[g.name] = g.instructorName || null; });
+
+  const nowMs = Date.now();
+  const todaySessions = (sessions || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  if (todaySessions.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i class="fas fa-mug-hot" style="font-size:24px;opacity:0.5;"></i><h4>مفيش حصص اتنشأت النهاردة</h4></div>';
+    return;
+  }
+
+  container.innerHTML = todaySessions.map(s => {
+    // ✅ Batch 23 (بند 10): لو الحصة معاها مدة محددة صراحة (duration_minutes)، "شغالة دلوقتي"
+    // بقت معتمدة على المدة دي — مش على عتبة احتساب الغياب (اللي غرضها تاني أصلاً: آخر وقت
+    // يُحسب فيه غياب طالب معملش حضور، مش وقت انتهاء الحصة نفسها). لو مفيش مدة محددة (حصص
+    // قديمة قبل الإضافة دي)، بيرجع لنفس المنطق القديم بالاعتماد على عتبة الغياب
+    const hasDuration = Number(s.duration_minutes) > 0;
+    const windowMs = (hasDuration ? Number(s.duration_minutes) : (s.absence_threshold_minutes || 30)) * 60000;
+    const elapsedMs = nowMs - new Date(s.created_at).getTime();
+    let statusLabel, statusColor;
+    if (elapsedMs < windowMs) { statusLabel = '🟢 شغالة دلوقتي'; statusColor = 'var(--success)'; }
+    else { statusLabel = hasDuration ? '⚪ انتهت مدة الحصة' : '⚪ خلص وقت احتساب الغياب'; statusColor = 'var(--gray-400)'; }
+
+    const instructorName = s.instructor_name || groupInstructorName[s.group_name];
+    const timeStr = new Date(s.created_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit' });
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">
+        <div>
+          <strong>${escapeHtml(s.session_label || s.group_name)}</strong>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:2px;">
+            📁 ${escapeHtml(s.group_name)}${instructorName ? ' — 👤 ' + escapeHtml(instructorName) : ''} — 🕐 ${escapeHtml(timeStr)}
+          </div>
+        </div>
+        <span style="font-size:12.5px;font-weight:600;color:${statusColor};white-space:nowrap;">${statusLabel}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+async function checkSessionAbsences() {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    await fetch(PROJECT_URL + '/functions/v1/check-session-absences', { method: 'POST', headers, body: '{}' });
+  } catch (error) { /* تجاهل بهدوء — ده فحص خلفي مش لازم يقاطع المستخدم */ }
+}
+
+// ✅ بتتنادى دورياً — بتنشر تلقائياً أي اختبار وصل وقت جدولته (بديل عن جدولة سيرفر مخصصة)
+async function checkScheduledExams() {
+  try {
+    await fetch(PROJECT_URL + '/functions/v1/check-scheduled-exams', { method: 'POST' });
+  } catch (error) { /* تجاهل بهدوء */ }
+}
+
+async function refreshCardModeStatus() {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/card-action-mode', {
+      method: 'POST', headers, body: JSON.stringify({ action: 'get' })
+    });
+    const result = await response.json();
+    const descEl = document.getElementById('cardModeDesc');
+    if (!result.success) return;
+
+    // ✅ نعبّي حقول المودال بالحالة الحالية، عشان لما المستخدم يفتحه يلاقي إعداداته زي ما هي.
+    // ✅ (طلب متابعة) استخدمنا isEnabled (مش readerEnabled) هنا عشان الـ checkbox وصندوق
+    // الإعدادات يعكسوا هل المدرس حدد وضع (حضور/دفع/مذكرة) فعلياً — readerEnabled بقى دايماً
+    // true تقريباً (القارئ فاتح قراية حتى بدون وضع محدد، عشان تسريع تسجيل الكروت)
+    const enabledCb = document.getElementById('cardReaderEnabledCb');
+    if (enabledCb) {
+      enabledCb.checked = !!result.isEnabled;
+      document.getElementById('cardModeSettingsBody').style.display = result.isEnabled ? 'block' : 'none';
+    }
+
+    // ✅ (طلب متابعة) القارئ ممكن يشتغل من غير أي وضع (حضور/دفع/مذكرة) مفعّل — إما لأن فيه
+    // طلب مسح كارت معلّق (تسجيل طالب جديد أو ربط كارت بطالب موجود)، أو لأنه ببساطة مفيش
+    // وضع محدد دلوقتي (القارئ فاضل شغّال قراية عشان تسريع التسجيل، بس من غير أي معالجة)
+    if (result.pendingRegistration) {
+      descEl.textContent = '🪪 القارئ شغّال مؤقتاً لمسح كارت (تسجيل/ربط طالب)';
+      descEl.style.color = 'var(--info)';
+      return;
+    }
+    if (!result.isEnabled) {
+      descEl.textContent = '📡 القارئ شغّال قراية (لسه مفيش وضع محدد) — جاهز لتسجيل كارت طالب';
+      descEl.style.color = 'var(--gray-400)';
+      return;
+    }
+
+    const modes = result.modes || ['attendance'];
+    const labels = [];
+    if (modes.includes('attendance')) labels.push('حضور');
+    if (modes.includes('payment')) labels.push(`دفع "${result.paymentTitle}"`);
+    if (modes.includes('book_payment')) labels.push('سداد مذكرة');
+    const isOnlyAttendance = modes.length === 1 && modes[0] === 'attendance';
+    let statusText = isOnlyAttendance ? 'حضور (الوضع الحالي)' : labels.join(' + ') + ' (شغّال)';
+    // ✅ Aug 2026 (Phase I): نوضّح سياق الجلسة الحالي (مدرس/مجموعة/حصة) لحسابات السنتر
+    if (result.activeGroupName && result.activeSessionLabel) {
+      statusText += ` — ${escapeHtml(result.activeGroupName)} / ${escapeHtml(result.activeSessionLabel)}`;
+    }
+    descEl.textContent = statusText;
+    descEl.style.color = isOnlyAttendance ? '' : 'var(--warning)';
+
+    if (result.activeGroupName) {
+      restoreCardModeContextSelection(result.activeInstructorNameId, result.activeGroupName, result.activeSessionId);
+    }
+  } catch (error) { /* تجاهل */ }
+}
+
+// ✅ Aug 2026 (Phase I follow-up 10): يعيد تحديد المجموعة/الحصة (والمدرس لو سنتر) في القوائم
+// المنسدلة زي ما هي محفوظة حالياً، عشان لو المستخدم فتح المودال تاني يلاقي السياق زي ما تركه
+async function restoreCardModeContextSelection(instructorNameId, groupName, sessionId) {
+  try {
+    const isCenterAccount = sessionStorage.getItem('isCenter') === 'true';
+    if (isCenterAccount) {
+      const instructorSelect = document.getElementById('cardModeInstructorSelect');
+      if (!instructorNameId || !instructorSelect || !instructorSelect.options.length) return;
+      instructorSelect.value = String(instructorNameId);
+      if (instructorSelect.value !== String(instructorNameId)) return;
+      onCardModeInstructorChange();
+    }
+    const groupSelect = document.getElementById('cardModeGroupSelect');
+    if (!groupName || !groupSelect) return;
+    groupSelect.value = groupName;
+    if (groupSelect.value !== groupName) return;
+    await onCardModeGroupChange();
+    const sessionSelect = document.getElementById('cardModeSessionSelect');
+    if (!sessionId || !sessionSelect) return;
+    sessionSelect.value = String(sessionId);
+  } catch (_e) { /* استعادة السياق اختيارية، مش لازم توقف فتح المودال لو فشلت */ }
+}
+
+// ✅ (طلب) اسم المجموعة -> بيانات المجموعة (فيها instructorNameId) — تُستخدم لتضييق قائمة المجموعات على مجموعات المدرس المختار
+let attendanceGroupsCache = [];
+
+async function loadAttendanceInstructorNames() {
+  const field = document.getElementById('attendanceInstructorField');
+  if (sessionStorage.getItem('isCenter') !== 'true') { field.style.display = 'none'; return; }
+  field.style.display = 'block';
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const [instructorsRes, groupsRes] = await Promise.all([
+      fetch(PROJECT_URL + '/functions/v1/manage-instructor-names', { method: 'POST', headers, body: JSON.stringify({ action: 'list' }) }),
+      fetch(PROJECT_URL + '/functions/v1/manage-group', { method: 'POST', headers, body: JSON.stringify({ action: 'listDetailed' }) }),
+    ]);
+    const instructorsResult = await instructorsRes.json();
+    const groupsResult = await groupsRes.json();
+    attendanceGroupsCache = groupsResult.success ? (groupsResult.data || []) : [];
+
+    const select = document.getElementById('attendanceInstructorName');
+    select.innerHTML = '<option value="">-- اختر المدرس --</option>';
+    if (instructorsResult.success) {
+      (instructorsResult.data || []).filter(n => n.is_active).forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n.id;
+        opt.textContent = n.name;
+        select.appendChild(opt);
+      });
+    }
+    // ✅ المجموعة تفضل مقفولة لحد ما يتم اختيار المدرس الأول
+    document.getElementById('attendanceGroup').innerHTML = '<option value="">-- اختر المدرس أولاً --</option>';
+    document.getElementById('attendanceGroup').disabled = true;
+    document.getElementById('attendanceSessionField').style.display = 'none';
+  } catch (error) {
+    console.error('❌ خطأ في تحميل أسماء المدرسين:', error);
+  }
+}
+
+// ✅ (طلب) بعد اختيار المدرس، تتحمل مجموعاته هو بس في قائمة المجموعة
+function onAttendanceInstructorChange() {
+  const instructorId = document.getElementById('attendanceInstructorName').value;
+  const groupSelect = document.getElementById('attendanceGroup');
+  document.getElementById('attendanceSessionField').style.display = 'none';
+  document.getElementById('attendanceSession').innerHTML = '<option value="">-- اختر الحصة --</option>';
+  document.getElementById('attendanceStudentSearch').value = '';
+  document.getElementById('attendanceSelectedUid').value = '';
+  document.getElementById('attendanceSelectedName').value = '';
+  allStudents = [];
+
+  if (!instructorId) {
+    groupSelect.innerHTML = '<option value="">-- اختر المدرس أولاً --</option>';
+    groupSelect.disabled = true;
+    return;
+  }
+  const matchingGroups = attendanceGroupsCache.filter(g => String(g.instructorNameId) === String(instructorId));
+  groupSelect.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+  matchingGroups.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.name; opt.textContent = g.name;
+    groupSelect.appendChild(opt);
+  });
+  if (matchingGroups.length === 0) {
+    groupSelect.innerHTML = '<option value="">-- لا توجد مجموعات مربوطة بهذا المدرس --</option>';
+    groupSelect.disabled = true;
+  } else {
+    groupSelect.disabled = false;
+  }
+}
+
+// ✅ Aug 2026 (Phase I follow-up 10): بعد اختيار المجموعة، تتحمل حصص النهاردة بتاعتها + الطلاب
+// المسجلين فيها — الحصة بقت مطلوبة لكل الحسابات مش السنتر بس
+async function onAttendanceGroupChange() {
+  await loadAttendanceStudents();
+  await loadAttendanceSessionsForGroup();
+}
+
+async function loadAttendanceSessionsForGroup() {
+  const group = document.getElementById('attendanceGroup').value;
+  const sessionField = document.getElementById('attendanceSessionField');
+  const sessionSelect = document.getElementById('attendanceSession');
+  document.getElementById('attendanceNewSessionBox').style.display = 'none';
+  if (!group) { sessionField.style.display = 'none'; return; }
+  sessionField.style.display = 'block';
+  sessionSelect.innerHTML = '<option value="">جاري التحميل...</option>';
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-group-sessions', {
+      method: 'POST', headers, body: JSON.stringify({ action: 'listToday', groupName: group })
+    });
+    const result = await response.json();
+    const sessions = result.success ? (result.data || []) : [];
+    sessionSelect.innerHTML = '<option value="">-- اختر الحصة --</option>';
+    sessions.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.session_label;
+      sessionSelect.appendChild(opt);
+    });
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__'; newOpt.textContent = '➕ إنشاء حصة جديدة...';
+    sessionSelect.appendChild(newOpt);
+    if (sessions.length === 0) sessionSelect.value = '__new__';
+    onAttendanceSessionChange();
+  } catch (error) {
+    console.error('❌ خطأ في تحميل الحصص:', error);
+    sessionSelect.innerHTML = '<option value="">-- تعذر تحميل الحصص --</option>';
+  }
+}
+
+function onAttendanceSessionChange() {
+  const value = document.getElementById('attendanceSession').value;
+  document.getElementById('attendanceNewSessionBox').style.display = value === '__new__' ? 'block' : 'none';
+}
+
+function openAttendanceModal() {
+  document.getElementById('attendanceModal').classList.add('open');
+  loadAttendanceInstructorNames();
+  if (sessionStorage.getItem('isCenter') !== 'true') {
+    document.getElementById('attendanceGroup').disabled = false;
+    loadAttendanceGroups();
+  }
+}
+
+function closeAttendanceModal() {
+  document.getElementById('attendanceModal').classList.remove('open');
+  document.getElementById('attendanceStudentSearch').value = '';
+  document.getElementById('attendanceSelectedUid').value = '';
+  document.getElementById('attendanceSelectedName').value = '';
+  document.getElementById('attendanceNotes').value = '';
+  document.getElementById('attendanceInstructorName').value = '';
+  document.getElementById('attendanceSessionField').style.display = 'none';
+  document.getElementById('attendanceNewSessionBox').style.display = 'none';
+}
+
+async function loadAttendanceGroups() {
+  try {
+    if (!isTokenValid()) {
+      return;
+    }
+
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-groups', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ clientId })
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      return;
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      const groups = result.data || [];
+      const select = document.getElementById('attendanceGroup');
+      select.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        select.appendChild(opt);
+      });
+    }
+  } catch (error) {
+    console.error('❌ خطأ في تحميل المجموعات:', error);
+  }
+}
+
+async function loadAttendanceStudents() {
+  const group = document.getElementById('attendanceGroup').value;
+  if (!group) {
+    allStudents = [];
+    return;
+  }
+  try {
+    if (!isTokenValid()) {
+      return;
+    }
+
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/get-students', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ clientId, groupName: group })
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      return;
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      allStudents = result.data || [];
+    }
+  } catch (error) {
+    console.error('❌ خطأ في تحميل الطلاب:', error);
+  }
+}
+
+function filterAttendanceStudents() {
+  const query = document.getElementById('attendanceStudentSearch').value.trim().toLowerCase();
+  const box = document.getElementById('attendanceSuggestions');
+  if (query.length < 1) {
+    box.style.display = 'none';
+    return;
+  }
+  const matches = allStudents.filter(s =>
+    s.name.toLowerCase().includes(query) ||
+    s.uid.toLowerCase().includes(query)
+  );
+  if (matches.length === 0) {
+    box.style.display = 'none';
+    return;
+  }
+  box.innerHTML = '';
+  matches.forEach(s => {
+    const div = document.createElement('div');
+    div.innerHTML = `<strong>${escapeHtml(s.name)}</strong> <span class="suggestion-uid">${escapeHtml(s.uid)}</span> <span style="color:var(--gray-400);font-size:12px;">(${escapeHtml(s.group_name)})</span>`;
+    div.onclick = () => {
+      document.getElementById('attendanceStudentSearch').value = s.name;
+      document.getElementById('attendanceSelectedUid').value = s.uid;
+      document.getElementById('attendanceSelectedName').value = s.name;
+      box.style.display = 'none';
+    };
+    box.appendChild(div);
+  });
+  box.style.display = 'block';
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.field-with-suggestions')) {
+    document.getElementById('attendanceSuggestions').style.display = 'none';
+  }
+});
+
+async function submitAttendance() {
+  const group = document.getElementById('attendanceGroup').value;
+  const studentUid = document.getElementById('attendanceSelectedUid').value;
+  const studentName = document.getElementById('attendanceSelectedName').value;
+  const notes = document.getElementById('attendanceNotes').value.trim();
+  const isCenter = sessionStorage.getItem('isCenter') === 'true';
+  const instructorNameId = document.getElementById('attendanceInstructorName').value || null;
+  let sessionValue = document.getElementById('attendanceSession').value || null;
+
+  // ✅ Aug 2026 (Phase I follow-up 10): المجموعة والحصة (النهاردة) بقيا إجباريين لكل الحسابات —
+  // المدرس (instructorNameId) لسه إجباري لحسابات السنتر بس
+  if (isCenter && !instructorNameId) {
+    showAttendanceToast('⚠️ اختر المدرس أولاً', 'warning');
+    return;
+  }
+  if (!group) {
+    showAttendanceToast('⚠️ اختر المجموعة', 'warning');
+    return;
+  }
+  if (!sessionValue) {
+    showAttendanceToast('⚠️ اختر الحصة', 'warning');
+    return;
+  }
+  if (!studentUid) {
+    showAttendanceToast('⚠️ اختر طالباً من القائمة', 'warning');
+    return;
+  }
+  let newSessionLabel = null, newSessionThreshold = null, newSessionDuration = null;
+  if (sessionValue === '__new__') {
+    newSessionLabel = document.getElementById('attendanceNewSessionLabel').value.trim();
+    if (!newSessionLabel) { showAttendanceToast('⚠️ حدد اسم الحصة الجديدة', 'warning'); return; }
+    newSessionThreshold = Number(document.getElementById('attendanceNewSessionThreshold').value) || 30;
+    // ✅ Batch 23 (بند 10): اختيارية — لو فاضية بتتبعت null والباك إند بيرجع لمنطق العتبة القديم
+    newSessionDuration = Number(document.getElementById('attendanceNewSessionDuration').value) || null;
+  }
+
+  try {
+    if (!isTokenValid()) {
+      showAttendanceToast('⚠️ انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+      handleUnauthorized();
+      return;
+    }
+
+    const headers = getAuthHeaders();
+    if (!headers) {
+      showAttendanceToast('⚠️ لا يوجد توكن، يرجى تسجيل الدخول مرة أخرى', 'error');
+      handleUnauthorized();
+      return;
+    }
+
+    // ✅ (طلب) دفعة 43: بدل ما ننشئ الحصة في طلب منفصل وبعدين نستخدم الـ id بتاعها في طلب
+    // تاني، بقينا نبعت بيانات الحصة الجديدة مباشرة مع طلب تسجيل الحضور نفسه — الدالة بتنشئها
+    // وتستخدمها فوراً في نفس الطلب (بنفس أسلوب تفعيل القارئ بالظبط). ده بيقفل مشكلة كانت
+    // بتحصل كل مرة: أول طالب بعد إنشاء حصة جديدة كان بيظهر "تم التسجيل بنجاح" لكن فعلياً
+    // مايترتبطش بالحصة، فمكانش بيظهر في سجلها خالص
+    const attendanceBody = {
+      clientId,
+      uid: studentUid,
+      manual: true,
+      notes: notes || 'حضور يدوي',
+      assistantId: assistantId || null,
+      instructorNameId: instructorNameId,
+      groupName: group,
+    };
+    if (sessionValue === '__new__') {
+      attendanceBody.newSessionLabel = newSessionLabel;
+      attendanceBody.newSessionThresholdMinutes = newSessionThreshold;
+      attendanceBody.newSessionDurationMinutes = newSessionDuration;
+    } else {
+      attendanceBody.sessionId = Number(sessionValue);
+    }
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/record-attendance', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(attendanceBody)
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      return;
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      showAttendanceToast(`✅ تم تسجيل حضور "${studentName}" بنجاح`, 'success');
+      setTimeout(() => {
+        closeAttendanceModal();
+        loadDashboard();
+      }, 1200);
+    } else if (result.message === 'DUPLICATE_IGNORE') {
+      showAttendanceToast(`⚠️ "${studentName}" مسجل حضور مسبقاً اليوم`, 'warning');
+    } else if (result.message === 'UNREGISTERED') {
+      showAttendanceToast(`❌ الطالب "${studentName}" غير مسجل في المنظومة`, 'error');
+    } else if (result.code === 'SESSION_THRESHOLD_PASSED') {
+      // ✅ (طلب) دفعة 43: النظام بقى يرفض تسجيل الحضور اليدوي بعد انتهاء مهلة أخذ الغياب
+      // لنفس الحصة، بدل ما يسجله حاضر في أي وقت
+      showAttendanceToast(result.message, 'error');
+    } else {
+      showAttendanceToast(`❌ فشل تسجيل الحضور: ${result.message}`, 'error');
+    }
+  } catch (error) {
+    console.error('❌ خطأ:', error);
+    showAttendanceToast('❌ فشل تسجيل الحضور - خطأ في الاتصال', 'error');
+  }
+}
+
+// ============================================
+// RESET SYSTEM
+// ============================================
+async function downloadBackup() {
+  const btn = document.getElementById('backupBtn');
+  const status = document.getElementById('backupStatus');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز النسخة الاحتياطية...';
+
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    const response = await fetch(PROJECT_URL + '/functions/v1/manage-backup', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ action: 'export', clientId })
+    });
+    if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+    const result = await response.json();
+
+    if (result.success) {
+      const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.href = url;
+      a.download = `نسخة-احتياطية-${teacherName}-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      status.style.display = 'block';
+      status.style.color = 'var(--success)';
+      status.innerHTML = '✅ تم تحميل النسخة الاحتياطية بنجاح';
+      btn.innerHTML = '<i class="fas fa-check"></i> تم التحميل — تقدر تحمّلها تاني لو حبيت';
+    } else {
+      status.style.display = 'block';
+      status.style.color = 'var(--danger)';
+      status.innerHTML = '❌ ' + result.message;
+      btn.innerHTML = '<i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)';
+    }
+  } catch (error) {
+    console.error('❌ خطأ في تحميل النسخة الاحتياطية:', error);
+    status.style.display = 'block';
+    status.style.color = 'var(--danger)';
+    status.innerHTML = '❌ فشل تحميل النسخة الاحتياطية: ' + error.message;
+    btn.innerHTML = '<i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function openResetConfirm() {
+  const overlay = document.createElement('div');
+  overlay.className = 'reset-modal-overlay open';
+  overlay.id = 'resetModalOverlay';
+
+  overlay.innerHTML = `
+    <div class="reset-modal-box">
+      <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
+      <h3>⚠️ إعادة تهيئة النظام</h3>
+      <p>حدّد البيانات اللي عايز تحذفها بس — مش لازم تحذف كل حاجة (مثلاً لو العام الدراسي انتهى بس الطلاب مكملين سنة جديدة، سيب "الطلاب أنفسهم" من غير تحديد).</p>
+      <div class="reset-opts-list" style="text-align:right;padding:4px 12px;font-size:13.5px;margin:10px 0;">
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="attendance" checked> ✅ سجلات الحضور
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="payments" checked> 💰 المدفوعات الشهرية
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="grades" checked> 📝 الدرجات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="bookPayments" checked> 📖 سداد المذكرات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-top:1px solid var(--gray-200);margin-top:6px;padding-top:12px;">
+          <input type="checkbox" class="reset-opt" value="students"> 📋 الطلاب أنفسهم (بيانتهم وأرقامهم وكروتهم)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="groups"> 🏫 المجموعات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="books"> 📚 المذكرات نفسها (كبند، مش سداداتها بس)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="paymentTitles"> 🏷️ بنود السداد المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="examTitles"> 🏷️ أسماء الامتحانات المحفوظة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="onlineExams"> 🖥️ الامتحانات الإلكترونية (أسئلتها ومحاولات الطلاب فيها)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="notifications"> 🔔 الإشعارات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="activityLogs"> 📜 سجل النشاطات القديم
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="registrationRequests"> 📋 طلبات التسجيل
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+          <input type="checkbox" class="reset-opt" value="conversations"> 💬 المحادثات مع أولياء الأمور
+        </label>
+      </div>
+      <div class="warning-text">
+        <i class="fas fa-skull"></i> اللي هتحدده هيتحذف نهائياً، مفيش رجوع بعد كده!
+      </div>
+      <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:16px;" onclick="downloadBackup()" id="backupBtn">
+        <i class="fas fa-download"></i> تحميل نسخة احتياطية أولاً (اختياري لكن مُنصح به)
+      </button>
+      <div id="backupStatus" style="font-size:12.5px;text-align:center;margin-bottom:12px;display:none;"></div>
+      <div class="form-group" style="text-align:right;margin-bottom:16px;">
+        <label for="resetPasswordInput" style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">
+          🔐 أدخل كلمة مرورك لتأكيد الحذف
+        </label>
+        <input type="password" id="resetPasswordInput" placeholder="كلمة المرور" autocomplete="current-password"
+          style="width:100%;padding:10px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel-reset" onclick="closeResetModal()">
+          <i class="fas fa-times"></i> إلغاء
+        </button>
+        <button class="btn btn-confirm-reset" onclick="confirmReset()">
+          <i class="fas fa-trash-alt"></i> تأكيد الحذف
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) closeResetModal();
+  });
+
+  setTimeout(() => {
+    const pwInput = document.getElementById('resetPasswordInput');
+    if (pwInput) pwInput.focus();
+  }, 50);
+}
+
+function closeResetModal() {
+  const modal = document.getElementById('resetModalOverlay');
+  if (modal) modal.remove();
+}
+
+async function confirmReset() {
+  const pwInput = document.getElementById('resetPasswordInput');
+  const password = pwInput ? pwInput.value : '';
+
+  if (!password) {
+    showToast('⚠️ يجب إدخال كلمة المرور لتأكيد الحذف', 'error');
+    if (pwInput) pwInput.focus();
+    return;
+  }
+
+  const btns = document.querySelectorAll('.reset-modal-box .btn');
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    if (!isTokenValid()) {
+      showToast('⚠️ انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى', 'error');
+      handleUnauthorized();
+      closeResetModal();
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      closeResetModal();
+      return;
+    }
+
+    // ✅ إرسال JSON صحيح + كلمة المرور للتحقق الفعلي في الخادم
+    const selectedOptions = {};
+    document.querySelectorAll('.reset-opt').forEach(cb => { selectedOptions[cb.value] = cb.checked; });
+    const requestBody = JSON.stringify({ clientId: clientId, password: password, options: selectedOptions });
+
+    const response = await fetch(PROJECT_URL + '/functions/v1/reset-system', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/json'
+      },
+      body: requestBody  // ✅ JSON صحيح
+    });
+
+    if (response.status === 401) {
+      handleUnauthorized('انتهت صلاحية الجلسة');
+      closeResetModal();
+      return;
+    }
+
+    const result = await response.json().catch(() => ({ success: false, message: 'استجابة غير متوقعة من الخادم' }));
+
+    if (!response.ok || !result.success) {
+      showToast('❌ ' + (result.message || 'فشل تنفيذ العملية'), 'error');
+      // نسيب المودال مفتوح (خصوصاً لو الباسورد غلط) عشان يقدر يحاول تاني
+      if (pwInput) { pwInput.value = ''; pwInput.focus(); }
+      btns.forEach(b => b.disabled = false);
+      return;
+    }
+
+    showToast('✅ ' + result.message, 'success');
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  } catch (error) {
+    console.error('❌ خطأ أثناء الحذف:', error);
+    showToast('❌ فشل حذف البيانات: ' + error.message, 'error');
+    btns.forEach(b => b.disabled = false);
+  }
+}
+    // ============================================
+    // INIT
+    // ============================================
+
+    let notifData = [];
+    let lastUnreadCount = 0;
+
+    function timeAgo(dateStr) {
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 1) return 'الآن';
+      if (mins < 60) return `منذ ${mins} د`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `منذ ${hrs} س`;
+      const days = Math.floor(hrs / 24);
+      return `منذ ${days} يوم`;
+    }
+
+    const NOTIF_ICONS = { bulk_message: '📨', center_teacher_message: '🏢', parent_message: '💬', teacher_message: '💬' };
+
+    function playNotificationSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [880, 1175].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          const start = now + i * 0.12;
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.18, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.25);
+        });
+      } catch (e) { /* بعض المتصفحات بتمنع الصوت قبل أي تفاعل من المستخدم، نتجاهل بهدوء */ }
+    }
+
+    async function loadNotifications() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-notifications', {
+          method: 'POST', headers, body: JSON.stringify({})
+        });
+        if (response.status === 401) return;
+        const result = await response.json();
+        if (!result.success) return;
+
+        if (result.unreadCount > lastUnreadCount && lastUnreadCount !== undefined) {
+          playNotificationSound();
+          // ✅ في تطبيق سطح المكتب، نعرض إشعار نظام حقيقي في درج الإشعارات زي أي برنامج
+          if (window.electronNotify && result.data && result.data[0]) {
+            window.electronNotify.show(result.data[0].title || 'إشعار جديد', result.data[0].message || '').catch(() => {});
+          }
+        }
+        lastUnreadCount = result.unreadCount;
+
+        notifData = result.data || [];
+        const badge = document.getElementById('notifBadge');
+        if (result.unreadCount > 0) {
+          badge.style.display = 'flex';
+          badge.textContent = result.unreadCount > 9 ? '9+' : result.unreadCount;
+        } else {
+          badge.style.display = 'none';
+        }
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الإشعارات:', error);
+      }
+    }
+
+    function renderNotifList() {
+      const list = document.getElementById('notifList');
+      if (notifData.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">مفيش إشعارات لسه</div>';
+        return;
+      }
+      list.innerHTML = notifData.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
+          <div class="n-time">${timeAgo(n.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const isOpening = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+      if (isOpening) positionNotifPanel();
+    }
+
+    // ✅ بنحسب مكان القائمة فعلياً وقت كل فتحة، بناءً على موقع زرار الجرس الحقيقي وحجم الشاشة الحالي —
+    // ده بيضمن رياضياً إنها تفضل جوه حدود الشاشة تماماً، مهما كان حجم الجهاز أو عرض نافذة المتصفح
+    function positionNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const btn = document.getElementById('notifBtn') || document.querySelector('.notif-wrap');
+      if (!panel || !btn) return;
+      const btnRect = btn.getBoundingClientRect();
+      const margin = 12;
+      const panelWidth = Math.min(340, window.innerWidth - margin * 2);
+      let left = btnRect.right - panelWidth;
+      if (left < margin) left = margin;
+      if (left + panelWidth > window.innerWidth - margin) left = window.innerWidth - margin - panelWidth;
+      panel.style.position = 'fixed';
+      panel.style.left = left + 'px';
+      panel.style.right = 'auto';
+      panel.style.width = panelWidth + 'px';
+      // ✅ Batch 24 (بند 4): بعد نقل الجرس لذيل القائمة الجانبية (تحت خالص)، فتح البانل تحت
+      // الزرار عادي هيطلعه خارج حدود الشاشة — لو مفيش مساحة كافية تحت، نفتحه لفوق بدل كده
+      const estimatedHeight = Math.min(420, window.innerHeight - margin * 2);
+      const spaceBelow = window.innerHeight - btnRect.bottom - margin;
+      if (spaceBelow < estimatedHeight && btnRect.top > estimatedHeight) {
+        panel.style.bottom = (window.innerHeight - btnRect.top + 10) + 'px';
+        panel.style.top = 'auto';
+      } else {
+        panel.style.top = (btnRect.bottom + 10) + 'px';
+        panel.style.bottom = 'auto';
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      const wrap = document.querySelector('.notif-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('notifPanel').classList.remove('open');
+      }
+    });
+
+    async function markOneRead(id) {
+      const item = notifData.find(n => n.id === id);
+      const wasUnread = item && !item.is_read;
+      try {
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل كان مش بيعمل أي حاجة خالص (return مبكر) —
+        // دلوقتي بيوديك لمكان الإشعار برضه حتى لو كان مقروء من قبل، وبس اللي بيتعلَّم كمقروء
+        // فعلياً (نداء الـ API) هو اللي بيتخطّى لو كان مقروء أصلاً
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه المستخدم لمكان الإشعار نفسه بدل
+        // ما يفضل واقف في نفس الصفحة من غير ما يعرف يوصل للمحادثة/الطالب الخاص بالإشعار
+        if (item) {
+          if (item.type === 'parent_message' && item.student_uid) {
+            const nm = (item.details && item.details.student_name) || '';
+            window.location.href = 'messages.html?openConversation=' + encodeURIComponent(item.student_uid) + (nm ? '&name=' + encodeURIComponent(nm) : '');
+          } else if (item.type === 'center_teacher_message') {
+            window.location.href = 'messages.html';
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
+      }
+    }
+
+    async function markAllRead() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+          method: 'POST', headers, body: JSON.stringify({ markAll: true })
+        });
+        notifData.forEach(n => n.is_read = true);
+        document.getElementById('notifBadge').style.display = 'none';
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الكل كمقروء:', error);
+      }
+    }
+
+    // ✅ (طلب) اللافتة الإعلانية الخاصة بلوحة المدرس — نفس نمط لافتة الطالب/ولي الأمر بالظبط
+    // بس بتقرا من الحقول المخصصة للمدرس (portal_banner_teacher_*)
+    // ✅ Batch 33 (بند 1): اللافتة بقت تدعم أكتر من صورة تتقلّب تلقائياً ورا بعض، كل صورة
+    // برابطها الخاص عند الضغط عليها — بدل صورة واحدة ثابتة زي ما كانت قبل كده
+    let portalBannerSlides = [];
+    let portalBannerIndex = 0;
+    let portalBannerTimer = null;
+
+    function showPortalBannerSlide(i) {
+      const slide = portalBannerSlides[i];
+      if (!slide) return;
+      document.getElementById('portalAdBannerImg').src = slide.image_url;
+      const banner = document.getElementById('portalAdBanner');
+      banner.href = slide.link_url || '#';
+      banner.style.cursor = slide.link_url ? 'pointer' : 'default';
+    }
+
+    async function loadPortalAdBanner() {
+      try {
+        const [settingsRes, adsRes] = await Promise.all([
+          fetch(PROJECT_URL + '/functions/v1/get-system-settings'),
+          fetch(PROJECT_URL + '/functions/v1/get-login-ads'),
+        ]);
+        const settingsResult = await settingsRes.json();
+        const adsResult = await adsRes.json();
+        const data = settingsResult.data || {};
+        const slides = (adsResult.portalBanners && adsResult.portalBanners.teacher) || [];
+        if (data.portal_banner_show_teacher && slides.length > 0) {
+          portalBannerSlides = slides;
+          portalBannerIndex = 0;
+          const banner = document.getElementById('portalAdBanner');
+          banner.onclick = (e) => {
+            const current = portalBannerSlides[portalBannerIndex];
+            if (!current || !current.link_url) e.preventDefault();
+          };
+          showPortalBannerSlide(0);
+          banner.style.display = 'block';
+          if (portalBannerTimer) clearInterval(portalBannerTimer);
+          if (slides.length > 1) {
+            portalBannerTimer = setInterval(() => {
+              portalBannerIndex = (portalBannerIndex + 1) % portalBannerSlides.length;
+              showPortalBannerSlide(portalBannerIndex);
+            }, 5000);
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل اللافتة الإعلانية:', error);
+      }
+    }
+
+    window.onload = function() {
+      if (!isTokenValid()) {
+        const token = sessionStorage.getItem(TOKEN_KEY);
+        if (token) {
+          handleUnauthorized('التوكن غير صالح');
+          return;
+        } else {
+          sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
+          window.location.href = LOGIN_URL;
+          return;
+        }
+      }
+
+      loadDashboard();
+      loadTodayAttendance();
+      registerPushIfNative();
+      refreshCardModeStatus();
+      checkSessionAbsences();
+      checkScheduledExams();
+      loadAtRiskStudents();
+      loadCenterOverview();
+      loadPortalAdBanner();
+      setInterval(loadDashboard, 30000);
+      setInterval(checkSessionAbsences, 5 * 60 * 1000);
+      setInterval(checkScheduledExams, 5 * 60 * 1000);
+      setInterval(loadTodayAttendance, 11000);
+      setInterval(refreshCardModeStatus, 23000);
+    };
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+  <div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div class="perm-dialog-box">
+      <div class="perm-dialog-icon">🔔</div>
+      <h3 class="perm-dialog-title">تفعيل الإشعارات الفورية</h3>
+      <p class="perm-dialog-text">
+        عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
+      </p>
+      <div style="display:flex;gap:10px;">
+        <button onclick="declinePermissionDialog()" class="perm-dialog-decline">مش دلوقتي</button>
+        <button onclick="acceptPermissionDialog()" class="perm-dialog-accept">فعّل الإشعارات</button>
+      </div>
+    </div>
+  </div>
+<script src="branding.js?v=2"></script>
+<script src="custom-dialogs.js?v=2"></script>
+</body>
+</html>

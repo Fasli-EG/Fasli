@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>صفحتي - فَصلي</title>
+  <meta name="description" content="صفحة الطالب الشخصية لمتابعة مستواه ومدفوعاته وحضوره في نظام فَصلي">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B1C33">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css?v=52">
+  <style>
+    /* ✅ Batch 22 (بند 4): الشريط العلوي كان بيمشي مع السكرول عادي زي أي عنصر تاني في الصفحة،
+       فلما الصفحة تطول (تبويبات + جداول) الطالب يفقد الوصول السريع للإشعارات/الوضع الليلي/الخروج
+       غير لو رجع لفوق. تثبيته بنفس نمط .header الموحّد في style.css (sticky + خلفية شبه شفافة
+       مع blur) بيخليه ظاهر طول الوقت زي باقي صفحات النظام */
+    .portal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px; border-bottom: 1px solid var(--gray-200);
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(247,248,250,0.92);
+    }
+    /* ✅ Batch 22 (بند 4): مكانش فيه لون نص صريح هنا — في الوضع الليلي ده بيسيب النص أسود
+       افتراضي (لون المتصفح) فوق خلفية غامقة فيبقى غير مقروء. نفس الملاحظة كانت منطبقة على
+       عنوان اسم الطالب (studentNameHeader) تحت لأنه <h2> عادي من غير كلاس بيدّيله لون */
+    .portal-header .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--gray-900); }
+    .portal-header .actions { display: flex; align-items: center; gap: 10px; }
+    .portal-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    #studentNameHeader { color: var(--gray-900); }
+    [data-theme="dark"] .portal-header { background: rgba(29,34,43,0.92); border-bottom-color: var(--gray-200); }
+  </style>
+</head>
+<body>
+
+  <div class="portal-header">
+    <div class="brand"><i class="fas fa-graduation-cap" style="color:var(--primary);"></i> فَصلي — صفحتي</div>
+    <div class="actions">
+      <div class="notif-wrap" id="notifWrap">
+        <button class="btn btn-outline btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+          <i class="fas fa-bell"></i> <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+        </button>
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-panel-header">
+            <span>الإشعارات</span>
+            <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="toggleDarkMode()"><i class="fas fa-moon"></i></button>
+      <button class="btn btn-outline btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> خروج</button>
+    </div>
+  </div>
+
+  <!-- ✅ Batch 24 (بند 8): لافتة إعلانية بعرض الشاشة يتحكم في ظهورها الماستر من إعدادات النظام -->
+  <a id="portalAdBanner" href="#" target="_blank" rel="noopener" style="display:none;width:100%;overflow:hidden;">
+    <img id="portalAdBannerImg" style="width:100%;height:auto;max-height:300px;object-fit:contain;display:block;">
+  </a>
+
+  <div class="portal-container">
+    <div id="studentDetailsLoading" style="text-align:center;padding:60px;color:var(--gray-400);">
+      <i class="fas fa-spinner fa-spin" style="font-size:28px;display:block;margin-bottom:10px;"></i>جاري تحميل بياناتك...
+    </div>
+
+    <div id="studentDetailsContent" style="display:none;">
+      <div class="card">
+        <div class="card-body" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+          <div style="width:60px;height:60px;border-radius:50%;background:var(--primary);color:#0B1C33;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;" id="studentAvatar">؟</div>
+          <div style="flex:1;min-width:200px;">
+            <h2 style="margin:0 0 4px;" id="studentNameHeader">—</h2>
+            <div style="font-size:13px;color:var(--gray-500);">
+              <span id="studentGroupHeader">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">📝 امتحانات اتقدّمت لها</div><div class="stat-value primary" id="statExamsTaken">0</div></div>
+        <div class="stat-card"><div class="stat-label">📊 متوسط مستواك الحالي</div><div class="stat-value success" id="statCurrentAvg">0%</div></div>
+        <div class="stat-card"><div class="stat-label">📈 اتجاه المستوى</div><div class="stat-value" id="statTrend">—</div></div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">💰 إجمالي المدفوع</div><div class="stat-value success" id="statTotalPaid">0 ج.م</div></div>
+        <div class="stat-card"><div class="stat-label">✅ نسبة حضورك</div><div class="stat-value primary" id="statAttendancePercentDetail">0%</div></div>
+        <div class="stat-card"><div class="stat-label">❌ أيام غيابك</div><div class="stat-value danger" id="statAbsentDays">0</div></div>
+      </div>
+
+      <!-- ✅ (طلب) لو الطالب مربوط بأكتر من مجموعة، بيظهر هنا اختيار (راديو) للمجموعة اللي عايز
+           يشوف بياناتها — الصفحة كلها (الاختبارات/الدرجات/الحضور/المدفوعات/المذكرات + الإحصائيات)
+           بتتفلتر على المجموعة المختارة بس، من غير خيار "كل المجموعات" -->
+      <div class="card" id="studentGroupFilterCard" style="display:none;">
+        <div class="card-body" style="padding:12px 16px;">
+          <label style="font-size:13.5px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:8px;"><i class="fas fa-layer-group"></i> اختر المجموعة اللي عايز تشوف بياناتها:</label>
+          <div id="studentGroupFilterRadios" style="display:flex;flex-wrap:wrap;gap:14px;"></div>
+        </div>
+      </div>
+
+      <!-- ✅ Aug 2026: تبويبات صفحة الطالب — نفس بيانات الصفحة القديمة بتتحمّل مرة واحدة
+           في loadStudentDetails/loadExams زي ما كان قبل التبويبات، فمفيش تحميل كسول لازم هنا -->
+      <div class="tabs" id="portalTabs">
+        <button class="tab active" data-tab="exams" onclick="switchPortalTab('exams')">
+          <i class="fas fa-file-pen"></i> الاختبارات
+        </button>
+        <button class="tab" data-tab="grades" onclick="switchPortalTab('grades')">
+          <i class="fas fa-list-check"></i> الدرجات
+        </button>
+        <button class="tab" data-tab="payments" onclick="switchPortalTab('payments')">
+          <i class="fas fa-money-bill-wave"></i> المدفوعات
+        </button>
+        <button class="tab" data-tab="books" onclick="switchPortalTab('books')">
+          <i class="fas fa-book"></i> المذكرات
+        </button>
+        <button class="tab" data-tab="attendance" onclick="switchPortalTab('attendance')">
+          <i class="fas fa-calendar-check"></i> الحضور
+        </button>
+      </div>
+
+      <div id="portalTabsWrap">
+      <div class="tab-content active" id="tab-exams">
+        <div class="card" id="examsCard" style="display:none;">
+          <div class="card-header">
+            <h3><i class="fas fa-file-pen" style="color:var(--warning);"></i> اختباراتك</h3>
+          </div>
+          <div class="card-body" id="examsListContainer"></div>
+        </div>
+        <div class="card" id="examsEmptyCard">
+          <div class="card-body">
+            <p style="color:var(--gray-400);font-size:13px;text-align:center;padding:20px;">لا يوجد اختبارات متاحة حاليًا</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-grades">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-chart-line" style="color:var(--primary);"></i> مخطط نمو مستواك</h3>
+          </div>
+          <div class="card-body">
+            <p style="color:var(--gray-500);font-size:13px;margin-bottom:14px;">
+              بيوضّح نسبتك في كل امتحان بالترتيب الزمني — عشان تشوف مستواك بيرتفع ولا بينخفض مع الوقت.
+            </p>
+            <div id="growthChartContainer" style="width:100%;overflow-x:auto;"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-list-check" style="color:var(--primary);"></i> تفاصيل درجاتك</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>الامتحان</th><th>الدرجة</th><th>النسبة</th><th>التاريخ</th></tr></thead>
+                <tbody id="gradesDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-payments">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-money-bill-wave" style="color:var(--success);"></i> سجل مدفوعاتك</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>البند</th><th>المدفوع</th><th>الإجمالي</th><th>الحالة</th></tr></thead>
+                <tbody id="paymentsDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-books">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-book" style="color:var(--warning);"></i> مذكراتك</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>المذكرة</th><th>السعر</th><th>المدفوع</th><th>الحالة</th><th>الملف</th></tr></thead>
+                <tbody id="booksDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-attendance">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-calendar-check" style="color:var(--info);"></i> سجل حضورك وغيابك</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead>
+                <tbody id="attendanceDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    function getToken() {
+      return sessionStorage.getItem(TOKEN_KEY);
+    }
+
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    }
+
+    function isTokenValid() {
+      const token = getToken();
+      if (!token) return false;
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return false;
+        return true;
+      } catch (e) { return false; }
+    }
+
+    let isLoggingOut = false;
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+      showToast('⛔ ' + message + '، يرجى تسجيل الدخول مرة أخرى', 'error');
+      setTimeout(() => {
+        sessionStorage.clear(); localStorage.clear();
+        window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
+        window.electronStore?.clear().catch(() => {});
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    const studentUid = sessionStorage.getItem('studentUid');
+    const studentName = sessionStorage.getItem('studentName') || 'طالب';
+    const studentGroup = sessionStorage.getItem('studentGroup') || '';
+
+    if (!studentUid) {
+      sessionStorage.clear(); localStorage.clear();
+      window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
+      window.electronStore?.clear().catch(() => {});
+      window.location.href = LOGIN_URL;
+    }
+
+    function showToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'info');
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    async function logout() {
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
+      try {
+        const jwt = sessionStorage.getItem('jwtToken');
+        let pushToken = localStorage.getItem('fasliPushToken');
+        const Preferences = window.Capacitor?.Plugins?.Preferences;
+        if (!pushToken && Preferences) {
+          const stored = await Preferences.get({ key: 'fasliPushToken' }).catch(() => null);
+          pushToken = stored?.value || null;
+        }
+        if (jwt && pushToken) {
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
+          }).catch(() => {});
+        }
+      } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
+      sessionStorage.clear(); localStorage.clear();
+      window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {});
+      window.electronStore?.clear().catch(() => {});
+      window.location.href = LOGIN_URL;
+    }
+
+    // ✅ (طلب) صفحة الطالب مكانش فيها أي كود تسجيل جهاز للإشعارات الحقيقية خالص (لا داخل
+    // تطبيق الموبايل ولا في المتصفح) — بعكس صفحة ولي الأمر والمدرس اللي عندهم على الأقل
+    // مسار التطبيق الأصلي (Capacitor). ده كان أهم سبب إن الطالب تحديداً ماكانش بيوصله أي
+    // إشعار حقيقي على جهازه، بس جرس داخل التطبيق يحتاج يكون فاتحه فعلياً عشان يشوفه
+    let pendingPushNotifications = null;
+
+    async function registerPushIfNative() {
+      try {
+        const Capacitor = window.Capacitor;
+        if (!Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
+        const PushNotifications = Capacitor.Plugins?.PushNotifications;
+        if (!PushNotifications) return;
+
+        const permStatus = await PushNotifications.checkPermissions();
+        if (permStatus.receive === 'granted') { finishPushRegistration(PushNotifications); return; }
+        if (permStatus.receive === 'denied') return;
+
+        pendingPushNotifications = PushNotifications;
+        document.getElementById('permissionDialog').style.display = 'flex';
+      } catch (e) { /* تجاهل */ }
+    }
+
+    function declinePermissionDialog() {
+      document.getElementById('permissionDialog').style.display = 'none';
+      pendingPushNotifications = null;
+    }
+
+    async function acceptPermissionDialog() {
+      document.getElementById('permissionDialog').style.display = 'none';
+      const PushNotifications = pendingPushNotifications;
+      pendingPushNotifications = null;
+      if (!PushNotifications) return;
+      try {
+        const req = await PushNotifications.requestPermissions();
+        if (req.receive === 'granted') finishPushRegistration(PushNotifications);
+      } catch (e) { /* تجاهل */ }
+    }
+
+    async function finishPushRegistration(PushNotifications) {
+      try {
+        await PushNotifications.register();
+        PushNotifications.addListener('registration', async (token) => {
+          try {
+            const jwt = sessionStorage.getItem('jwtToken');
+            if (!jwt || !token?.value) return;
+            localStorage.setItem('fasliPushToken', token.value);
+            const Preferences = window.Capacitor?.Plugins?.Preferences;
+            if (Preferences) Preferences.set({ key: 'fasliPushToken', value: token.value }).catch(() => {});
+            await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+              body: JSON.stringify({ action: 'register', token: token.value, platform: 'android' })
+            });
+          } catch (e) { /* تجاهل */ }
+        });
+      } catch (e) { /* تجاهل */ }
+    }
+
+    // ✅ (طلب) تفعيل الإشعارات الحقيقية لما الطالب بيفتح الموقع من متصفح عادي (مش تطبيق
+    // موبايل) — عن طريق Firebase Web Push. مايشتغلش غير لو الماستر ضبط إعدادات Firebase من
+    // لوحة التحكم (get-system-settings)، وإلا بيتجاهل بهدوء من غير أي تأثير على باقي الصفحة
+    function loadScriptOnce(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function initWebPushNotifications() {
+      try {
+        if (window.Capacitor?.isNativePlatform?.()) return; // جوه التطبيق الأصلي بيستخدم مسار Capacitor فوق
+        if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+
+        const settingsRes = await fetch(PROJECT_URL + '/functions/v1/get-system-settings');
+        const settingsResult = await settingsRes.json();
+        const cfg = settingsResult.data || {};
+        if (!cfg.firebase_api_key || !cfg.firebase_project_id || !cfg.firebase_vapid_key) return;
+
+        if (!window.firebase) {
+          await loadScriptOnce('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+          await loadScriptOnce('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+        }
+        if (!firebase.apps.length) {
+          firebase.initializeApp({
+            apiKey: cfg.firebase_api_key, authDomain: cfg.firebase_auth_domain, projectId: cfg.firebase_project_id,
+            storageBucket: cfg.firebase_storage_bucket, messagingSenderId: cfg.firebase_messaging_sender_id, appId: cfg.firebase_app_id,
+          });
+        }
+
+        let permission = Notification.permission;
+        if (permission === 'default') permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        // ✅ (طلب) نفس تصحيح الـ scope المطلق اللي كان بيفشل بصمت تحت مسار GitHub Pages الفرعي
+        const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js', { scope: 'firebase-cloud-messaging-push-scope' });
+        const messaging = firebase.messaging();
+        const token = await messaging.getToken({ vapidKey: cfg.firebase_vapid_key, serviceWorkerRegistration: reg });
+        if (!token) return;
+
+        const jwt = sessionStorage.getItem('jwtToken');
+        if (!jwt) return;
+        await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+          body: JSON.stringify({ action: 'register', token, platform: 'web' })
+        });
+
+        // ✅ إشعار وصل والصفحة مفتوحة قدام الطالب فعلاً — نحدّث الجرس فوراً بدل ما ننتظر الـ polling
+        messaging.onMessage(() => { if (typeof loadNotifications === 'function') loadNotifications(); });
+      } catch (error) {
+        console.error('⚠️ تعذّر تفعيل الإشعارات الحقيقية:', error);
+      }
+    }
+
+    // ✅ نسخة بسيطة من نافذة التأكيد لو custom-dialogs.js مش محمّل لأي سبب
+    async function customConfirm(message) {
+      if (window.__customConfirmImpl) return window.__customConfirmImpl(message);
+      return window.confirm(message);
+    }
+
+    function getThemeKey() { return 'theme_' + studentUid; }
+
+    (function() {
+      const savedTheme = localStorage.getItem(getThemeKey());
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+
+    function toggleDarkMode() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem(getThemeKey(), next);
+    }
+
+    // ============================================
+    // ✅ تحميل بيانات الطالب (نفس منطق student-details.html، بس للطالب نفسه بدل ما المدرس يشوفه)
+    // ============================================
+    // ✅ بيانات آخر تحميل ناجح — تُستخدم في تطبيق فلتر المجموعة من غير إعادة نداء السيرفر
+    let lastLoadedGrades = [];
+    let lastLoadedPayments = [];
+    let lastLoadedAttendance = [];
+    let lastLoadedBooks = [];
+    let lastLoadedExams = [];
+    let currentStudentGroupFilter = studentGroup; // ✅ (طلب) فلتر المجموعة المختارة — دايماً مجموعة محددة، مفيش خيار "الكل"
+    let studentGroupsList = [studentGroup].filter(Boolean); // ✅ (طلب) كل المجموعات اللي الطالب فيها، مش بس أول مجموعة دخلها
+
+    async function loadStudentDetails() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) { window.location.href = LOGIN_URL; return; }
+
+        // ✅ نداء واحد بس بدل 4 طلبات منفصلة — نفس البيانات، أسرع للمستخدم
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-student-full-profile', {
+          method: 'POST', headers, body: JSON.stringify({ studentUid })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة'); return;
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showToast('❌ ' + result.message, 'error');
+          document.getElementById('studentDetailsLoading').innerHTML = '<p style="color:var(--danger);">❌ ' + escapeHtml(result.message) + '</p>';
+          return;
+        }
+
+        const grades = (result.data.grades || []).filter(g => !g.missed);
+        grades.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        lastLoadedGrades = grades;
+        lastLoadedPayments = result.data.payments || [];
+        lastLoadedAttendance = result.data.attendance || [];
+        lastLoadedBooks = result.data.books || [];
+
+        renderStudentHeader(grades);
+        setupStudentGroupFilter(result.data.info || {});
+        applyStudentGroupFilter();
+
+        document.getElementById('studentDetailsLoading').style.display = 'none';
+        document.getElementById('studentDetailsContent').style.display = 'block';
+      } catch (error) {
+        console.error('❌ خطأ في تحميل بياناتك:', error);
+        document.getElementById('studentDetailsLoading').innerHTML = '<p style="color:var(--danger);">❌ تعذر تحميل البيانات</p>';
+      }
+    }
+
+    function renderStudentHeader(grades) {
+      document.getElementById('studentNameHeader').textContent = studentName;
+      // ✅ (طلب) لازم تتعرض كل المجموعات اللي الطالب فيها، مش بس أول مجموعة دخلها
+      document.getElementById('studentGroupHeader').textContent = studentGroupsList.length > 1 ? studentGroupsList.join(' ، ') : studentGroup;
+      document.getElementById('studentAvatar').textContent = studentName.charAt(0) || '؟';
+      document.getElementById('statExamsTaken').textContent = grades.length;
+
+      if (grades.length > 0) {
+        const percents = grades.map(g => (g.max_score > 0 ? (g.score / g.max_score) * 100 : 0));
+        const totalScoreSum = grades.reduce((sum, g) => sum + Number(g.score), 0);
+        const totalMaxSum = grades.reduce((sum, g) => sum + Number(g.max_score || 0), 0);
+        const avg = totalMaxSum > 0 ? (totalScoreSum / totalMaxSum) * 100 : 0;
+        document.getElementById('statCurrentAvg').textContent = Math.round(avg) + '%';
+
+        const trendEl = document.getElementById('statTrend');
+        if (percents.length >= 2) {
+          const mid = Math.floor(percents.length / 2);
+          const firstHalfAvg = percents.slice(0, mid || 1).reduce((a, b) => a + b, 0) / (mid || 1);
+          const secondHalfAvg = percents.slice(mid).reduce((a, b) => a + b, 0) / (percents.length - mid);
+          const diff = secondHalfAvg - firstHalfAvg;
+          if (diff > 3) { trendEl.textContent = '📈 في ارتفاع'; trendEl.className = 'stat-value success'; }
+          else if (diff < -3) { trendEl.textContent = '📉 في انخفاض'; trendEl.className = 'stat-value danger'; }
+          else { trendEl.textContent = '➡️ مستقر'; trendEl.className = 'stat-value warning'; }
+        } else {
+          trendEl.textContent = '— محتاج امتحانين على الأقل';
+          trendEl.className = 'stat-value';
+        }
+      } else {
+        // ✅ (طلب) متوسط المستوى واتجاهه لازم يكونوا مرتبطين بالمجموعة المحددة فعلاً — لو
+        // اخترت مجموعة مفيهاش درجات، يرجعوا للقيم الافتراضية بدل ما يفضلوا واقفين على أرقام
+        // المجموعة اللي كانت متحددة قبلها
+        document.getElementById('statCurrentAvg').textContent = '0%';
+        const trendEl = document.getElementById('statTrend');
+        trendEl.textContent = '—';
+        trendEl.className = 'stat-value';
+      }
+    }
+
+    function renderGrowthChart(grades) {
+      const container = document.getElementById('growthChartContainer');
+      if (grades.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;padding:30px;">مفيش درجات مسجّلة لسه لرسم المخطط.</p>';
+        return;
+      }
+
+      const percents = grades.map(g => g.max_score > 0 ? Math.round((g.score / g.max_score) * 100) : 0);
+      const width = Math.max(500, grades.length * 90);
+      const height = 220;
+      const padding = 40;
+      const chartW = width - padding * 2;
+      const chartH = height - padding * 2;
+
+      const points = percents.map((p, i) => {
+        const x = padding + (grades.length > 1 ? (i / (grades.length - 1)) * chartW : chartW / 2);
+        const y = padding + chartH - (p / 100) * chartH;
+        return { x, y, p, examName: grades[i].exam_name };
+      });
+
+      const pathD = points.map((pt, i) => (i === 0 ? 'M' : 'L') + pt.x + ',' + pt.y).join(' ');
+      const areaD = pathD + ` L${points[points.length - 1].x},${padding + chartH} L${points[0].x},${padding + chartH} Z`;
+
+      const gridLines = [0, 25, 50, 75, 100].map(v => {
+        const y = padding + chartH - (v / 100) * chartH;
+        return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="var(--gray-200)" stroke-width="1" />
+                <text x="${padding - 8}" y="${y + 4}" font-size="11" fill="var(--gray-400)" text-anchor="end">${v}%</text>`;
+      }).join('');
+
+      const pointCircles = points.map(pt => `
+        <circle cx="${pt.x}" cy="${pt.y}" r="5" fill="var(--primary)" stroke="#fff" stroke-width="2">
+          <title>${escapeHtml(pt.examName)}: ${pt.p}%</title>
+        </circle>
+        <text x="${pt.x}" y="${padding + chartH + 22}" font-size="10.5" fill="var(--gray-500)" text-anchor="middle">${escapeHtml(pt.examName.length > 10 ? pt.examName.slice(0, 9) + '…' : pt.examName)}</text>
+        <text x="${pt.x}" y="${pt.y - 12}" font-size="11" font-weight="700" fill="var(--gray-800)" text-anchor="middle">${pt.p}%</text>
+      `).join('');
+
+      container.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" style="width:100%;min-width:${width}px;height:${height}px;">
+          <defs>
+            <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="var(--primary)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          ${gridLines}
+          <path d="${areaD}" fill="url(#growthGradient)" />
+          <path d="${pathD}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+          ${pointCircles}
+        </svg>
+      `;
+    }
+
+    // ✅ (طلب) لو مربوط بأكتر من مجموعة، بنبني قائمة الفلتر من كل المجموعات اللي انت فيها
+    // (الأساسية + المربوطة من الـbackend، زائد أي مجموعة ظهرت فعلياً في بياناتك كاحتياط) وبنظهر
+    // كارت الفلتر بس لو فعلاً فيه أكتر من مجموعة.
+    function setupStudentGroupFilter(info) {
+      const fromInfo = Array.isArray(info.groups) ? info.groups : [];
+      const fromData = new Set();
+      [...lastLoadedGrades, ...lastLoadedPayments, ...lastLoadedAttendance, ...lastLoadedBooks, ...lastLoadedExams.map(e => ({ group_name: e.groupName }))].forEach(r => {
+        if (r.group_name) fromData.add(r.group_name);
+      });
+      const allGroups = Array.from(new Set([...fromInfo, ...fromData])).filter(Boolean);
+      studentGroupsList = allGroups.length > 0 ? allGroups : [studentGroup].filter(Boolean);
+
+      const card = document.getElementById('studentGroupFilterCard');
+      const radiosWrap = document.getElementById('studentGroupFilterRadios');
+      if (allGroups.length <= 1) {
+        card.style.display = 'none';
+        currentStudentGroupFilter = allGroups[0] || studentGroup;
+        return;
+      }
+      card.style.display = '';
+      // ✅ (طلب) فلتر راديو بدل قائمة منسدلة، وبدون خيار "كل المجموعات" — لازم مجموعة واحدة محددة دايمًا
+      if (!allGroups.includes(currentStudentGroupFilter)) currentStudentGroupFilter = allGroups[0];
+      radiosWrap.innerHTML = allGroups.map((g, i) => `
+        <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;">
+          <input type="radio" name="studentGroupFilter" value="${escapeHtml(g)}" onchange="applyStudentGroupFilter()" ${g === currentStudentGroupFilter ? 'checked' : ''}>
+          ${escapeHtml(g)}
+        </label>
+      `).join('');
+    }
+
+    function applyStudentGroupFilter() {
+      const checked = document.querySelector('input[name="studentGroupFilter"]:checked');
+      if (checked) currentStudentGroupFilter = checked.value;
+      const byGroup = r => r.group_name === currentStudentGroupFilter;
+
+      const grades = lastLoadedGrades.filter(byGroup);
+      renderStudentHeader(grades);
+      renderGrowthChart(grades);
+      renderGradesTable(grades);
+      renderPaymentsTable(lastLoadedPayments.filter(byGroup));
+      renderAttendanceTable(lastLoadedAttendance.filter(byGroup));
+      renderBooksTable(lastLoadedBooks.filter(byGroup));
+      renderExams(lastLoadedExams.filter(e => e.groupName === currentStudentGroupFilter));
+    }
+
+    // ✅ (طلب) الطالب ممكن يكون مربوط بأكتر من مجموعة (تعدد المواد/المدرسين) — بدل ما بياناته
+    // تتعرض مخلوطة في جدول واحد، بنفصلها بعنوان فرعي لكل مجموعة عشان تبقى أسهل في القراءة.
+    // لو البيانات كلها من مجموعة واحدة (الحالة الأشيع) بيفضل الشكل زي ما هو من غير أي عنوان إضافي.
+    // (لو فلترت على مجموعة معيّنة، الصفوف كلها من نفس المجموعة أصلاً فمش هيظهر أي عنوان)
+    function groupRowsByGroupName(rows) {
+      const groups = [];
+      const indexByName = {};
+      rows.forEach(r => {
+        const name = r.group_name || 'بدون مجموعة';
+        if (!(name in indexByName)) {
+          indexByName[name] = groups.length;
+          groups.push({ name, rows: [] });
+        }
+        groups[indexByName[name]].rows.push(r);
+      });
+      return groups;
+    }
+
+    function renderGroupSectionHeader(groupName, count, colspan) {
+      return `<tr><td colspan="${colspan}" style="background:var(--gray-50);font-weight:700;padding:8px 12px;color:var(--gray-700);">📁 ${escapeHtml(groupName)} <span style="font-weight:500;color:var(--gray-500);">(${count})</span></td></tr>`;
+    }
+
+    function renderGradesTable(grades) {
+      const tbody = document.getElementById('gradesDetailBody');
+      if (grades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-400);">لا توجد درجات مسجّلة</td></tr>';
+        return;
+      }
+      const sorted = [...grades].reverse();
+      const rowTpl = g => {
+        const percent = g.max_score > 0 ? Math.round((g.score / g.max_score) * 100) : 0;
+        const date = g.created_at ? new Date(g.created_at).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' }) : '—';
+        return `
+          <tr>
+            <td>${escapeHtml(g.exam_name)}</td>
+            <td>${g.score} / ${g.max_score}</td>
+            <td><strong>${percent}%</strong></td>
+            <td>${date}</td>
+          </tr>
+        `;
+      };
+      const groups = groupRowsByGroupName(sorted);
+      if (groups.length > 1) {
+        tbody.innerHTML = groups.map(g => renderGroupSectionHeader(g.name, g.rows.length, 4) + g.rows.map(rowTpl).join('')).join('');
+      } else {
+        tbody.innerHTML = sorted.map(rowTpl).join('');
+      }
+    }
+
+    function renderPaymentsTable(payments) {
+      const tbody = document.getElementById('paymentsDetailBody');
+      let totalPaid = 0;
+      if (payments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-400);">لا توجد مدفوعات مسجّلة</td></tr>';
+      } else {
+        const rowTpl = p => {
+          totalPaid += Number(p.amount) || 0;
+          const isFull = p.amount >= p.total_amount;
+          const statusText = isFull ? '✅ مدفوع بالكامل' : (p.amount > 0 ? '🟡 دفعة جزئية' : '❌ غير مدفوع');
+          return `<tr><td>${escapeHtml(p.title)}</td><td>${p.amount} ج.م</td><td>${p.total_amount} ج.م</td><td>${statusText}</td></tr>`;
+        };
+        const groups = groupRowsByGroupName(payments);
+        if (groups.length > 1) {
+          tbody.innerHTML = groups.map(g => renderGroupSectionHeader(g.name, g.rows.length, 4) + g.rows.map(rowTpl).join('')).join('');
+        } else {
+          tbody.innerHTML = payments.map(rowTpl).join('');
+        }
+      }
+      document.getElementById('statTotalPaid').textContent = totalPaid.toLocaleString('ar-EG') + ' ج.م';
+    }
+
+    function renderBooksTable(books) {
+      const tbody = document.getElementById('booksDetailBody');
+      if (books.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-400);">لا توجد مذكرات مسجّلة</td></tr>';
+        return;
+      }
+      const rowTpl = b => {
+        const isFull = b.amount >= b.price;
+        const statusText = b.missed ? '❌ غير مسدد' : (isFull ? '✅ مدفوع بالكامل' : '🟡 دفعة جزئية');
+        const downloadCell = b.file_url ? `<a href="${b.file_url}" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-download"></i></a>` : '—';
+        return `<tr><td>${escapeHtml(b.book_name)}</td><td>${b.price} ج.م</td><td>${b.amount || 0} ج.م</td><td>${statusText}</td><td>${downloadCell}</td></tr>`;
+      };
+      const groups = groupRowsByGroupName(books);
+      if (groups.length > 1) {
+        tbody.innerHTML = groups.map(g => renderGroupSectionHeader(g.name, g.rows.length, 5) + g.rows.map(rowTpl).join('')).join('');
+      } else {
+        tbody.innerHTML = books.map(rowTpl).join('');
+      }
+    }
+
+    function renderAttendanceTable(records) {
+      const tbody = document.getElementById('attendanceDetailBody');
+      if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--gray-400);">لا توجد سجلات حضور</td></tr>';
+        document.getElementById('statAttendancePercentDetail').textContent = '0%';
+        document.getElementById('statAbsentDays').textContent = '0';
+        return;
+      }
+
+      let presentCount = 0, absentCount = 0;
+      const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const rowTpl = r => {
+        const isPresent = r.status === 'present';
+        if (isPresent) presentCount++; else absentCount++;
+        const dateStr = new Date(r.date).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+        let timeStr = '—';
+        if (r.created_at) timeStr = new Date(r.created_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit' });
+        else if (r.time) timeStr = r.time;
+        return `<tr><td>${dateStr}</td><td>${timeStr}</td><td>${isPresent ? '✅ حاضر' : '❌ غائب'}</td></tr>`;
+      };
+      const groups = groupRowsByGroupName(sorted);
+      if (groups.length > 1) {
+        tbody.innerHTML = groups.map(g => renderGroupSectionHeader(g.name, g.rows.length, 3) + g.rows.map(rowTpl).join('')).join('');
+      } else {
+        tbody.innerHTML = sorted.map(rowTpl).join('');
+      }
+
+      const total = presentCount + absentCount;
+      document.getElementById('statAttendancePercentDetail').textContent = total > 0 ? Math.round((presentCount / total) * 100) + '%' : '0%';
+      document.getElementById('statAbsentDays').textContent = absentCount;
+    }
+
+    // ============================================
+    // ✅ الإشعارات
+    // ============================================
+    let notifData = [];
+    let lastUnreadCount = 0;
+    const NOTIF_ICONS = { bulk_message: '📨', center_teacher_message: '🏢', parent_message: '💬', teacher_message: '💬' };
+
+    function timeAgo(dateStr) {
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 1) return 'الآن';
+      if (mins < 60) return `منذ ${mins} د`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `منذ ${hrs} س`;
+      const days = Math.floor(hrs / 24);
+      return `منذ ${days} يوم`;
+    }
+
+    async function loadNotifications() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-notifications', { method: 'POST', headers, body: '{}' });
+        if (response.status === 401) return;
+        const result = await response.json();
+        if (!result.success) return;
+
+        lastUnreadCount = result.unreadCount;
+        notifData = result.data || [];
+
+        const badge = document.getElementById('notifBadge');
+        if (result.unreadCount > 0) {
+          badge.style.display = 'flex';
+          badge.textContent = result.unreadCount > 9 ? '9+' : result.unreadCount;
+        } else {
+          badge.style.display = 'none';
+        }
+        renderNotifList();
+      } catch (error) { console.error('❌ خطأ في تحميل الإشعارات:', error); }
+    }
+
+    function renderNotifList() {
+      const list = document.getElementById('notifList');
+      if (notifData.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">مفيش إشعارات لسه</div>';
+        return;
+      }
+      list.innerHTML = notifData.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
+          <div class="n-time">${timeAgo(n.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const isOpening = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+      if (isOpening) {
+        positionNotifPanel();
+        // ✅ عند فتح اللوحة، نعلّم كل الإشعارات المعروضة كمقروءة فوراً — يمسح البادج ويوضح الحالة بصرياً بدون إعادة تحميل الصفحة
+        markAllRead();
+      }
+    }
+
+    // ✅ بنحسب مكان القائمة فعلياً وقت كل فتحة، بناءً على موقع زرار الجرس الحقيقي وحجم الشاشة الحالي
+    function positionNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const btn = document.getElementById('notifBtn');
+      if (!panel || !btn) return;
+      const btnRect = btn.getBoundingClientRect();
+      const margin = 12;
+      const panelWidth = Math.min(340, window.innerWidth - margin * 2);
+      let left = btnRect.right - panelWidth;
+      if (left < margin) left = margin;
+      if (left + panelWidth > window.innerWidth - margin) left = window.innerWidth - margin - panelWidth;
+      panel.style.position = 'fixed';
+      panel.style.left = left + 'px';
+      panel.style.right = 'auto';
+      panel.style.top = (btnRect.bottom + 10) + 'px';
+      panel.style.width = panelWidth + 'px';
+    }
+
+    document.addEventListener('click', function(e) {
+      const wrap = document.getElementById('notifWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        const panel = document.getElementById('notifPanel');
+        if (panel) panel.classList.remove('open');
+      }
+    });
+
+    async function markOneRead(id) {
+      const item = notifData.find(n => n.id === id);
+      const wasUnread = item && !item.is_read;
+      try {
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل بيوديك للتبويب الخاص بيه برضه، مش بس أول مرة
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه الطالب للتبويب المرتبط بالإشعار
+        // نفسه (حضور/درجات/مدفوعات/مذكرات) بدل ما يفضل واقف في نفس مكانه
+        if (item) {
+          const tabByType = { attendance: 'attendance', grade: 'grades', payment: 'payments', book_payment: 'books', exam: 'exams' };
+          const tab = tabByType[item.type];
+          if (tab) {
+            document.getElementById('notifPanel')?.classList.remove('open');
+            switchPortalTab(tab);
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
+      }
+    }
+
+    async function markAllRead() {
+      if (!notifData.some(n => !n.is_read)) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+          method: 'POST', headers, body: JSON.stringify({ markAll: true })
+        });
+        notifData.forEach(n => n.is_read = true);
+        document.getElementById('notifBadge').style.display = 'none';
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الكل كمقروء:', error);
+      }
+    }
+
+    // ============================================
+    // ✅ الاختبارات المتاحة
+    // ============================================
+    async function loadExams() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-exams-for-student', { method: 'POST', headers, body: '{}' });
+        const result = await response.json();
+        if (!result.success) return;
+        lastLoadedExams = result.data || [];
+        renderExams(lastLoadedExams.filter(e => e.groupName === currentStudentGroupFilter));
+      } catch (error) { console.error('❌ خطأ في تحميل الاختبارات:', error); }
+    }
+
+    // ✅ (طلب) الاختبارات الإلكترونية لازم تتفلتر برضه على المجموعة المختارة، زي باقي بيانات الصفحة
+    function renderExams(data) {
+      if (data.length === 0) {
+        document.getElementById('examsCard').style.display = 'none';
+        document.getElementById('examsEmptyCard').style.display = 'block';
+        return;
+      }
+      try {
+        document.getElementById('examsCard').style.display = 'block';
+        document.getElementById('examsEmptyCard').style.display = 'none';
+        const container = document.getElementById('examsListContainer');
+        container.innerHTML = data.map(e => {
+          let actionHtml = '';
+          let practiceHtml = '';
+          // ✅ (طلب) الاختبار اللي مابيتحسبش في الدرجات (تدريب حر بالكامل) لازم يظهر للطالب
+          // كده بوضوح — دخول مباشر بوضع التدريب، من غير أي منطق "محاولة رسمية" (وقت محدد،
+          // محاولة واحدة بس) خالص، عشان مايحسّش إنه بيتحدّى اختبار رسمي وهو مش كده
+          if (!e.countsTowardGrade) {
+            actionHtml = `<button class="btn btn-outline btn-sm" onclick="window.location.href='take-exam.html?examId=${e.id}&mode=practice'" title="تدريب حر — بلا وقت، ومش هيتحسب في درجاتك"><i class="fas fa-dumbbell"></i> دخول كتدريب حر</button>`;
+          } else {
+            if (e.status === 'not_started') {
+              actionHtml = `<button class="btn btn-primary btn-sm" onclick="window.location.href='take-exam.html?examId=${e.id}'">دخول للاختبار</button>`;
+            } else if (e.status === 'in_progress') {
+              actionHtml = `<button class="btn btn-warning btn-sm" onclick="window.location.href='take-exam.html?examId=${e.id}'">كمّل الاختبار</button>`;
+            } else {
+              const statusLabel = e.status === 'timed_out' ? 'انتهى وقتك' : 'خلّصت';
+              actionHtml = `<span style="font-size:13px;color:var(--success);">✅ ${statusLabel} — ${e.score} / ${e.totalPossible}</span>`;
+            }
+            // ✅ الاختبار الرسمي بيفضل معاه زرار تدريب حر منفصل للمراجعة الإضافية بعد كده
+            practiceHtml = e.canPractice
+              ? `<button class="btn btn-outline btn-sm" onclick="window.location.href='take-exam.html?examId=${e.id}&mode=practice'" title="تدريب حر — بلا وقت، ماتتحسبش في تقريرك"><i class="fas fa-dumbbell"></i> تدريب حر</button>`
+              : '';
+          }
+          const gradeBadge = e.countsTowardGrade
+            ? '<span title="درجتك في الاختبار ده بتتسجّل في درجاتك الرسمية" style="font-size:11px;color:var(--success);"><i class="fas fa-chart-line"></i> رسمي</span>'
+            : '<span title="مجرد تدريب حر — مابيتحسبش في درجاتك" style="font-size:11px;color:var(--gray-500);"><i class="fas fa-dumbbell"></i> تدريب</span>';
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+              <div>
+                <strong style="color:var(--gray-900);">${escapeHtml(e.title)}</strong>
+                <div style="font-size:12px;color:var(--gray-500);margin-top:3px;">${e.durationMinutes} دقيقة — ${e.questionCount} سؤال — ${gradeBadge}</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${actionHtml}
+                ${practiceHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) { console.error('❌ خطأ في تحميل الاختبارات:', error); }
+    }
+
+    // ✅ فحص دوري — بينشر أي اختبار وصل وقت جدولته تلقائياً (بديل عن جدولة سيرفر مخصصة)
+    async function checkScheduledExams() {
+      try { await fetch(PROJECT_URL + '/functions/v1/check-scheduled-exams', { method: 'POST' }); }
+      catch (error) { /* تجاهل بهدوء */ }
+    }
+
+    // ✅ Aug 2026: تبديل تبويبات صفحة الطالب — كل بيانات الصفحة بتتحمّل مرة واحدة في
+    // window.onload زي ما كان قبل التبويبات، فمفيش تحميل كسول لازم هنا
+    function switchPortalTab(name) {
+      document.querySelectorAll('#portalTabs .tab').forEach(t => t.classList.remove('active'));
+      const tabBtn = document.querySelector('#portalTabs .tab[data-tab="' + name + '"]');
+      if (tabBtn) tabBtn.classList.add('active');
+      document.querySelectorAll('#portalTabsWrap .tab-content').forEach(tc => tc.classList.remove('active'));
+      const content = document.getElementById('tab-' + name);
+      if (content) content.classList.add('active');
+    }
+
+    // ✅ Batch 24 (بند 8): اللافتة الإعلانية اللي بيتحكم فيها الماستر (عرض/إخفاء لصفحة الطالب
+    // تحديداً) من إعدادات النظام العامة — نفس النقطة اللي بتتجاب منها روابط التحميل وأرقام التواصل
+    // ✅ Batch 33 (بند 1): اللافتة بقت تدعم أكتر من صورة تتقلّب تلقائياً ورا بعض، كل صورة
+    // برابطها الخاص عند الضغط عليها — بدل صورة واحدة ثابتة زي ما كانت قبل كده
+    let portalBannerSlides = [];
+    let portalBannerIndex = 0;
+    let portalBannerTimer = null;
+
+    function showPortalBannerSlide(i) {
+      const slide = portalBannerSlides[i];
+      if (!slide) return;
+      document.getElementById('portalAdBannerImg').src = slide.image_url;
+      const banner = document.getElementById('portalAdBanner');
+      banner.href = slide.link_url || '#';
+      banner.style.cursor = slide.link_url ? 'pointer' : 'default';
+    }
+
+    async function loadPortalAdBanner() {
+      try {
+        const [settingsRes, adsRes] = await Promise.all([
+          fetch(PROJECT_URL + '/functions/v1/get-system-settings'),
+          fetch(PROJECT_URL + '/functions/v1/get-login-ads'),
+        ]);
+        const settingsResult = await settingsRes.json();
+        const adsResult = await adsRes.json();
+        const data = settingsResult.data || {};
+        const slides = (adsResult.portalBanners && adsResult.portalBanners.student) || [];
+        if (data.portal_banner_show_student && slides.length > 0) {
+          portalBannerSlides = slides;
+          portalBannerIndex = 0;
+          const banner = document.getElementById('portalAdBanner');
+          banner.onclick = (e) => {
+            const current = portalBannerSlides[portalBannerIndex];
+            if (!current || !current.link_url) e.preventDefault();
+          };
+          showPortalBannerSlide(0);
+          banner.style.display = 'block';
+          if (portalBannerTimer) clearInterval(portalBannerTimer);
+          if (slides.length > 1) {
+            portalBannerTimer = setInterval(() => {
+              portalBannerIndex = (portalBannerIndex + 1) % portalBannerSlides.length;
+              showPortalBannerSlide(portalBannerIndex);
+            }, 5000);
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل اللافتة الإعلانية:', error);
+      }
+    }
+
+    window.onload = function() {
+      loadStudentDetails();
+      loadNotifications();
+      checkScheduledExams();
+      loadExams();
+      loadPortalAdBanner();
+      registerPushIfNative();
+      initWebPushNotifications();
+      setInterval(checkScheduledExams, 3 * 60 * 1000);
+      // ✅ (طلب) الطالب كان مفيهوش أي تحديث دوري للإشعارات أصلاً (بتتحمّل مرة واحدة بس عند
+      // فتح الصفحة) — ده أهم سبب إن إشعاراته كانت بتوصله متأخرة جداً أو محتاج يعمل تحديث
+      // يدوي (F5) عشان يشوفها. دلوقتي بتتحدّث كل 10 ثواني زي باقي لوحات التحكم
+      setInterval(loadNotifications, 10000);
+    };
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+  <div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div class="perm-dialog-box">
+      <div class="perm-dialog-icon">🔔</div>
+      <h3 class="perm-dialog-title">تفعيل الإشعارات الفورية</h3>
+      <p class="perm-dialog-text">
+        عشان توصلك آخر تحديثات فَصلي فوراً (حضور، درجات، اختبارات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
+      </p>
+      <div style="display:flex;gap:10px;">
+        <button onclick="declinePermissionDialog()" class="perm-dialog-decline">مش دلوقتي</button>
+        <button onclick="acceptPermissionDialog()" class="perm-dialog-accept">فعّل الإشعارات</button>
+      </div>
+    </div>
+  </div>
+<script src="branding.js?v=2"></script>
+<script src="custom-dialogs.js?v=2"></script>
+</body>
+</html>

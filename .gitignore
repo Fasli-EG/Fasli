@@ -1,0 +1,29 @@
+# === NEVER commit these — secrets & credentials ===
+secrets-do-not-upload/
+*.pem
+*.key
+*firebase-adminsdk*.json
+*service-account*.json
+
+# === Dependencies / build output ===
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# === Supabase local ===
+supabase/.temp/
+supabase/.branches/
+
+# === Editor / OS junk ===
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+
+# === Env files ===
+.env
+.env.local
+.env.*.local

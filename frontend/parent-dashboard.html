@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة تحكم ولي الأمر - فَصلي</title>
+  <meta name="description" content="لوحة تحكم ولي الأمر لمتابعة أبنائه في نظام فَصلي">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B1C33">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css?v=52">
+  <style>
+    .student-card .student-name { font-size: 18px; font-weight: 700; color: var(--gray-900); }
+    .student-card .student-name .uid { font-size: 12px; font-weight: 400; color: var(--gray-400); font-family: monospace; margin-right: 6px; }
+    .student-card .student-status { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .student-card .student-status.present { background: var(--success-light); color: var(--success); }
+    .student-card .student-status.absent { background: var(--danger-light); color: var(--danger); }
+    .student-card .student-details .detail { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--gray-600); padding: 4px 0; }
+    .student-card .student-details .detail .icon { width: 24px; text-align: center; font-size: 16px; }
+    /* ✅ Batch 23 (بند 2): بقى 5 عناصر (زيادة الاختبارات الإلكترونية) — 3 أعمدة بدل 4 عشان
+       تترتب 3+2 بشكل متناسق بدل ما يبقى عمود خامس ضيق */
+    .student-card .student-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-200); }
+    /* ✅ Batch 22: 4 إحصائيات بقت زحمة على شاشات الموبايل الضيقة بعد إضافة "إجمالي المدفوعات" */
+    @media (max-width: 420px) {
+      .student-card .student-stats { grid-template-columns: 1fr 1fr; row-gap: 12px; }
+    }
+    .student-card .student-stats .stat-item { text-align: center; }
+    .student-card .student-stats .stat-item .num { font-size: 18px; font-weight: 700; color: var(--gray-900); }
+    .student-card .student-stats .stat-item .num.green { color: var(--success); }
+    .student-card .student-stats .stat-item .num.blue { color: var(--primary); }
+    .student-card .student-stats .stat-item .num.orange { color: var(--warning); }
+    .student-card .student-stats .stat-item .label { font-size: 11px; color: var(--gray-400); }
+    .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 28px; }
+    .student-card {
+      background: #fff; border: 2px solid var(--gray-200);
+      border-radius: 16px; padding: 18px 20px; cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease; box-shadow: var(--shadow);
+    }
+    .student-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    [data-theme="dark"] .student-card { background: var(--gray-100); }
+    [data-theme="dark"] .student-card .student-name { color: var(--gray-800); }
+    [data-theme="dark"] .student-card .student-name .uid { color: var(--gray-500); }
+    [data-theme="dark"] .student-card .student-details .detail { color: var(--gray-600); }
+    [data-theme="dark"] .student-card .student-stats { border-color: var(--gray-200); }
+    [data-theme="dark"] .student-card .student-stats .stat-item .num { color: var(--gray-800); }
+    [data-theme="dark"] .student-card .student-stats .stat-item .label { color: var(--gray-500); }
+    [data-theme="dark"] .student-card .view-link { color: var(--primary-light); }
+    [data-theme="dark"] .student-card .view-link:hover { color: var(--primary); }
+    [data-theme="dark"] .stat-card { background: var(--gray-100); border-color: var(--gray-200); }
+    [data-theme="dark"] .stat-card .stat-label { color: var(--gray-400); }
+    [data-theme="dark"] .stat-card .stat-value { color: var(--gray-400); }
+    [data-theme="dark"] .card { background: var(--gray-100); border-color: var(--gray-200); }
+    [data-theme="dark"] .card .card-header h2 { color: var(--gray-800); }
+    [data-theme="dark"] .card .card-header .badge-count { background: var(--gray-200); color: var(--gray-600); }
+    [data-theme="dark"] .actions .btn-secondary { background: var(--gray-200); color: var(--gray-800); border-color: var(--gray-300); }
+    [data-theme="dark"] .actions .btn-secondary:hover { background: var(--gray-300); }
+    [data-theme="dark"] .actions .btn-outline { color: var(--gray-600); border-color: var(--gray-300); }
+    [data-theme="dark"] .actions .btn-outline:hover { background: var(--gray-200); }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="brand">
+      <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
+      <h1>فَصلي</h1>
+    </div>
+    <div class="user-info">
+      <button class="btn btn-secondary btn-sm" onclick="refreshData()" title="تحديث البيانات">
+        <i class="fas fa-sync"></i> تحديث
+      </button>
+      <div class="user-badge">
+        <div class="avatar" id="userAvatar">و</div>
+        <span id="parentName">مرحباً، ولي أمر</span>
+      </div>
+      <div class="notif-wrap">
+        <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
+          <i class="fas fa-bell"></i>
+          <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+        </button>
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-panel-header">
+            <span>الإشعارات</span>
+            <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button class="btn btn-danger btn-sm" onclick="logout()" title="تسجيل الخروج">
+        <i class="fas fa-sign-out-alt"></i> خروج
+      </button>
+    </div>
+  </header>
+
+  <!-- ✅ Batch 24 (بند 8): لافتة إعلانية بعرض الشاشة يتحكم في ظهورها الماستر من إعدادات النظام -->
+  <a id="portalAdBanner" href="#" target="_blank" rel="noopener" style="display:none;width:100%;overflow:hidden;">
+    <img id="portalAdBannerImg" style="width:100%;height:auto;max-height:320px;object-fit:contain;display:block;">
+  </a>
+
+  <div class="container">
+    <div class="breadcrumb">
+      <span>📊 لوحة تحكم ولي الأمر</span>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-label">👨‍👩‍👦 عدد الأبناء</div>
+        <div class="stat-value primary" id="statChildren">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">✅ حضور اليوم</div>
+        <div class="stat-value success" id="statPresent">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">❌ غياب اليوم</div>
+        <div class="stat-value danger" id="statAbsent">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>👨‍👩‍👦 أبنائي</h2>
+        <span class="badge-count" id="childrenCount">0 طالب</span>
+      </div>
+      <div id="studentsContainer">
+        <div class="empty-state loading-state">
+          <div class="icon"><i class="fas fa-spinner fa-spin"></i></div>
+          <h4>جاري تحميل الأبناء...</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+            const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    // ✅ استرجاع الجلسة المحفوظة (تذكرني) لو موجودة ومفيش جلسة حالية في التبويب ده
+    (function restoreRememberedSession() {
+      if (!sessionStorage.getItem('jwtToken') && localStorage.getItem('fasliRememberMe') === 'true') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'fasliRememberMe') continue;
+          sessionStorage.setItem(key, localStorage.getItem(key));
+        }
+      }
+    })();
+
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    function getToken() {
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const exp = payload.exp;
+          if (exp) {
+            const now = Math.floor(Date.now() / 1000);
+            if (exp < now) {
+              return token;
+            }
+          }
+        }
+      } catch (e) {
+      }
+      return token;
+    }
+
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      };
+    }
+
+    function isTokenValid() {
+      const token = getToken();
+      if (!token) return false;
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1]));
+        const exp = payload.exp;
+        if (exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (exp < now) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    let isLoggingOut = false;
+
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      if (isTokenValid()) {
+        showToast('⛔ ليس لديك صلاحية للوصول إلى هذه البيانات.', 'error');
+        return;
+      }
+
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+
+      showToast('⛔ ' + message + '، يرجى تسجيل الدخول مرة أخرى', 'error');
+
+      setTimeout(() => {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem('clientId');
+        sessionStorage.removeItem('teacherClientId');
+        sessionStorage.removeItem('userRole');
+        sessionStorage.removeItem('parentPhone');
+        sessionStorage.removeItem('parentName');
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    const parentPhone = sessionStorage.getItem('parentPhone');
+    const parentName = sessionStorage.getItem('parentName') || 'ولي أمر';
+
+    if (!parentPhone) {
+      sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
+      window.location.href = LOGIN_URL;
+    }
+
+    function showToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'info');
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    const displayName = parentName || 'ولي أمر';
+    document.getElementById('parentName').textContent = 'مرحباً، ' + displayName;
+    document.getElementById('userAvatar').textContent = displayName.charAt(0);
+
+    async function loadChildren() {
+      const container = document.getElementById('studentsContainer');
+      container.innerHTML = '<div class="empty-state loading-state"><div class="icon"><i class="fas fa-spinner fa-spin"></i></div><h4>جاري تحميل الأبناء...</h4></div>';
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-parent-children', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ parentPhone })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          const children = result.data || [];
+          document.getElementById('statChildren').textContent = children.length;
+          document.getElementById('childrenCount').textContent = children.length + ' طالب';
+
+          const presentCount = children.filter(c => c.today_attendance === 'present').length;
+          const absentCount = children.filter(c => c.today_attendance !== 'present').length;
+          document.getElementById('statPresent').textContent = presentCount;
+          document.getElementById('statAbsent').textContent = absentCount;
+
+          let totalAvg = 0;
+          let avgCount = 0;
+          children.forEach(c => {
+            if (c.avg_grade !== undefined && c.avg_grade !== null) {
+              totalAvg += c.avg_grade;
+              avgCount++;
+            }
+          });
+          const avgGrade = avgCount > 0 ? Math.round(totalAvg / avgCount) : 0;
+
+          if (children.length === 0) {
+            container.innerHTML = `
+              <div class="empty-state">
+                <div class="icon">📭</div>
+                <h4>لا يوجد أبناء مسجلون</h4>
+                <p>يرجى التواصل مع المدرس لتسجيل رقم هاتفك كولي أمر للطالب</p>
+              </div>
+            `;
+            return;
+          }
+
+          let html = '<div class="students-grid">';
+          const brandPrimary = (getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()) || '#F2B705';
+          const cardAccents = [brandPrimary, '#5FBF9A', '#7FA8E8', '#E88AC4', '#E89B5F'];
+          children.forEach((student, idx) => {
+            const isPresent = student.today_attendance === 'present';
+            const avg = student.avg_grade !== undefined && student.avg_grade !== null ? Math.round(student.avg_grade) : '—';
+            const avgClass = avg !== '—' && avg >= 70 ? 'green' : (avg !== '—' && avg >= 50 ? 'orange' : 'orange');
+            const accent = cardAccents[idx % cardAccents.length];
+
+            html += `
+              <div class="student-card" style="border-color:${accent};" onclick="window.location.href='parent-student-details.html?uid=${encodeURIComponent(student.uid)}'">
+                <div class="student-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:38px;height:38px;border-radius:10px;background:${accent}22;color:${accent};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;">${escapeHtml(student.name).trim().charAt(0)}</div>
+                    <div class="student-name">
+                      ${escapeHtml(student.name)}
+                      <span class="uid">${escapeHtml(student.uid)}</span>
+                    </div>
+                  </div>
+
+                  <span class="student-status ${isPresent ? 'present' : 'absent'}">
+                    ${isPresent ? '✅ حاضر اليوم' : '❌ غائب اليوم'}
+                  </span>
+                </div>
+                <div class="student-details">
+                  <div class="detail">
+                    <span class="icon">👨‍🏫</span>
+                    <span>المدرس: ${escapeHtml(student.teacher_name || 'غير محدد')}</span>
+                  </div>
+                  <div class="detail">
+                    <span class="icon">📚</span>
+                    <span>المجموعة: ${escapeHtml(student.group_name)}</span>
+                  </div>
+                </div>
+                ${(student.teacher_whatsapp || student.teacher_phone) ? `
+                <div class="teacher-contact-row" onclick="event.stopPropagation();">
+                  ${student.teacher_whatsapp ? `<a href="https://wa.me/${encodeURIComponent(student.teacher_whatsapp)}" target="_blank" rel="noopener" class="teacher-contact-btn wa">💬 تواصل مع ${escapeHtml(student.teacher_name)} عبر واتساب</a>` : ''}
+                  ${(!student.teacher_whatsapp && student.teacher_phone) ? `<a href="tel:${encodeURIComponent(student.teacher_phone)}" class="teacher-contact-btn call">📞 اتصال بـ ${escapeHtml(student.teacher_name)}</a>` : ''}
+                </div>` : ''}
+                <div class="student-stats">
+                  <div class="stat-item">
+                    <div class="num green">${student.attendance_percent || 0}%</div>
+                    <div class="label">نسبة الحضور</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="num blue">${student.grades_count || 0}</div>
+                    <div class="label">عدد الدرجات</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="num ${avgClass}">${avg}</div>
+                    <div class="label">المتوسط</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="num" style="color:${accent};">${(student.total_paid || 0).toLocaleString('ar-EG')}</div>
+                    <div class="label">إجمالي المدفوعات</div>
+                  </div>
+                  <!-- ✅ Batch 23 (بند 2): عدد الاختبارات الإلكترونية الفعلي (exam_attempts)، منفصل
+                       عن "عدد الدرجات" اللي كان بيتسمى غلط "عدد الامتحانات" وهو فعليًا كل الدرجات
+                       (يدوية + إلكترونية محتسبة بس) -->
+                  <div class="stat-item">
+                    <div class="num" style="color:var(--info);">${student.exams_count || 0}</div>
+                    <div class="label">الاختبارات الإلكترونية</div>
+                  </div>
+                </div>
+                <div class="view-link" style="text-align:left;margin-top:8px;color:var(--primary);opacity:0.6;">
+                  <i class="fas fa-chevron-left"></i>
+                </div>
+              </div>
+            `;
+          });
+          html += '</div>';
+          container.innerHTML = html;
+        } else {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">⚠️</div>
+              <h4>حدث خطأ</h4>
+              <p>${result.message}</p>
+            </div>
+          `;
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">⚠️</div>
+            <h4>خطأ في الاتصال</h4>
+            <p>حدث خطأ أثناء تحميل البيانات</p>
+          </div>
+        `;
+        showToast('❌ خطأ في الاتصال بالخادم', 'error');
+      }
+    }
+
+    function refreshData() {
+      showToast('⏳ جاري تحديث البيانات...', 'info');
+      loadChildren();
+    }
+
+    async function logout() {
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
+      try {
+        const jwt = sessionStorage.getItem('jwtToken');
+        let pushToken = localStorage.getItem('fasliPushToken');
+        const Preferences = window.Capacitor?.Plugins?.Preferences;
+        if (!pushToken && Preferences) {
+          const stored = await Preferences.get({ key: 'fasliPushToken' }).catch(() => null);
+          pushToken = stored?.value || null;
+        }
+        if (jwt && pushToken) {
+          // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
+          }).catch(() => {});
+        }
+      } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
+      {
+        sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
+        window.location.href = LOGIN_URL;
+      }
+    }
+
+    function getThemeKey() {
+      return 'theme_' + parentPhone;
+    }
+
+    (function() {
+      const savedTheme = localStorage.getItem(getThemeKey());
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      }
+      setTimeout(() => {
+        const theme = document.documentElement.getAttribute('data-theme') || 'light';
+        updateThemeIcon(theme);
+      }, 100);
+    })();
+
+    let pendingPushNotifications = null;
+
+    async function registerPushIfNative() {
+      try {
+        const Capacitor = window.Capacitor;
+        if (!Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return;
+        const PushNotifications = Capacitor.Plugins?.PushNotifications;
+        if (!PushNotifications) return;
+
+        const permStatus = await PushNotifications.checkPermissions();
+        if (permStatus.receive === 'granted') { finishPushRegistration(PushNotifications); return; }
+        if (permStatus.receive === 'denied') return;
+
+        pendingPushNotifications = PushNotifications;
+        document.getElementById('permissionDialog').style.display = 'flex';
+      } catch (e) { /* تجاهل */ }
+    }
+
+    function declinePermissionDialog() {
+      document.getElementById('permissionDialog').style.display = 'none';
+      pendingPushNotifications = null;
+    }
+
+    async function acceptPermissionDialog() {
+      document.getElementById('permissionDialog').style.display = 'none';
+      const PushNotifications = pendingPushNotifications;
+      pendingPushNotifications = null;
+      if (!PushNotifications) return;
+      try {
+        const req = await PushNotifications.requestPermissions();
+        if (req.receive === 'granted') finishPushRegistration(PushNotifications);
+      } catch (e) { /* تجاهل */ }
+    }
+
+    async function finishPushRegistration(PushNotifications) {
+      try {
+        await PushNotifications.register();
+        PushNotifications.addListener('registration', async (token) => {
+          try {
+            const jwt = sessionStorage.getItem('jwtToken');
+            if (!jwt || !token?.value) return;
+            localStorage.setItem('fasliPushToken', token.value);
+            const Preferences = window.Capacitor?.Plugins?.Preferences;
+            if (Preferences) Preferences.set({ key: 'fasliPushToken', value: token.value }).catch(() => {});
+            await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+              body: JSON.stringify({ action: 'register', token: token.value, platform: 'android' })
+            });
+          } catch (e) { /* تجاهل */ }
+        });
+      } catch (e) { /* تجاهل */ }
+    }
+
+    // ✅ (طلب) تفعيل الإشعارات الحقيقية لما ولي الأمر بيفتح الموقع من متصفح عادي (مش تطبيق
+    // موبايل) — عن طريق Firebase Web Push. مايشتغلش غير لو الماستر ضبط إعدادات Firebase من
+    // لوحة التحكم (get-system-settings)، وإلا بيتجاهل بهدوء من غير أي تأثير على باقي الصفحة
+    function loadScriptOnce(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function initWebPushNotifications() {
+      try {
+        if (window.Capacitor?.isNativePlatform?.()) return; // جوه التطبيق الأصلي بيستخدم مسار Capacitor فوق
+        if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+
+        const settingsRes = await fetch(PROJECT_URL + '/functions/v1/get-system-settings');
+        const settingsResult = await settingsRes.json();
+        const cfg = settingsResult.data || {};
+        if (!cfg.firebase_api_key || !cfg.firebase_project_id || !cfg.firebase_vapid_key) return;
+
+        if (!window.firebase) {
+          await loadScriptOnce('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+          await loadScriptOnce('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+        }
+        if (!firebase.apps.length) {
+          firebase.initializeApp({
+            apiKey: cfg.firebase_api_key, authDomain: cfg.firebase_auth_domain, projectId: cfg.firebase_project_id,
+            storageBucket: cfg.firebase_storage_bucket, messagingSenderId: cfg.firebase_messaging_sender_id, appId: cfg.firebase_app_id,
+          });
+        }
+
+        let permission = Notification.permission;
+        if (permission === 'default') permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        // ✅ (طلب) Scope مطلق (بيبدأ بـ /) بيتفسّر بالنسبة لجذر الدومين بالكامل — لكن الموقع
+        // منشور على GitHub Pages تحت مسار فرعي (.../Fasli/)، فالـ scope المطلق ده كان بره
+        // الحد المسموح لعامل خدمة متسجّل من جوه المسار الفرعي، وده كان بيفشل بصمت (SecurityError
+        // متبلوع جوه try/catch) — فمفيش أي إشعار حقيقي كان بيتسجّل خالص حتى بعد ضبط Firebase.
+        // الحل: scope نسبي (من غير / في الأول) بيتفسّر بالنسبة لمسار الصفحة الحالية بدل جذر الدومين
+        const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js', { scope: 'firebase-cloud-messaging-push-scope' });
+        const messaging = firebase.messaging();
+        const token = await messaging.getToken({ vapidKey: cfg.firebase_vapid_key, serviceWorkerRegistration: reg });
+        if (!token) return;
+
+        const jwt = sessionStorage.getItem('jwtToken');
+        if (!jwt) return;
+        await fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+          body: JSON.stringify({ action: 'register', token, platform: 'web' })
+        });
+
+        messaging.onMessage(() => { if (typeof loadNotifications === 'function') loadNotifications(); });
+      } catch (error) {
+        console.error('⚠️ تعذّر تفعيل الإشعارات الحقيقية:', error);
+      }
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem(getThemeKey(), newTheme);
+      updateThemeIcon(newTheme);
+    }
+
+    function updateThemeIcon(theme) {
+      const btn = document.getElementById('themeToggle');
+      if (!btn) return;
+      const icon = btn.querySelector('i');
+      if (!icon) return;
+      if (theme === 'dark') {
+        icon.className = 'fas fa-sun';
+        btn.title = 'الوضع النهاري';
+      } else {
+        icon.className = 'fas fa-moon';
+        btn.title = 'الوضع الليلي';
+      }
+    }
+
+    // ============================================
+    // الإشعارات
+    // ============================================
+    let notifData = [];
+    let lastUnreadCount = 0;
+
+    function timeAgo(dateStr) {
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 1) return 'الآن';
+      if (mins < 60) return `منذ ${mins} د`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `منذ ${hrs} س`;
+      const days = Math.floor(hrs / 24);
+      return `منذ ${days} يوم`;
+    }
+
+    const NOTIF_ICONS = {
+      attendance: '✅', payment: '💰', book_payment: '📖', grade: '📝', bulk_message: '📨', teacher_message: '💬'
+    };
+
+        function playNotificationSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [880, 1175].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          const start = now + i * 0.12;
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.18, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.25);
+        });
+      } catch (e) { /* بعض المتصفحات بتمنع الصوت قبل أي تفاعل من المستخدم، نتجاهل بهدوء */ }
+    }
+
+    async function loadNotifications() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-notifications', {
+          method: 'POST', headers, body: JSON.stringify({})
+        });
+        if (response.status === 401) return;
+        const result = await response.json();
+        if (!result.success) return;
+
+        if (result.unreadCount > lastUnreadCount && lastUnreadCount !== undefined) {
+          playNotificationSound();
+          // ✅ في تطبيق سطح المكتب، نعرض إشعار نظام حقيقي في درج الإشعارات زي أي برنامج
+          if (window.electronNotify && result.data && result.data[0]) {
+            window.electronNotify.show(result.data[0].title || 'إشعار جديد', result.data[0].message || '').catch(() => {});
+          }
+        }
+        lastUnreadCount = result.unreadCount;
+
+        notifData = result.data || [];
+        const badge = document.getElementById('notifBadge');
+        if (result.unreadCount > 0) {
+          badge.style.display = 'flex';
+          badge.textContent = result.unreadCount > 9 ? '9+' : result.unreadCount;
+        } else {
+          badge.style.display = 'none';
+        }
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الإشعارات:', error);
+      }
+    }
+
+    function renderNotifList() {
+      const list = document.getElementById('notifList');
+      if (notifData.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">مفيش إشعارات لسه</div>';
+        return;
+      }
+      list.innerHTML = notifData.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markOneRead(${n.id})">
+          <div class="n-title">${!n.is_read ? '<span class="n-dot"></span>' : ''} ${NOTIF_ICONS[n.type] || '🔔'} ${escapeHtml(n.title)}</div>
+          <div class="n-msg">${escapeHtml(n.message)}</div>
+          <div class="n-time">${timeAgo(n.created_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const isOpening = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+      if (isOpening) positionNotifPanel();
+    }
+
+    // ✅ بنحسب مكان القائمة فعلياً وقت كل فتحة، بناءً على موقع زرار الجرس الحقيقي وحجم الشاشة الحالي —
+    // ده بيضمن رياضياً إنها تفضل جوه حدود الشاشة تماماً، مهما كان حجم الجهاز أو عرض نافذة المتصفح
+    function positionNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      const btn = document.getElementById('notifBtn') || document.querySelector('.notif-wrap');
+      if (!panel || !btn) return;
+      const btnRect = btn.getBoundingClientRect();
+      const margin = 12;
+      const panelWidth = Math.min(340, window.innerWidth - margin * 2);
+      let left = btnRect.right - panelWidth;
+      if (left < margin) left = margin;
+      if (left + panelWidth > window.innerWidth - margin) left = window.innerWidth - margin - panelWidth;
+      panel.style.position = 'fixed';
+      panel.style.left = left + 'px';
+      panel.style.right = 'auto';
+      panel.style.top = (btnRect.bottom + 10) + 'px';
+      panel.style.width = panelWidth + 'px';
+    }
+
+    document.addEventListener('click', function(e) {
+      const wrap = document.querySelector('.notif-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('notifPanel').classList.remove('open');
+      }
+    });
+
+    async function markOneRead(id) {
+      const item = notifData.find(n => n.id === id);
+      const wasUnread = item && !item.is_read;
+      try {
+        // ✅ (تعديل) الضغط على إشعار مقروء بالفعل بيوديك لمكانه برضه، مش بس أول مرة
+        if (wasUnread) {
+          const headers = getAuthHeaders();
+          if (headers) {
+            await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+              method: 'POST', headers, body: JSON.stringify({ notificationId: id })
+            });
+            item.is_read = true;
+            const badge = document.getElementById('notifBadge');
+            const unread = notifData.filter(n => !n.is_read).length;
+            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+            else badge.style.display = 'none';
+            renderNotifList();
+          }
+        }
+        // ✅ Batch 24 (بند 6): بعد تعليم الإشعار كمقروء، نوجّه ولي الأمر لتبويب الطالب المرتبط
+        // بالإشعار مباشرة (حضور/درجات/مدفوعات/مذكرات/تواصل) بدل ما يفضل واقف في نفس الصفحة
+        if (item && item.student_uid) {
+          const tabByType = { attendance: 'attendance', grade: 'grades', payment: 'payments', book_payment: 'books', exam: 'exams' };
+          const tab = tabByType[item.type] || (['teacher_message', 'bulk_message', 'center_bulk_message'].includes(item.type) ? 'messages' : null);
+          if (tab) window.location.href = 'parent-student-details.html?uid=' + encodeURIComponent(item.student_uid) + '&tab=' + tab;
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الإشعار كمقروء:', error);
+      }
+    }
+
+    async function markAllRead() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/mark-notification-read', {
+          method: 'POST', headers, body: JSON.stringify({ markAll: true })
+        });
+        notifData.forEach(n => n.is_read = true);
+        document.getElementById('notifBadge').style.display = 'none';
+        renderNotifList();
+      } catch (error) {
+        console.error('❌ خطأ في تعليم الكل كمقروء:', error);
+      }
+    }
+
+    // ✅ Batch 24 (بند 8): اللافتة الإعلانية اللي بيتحكم فيها الماستر (عرض/إخفاء لصفحة ولي
+    // الأمر تحديداً) من إعدادات النظام العامة
+    // ✅ Batch 33 (بند 1): اللافتة بقت تدعم أكتر من صورة تتقلّب تلقائياً ورا بعض، كل صورة
+    // برابطها الخاص عند الضغط عليها — بدل صورة واحدة ثابتة زي ما كانت قبل كده
+    let portalBannerSlides = [];
+    let portalBannerIndex = 0;
+    let portalBannerTimer = null;
+
+    function showPortalBannerSlide(i) {
+      const slide = portalBannerSlides[i];
+      if (!slide) return;
+      document.getElementById('portalAdBannerImg').src = slide.image_url;
+      const banner = document.getElementById('portalAdBanner');
+      banner.href = slide.link_url || '#';
+      banner.style.cursor = slide.link_url ? 'pointer' : 'default';
+    }
+
+    async function loadPortalAdBanner() {
+      try {
+        const [settingsRes, adsRes] = await Promise.all([
+          fetch(PROJECT_URL + '/functions/v1/get-system-settings'),
+          fetch(PROJECT_URL + '/functions/v1/get-login-ads'),
+        ]);
+        const settingsResult = await settingsRes.json();
+        const adsResult = await adsRes.json();
+        const data = settingsResult.data || {};
+        const slides = (adsResult.portalBanners && adsResult.portalBanners.parent) || [];
+        if (data.portal_banner_show_parent && slides.length > 0) {
+          portalBannerSlides = slides;
+          portalBannerIndex = 0;
+          const banner = document.getElementById('portalAdBanner');
+          banner.onclick = (e) => {
+            const current = portalBannerSlides[portalBannerIndex];
+            if (!current || !current.link_url) e.preventDefault();
+          };
+          showPortalBannerSlide(0);
+          banner.style.display = 'block';
+          if (portalBannerTimer) clearInterval(portalBannerTimer);
+          if (slides.length > 1) {
+            portalBannerTimer = setInterval(() => {
+              portalBannerIndex = (portalBannerIndex + 1) % portalBannerSlides.length;
+              showPortalBannerSlide(portalBannerIndex);
+            }, 5000);
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل اللافتة الإعلانية:', error);
+      }
+    }
+
+    window.onload = function() {
+      loadChildren();
+      loadNotifications();
+      registerPushIfNative();
+      initWebPushNotifications();
+      loadPortalAdBanner();
+      setInterval(() => { loadChildren(); }, 30000);
+      // ✅ (طلب) تقصير فترة تحديث الإشعارات عشان تكون أقرب للحظية
+      setInterval(() => { loadNotifications(); }, 10000);
+    };
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+  <div id="permissionDialog" style="display:none;position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div class="perm-dialog-box">
+      <div class="perm-dialog-icon">🔔</div>
+      <h3 class="perm-dialog-title">تفعيل الإشعارات الفورية</h3>
+      <p class="perm-dialog-text">
+        عشان توصلك آخر تحديثات فَصلي فوراً (رسائل، درجات، مدفوعات) حتى لو التطبيق مقفول، محتاجين إذنك لإرسال الإشعارات.
+      </p>
+      <div style="display:flex;gap:10px;">
+        <button onclick="declinePermissionDialog()" class="perm-dialog-decline">مش دلوقتي</button>
+        <button onclick="acceptPermissionDialog()" class="perm-dialog-accept">فعّل الإشعارات</button>
+      </div>
+    </div>
+  </div>
+<script src="branding.js?v=2"></script>
+<script src="custom-dialogs.js?v=2"></script>
+</body>
+</html>

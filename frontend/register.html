@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>سجّل ابنك - فَصلي</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css?v=52">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: var(--gray-50); }
+    .reg-box { max-width: 460px; width: 100%; background: #fff; border-radius: 18px; padding: 32px 28px; box-shadow: var(--shadow-lg); }
+    [data-theme="dark"] .reg-box { background: var(--gray-100); }
+    .reg-box h2 { text-align: center; margin-bottom: 6px; }
+    .reg-box .sub { text-align: center; color: var(--gray-500); font-size: 13.5px; margin-bottom: 24px; }
+    .reg-box .field { margin-bottom: 14px; }
+    .reg-box input, .reg-box select, .reg-box textarea {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--gray-200); border-radius: 10px; font-family: inherit; font-size: 14px;
+    }
+    .instructor-list { border: 1px solid var(--gray-200); border-radius: 10px; padding: 8px 12px; max-height: 220px; overflow-y: auto; }
+    .instructor-list label { display: flex; align-items: center; gap: 10px; padding: 8px 2px; cursor: pointer; font-size: 14px; }
+    .instructor-list label input { width: auto; }
+  </style>
+</head>
+<body>
+
+  <div class="reg-box" id="regBox">
+    <div id="regLoading" style="text-align:center;padding:20px;color:var(--gray-400);">
+      <i class="fas fa-spinner fa-spin"></i> جاري التحميل...
+    </div>
+
+    <div id="regFormContainer" style="display:none;">
+      <h2>📝 سجّل ابنك معانا</h2>
+      <p class="sub" id="teacherNameLabel">هنتواصل معاك في أقرب وقت لتأكيد التسجيل</p>
+
+      <div class="field" id="instructorFieldWrap" style="display:none;">
+        <label>اختر المدرس (يمكن اختيار أكتر من واحد)</label>
+        <div class="instructor-list" id="instructorList"></div>
+      </div>
+
+      <!-- ✅ (المرحلة الدراسية) بُعد مستقل عن اختيار المدرس — بيظهر فقط لو المدرس عرّف مراحل دراسية،
+           وإلا الحقل مش بيمنع التسجيل خالص عشان مانكسرش روابط تسجيل قديمة -->
+      <div class="field" id="levelFieldWrap" style="display:none;">
+        <label>المرحلة الدراسية</label>
+        <select id="levelSelectInput">
+          <option value="">-- اختر المرحلة الدراسية --</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>اسم الطالب</label>
+        <input type="text" id="studentNameInput" placeholder="الاسم الكامل">
+      </div>
+      <div class="field">
+        <label>رقم هاتف الطالب</label>
+        <input type="text" id="studentPhoneInput" placeholder="01xxxxxxxxx" dir="ltr">
+      </div>
+      <div class="field">
+        <label>اسم ولي الأمر (اختياري)</label>
+        <input type="text" id="parentNameInput" placeholder="اسمك">
+      </div>
+      <div class="field">
+        <label>رقم هاتف ولي الأمر</label>
+        <input type="text" id="parentPhoneInput" placeholder="01xxxxxxxxx" dir="ltr">
+      </div>
+      <div class="field">
+        <label>ملاحظات (اختياري)</label>
+        <textarea id="notesInput" rows="2" placeholder="أي تفاصيل إضافية"></textarea>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;" onclick="submitRegistration()">
+        <i class="fas fa-paper-plane"></i> إرسال الطلب
+      </button>
+      <div id="regMessage" style="margin-top:14px;text-align:center;font-size:13.5px;"></div>
+    </div>
+
+    <div id="regErrorContainer" style="display:none;text-align:center;padding:20px;">
+      <i class="fas fa-triangle-exclamation" style="font-size:32px;color:var(--danger);"></i>
+      <p style="margin-top:10px;color:var(--gray-600);" id="regErrorText">الرابط ده مش متاح</p>
+    </div>
+  </div>
+
+  <script>
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    const params = new URLSearchParams(window.location.search);
+    const registrationToken = params.get('token');
+
+    function showError(message) {
+      document.getElementById('regLoading').style.display = 'none';
+      document.getElementById('regErrorContainer').style.display = 'block';
+      document.getElementById('regErrorText').textContent = message;
+    }
+
+    async function init() {
+      if (!registrationToken) {
+        showError('الرابط ده ناقص — لازم يكون فيه توكن التسجيل.');
+        return;
+      }
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/submit-registration-request', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'lookup', token: registrationToken })
+        });
+        const result = await response.json();
+        if (!result.success) {
+          showError(result.message || 'الرابط ده مش متاح');
+          return;
+        }
+
+        document.getElementById('teacherNameLabel').textContent = 'التسجيل عند ' + result.teacherName + ' — هنتواصل معاك في أقرب وقت لتأكيد التسجيل';
+
+        if (result.isCenter && Array.isArray(result.instructors) && result.instructors.length > 0) {
+          const wrap = document.getElementById('instructorFieldWrap');
+          const list = document.getElementById('instructorList');
+          list.innerHTML = result.instructors.map(function(ins) {
+            return '<label><input type="checkbox" class="instructorCb" value="' + ins.id + '"> ' + escapeHtmlLocal(ins.name) + '</label>';
+          }).join('');
+          wrap.style.display = 'block';
+        }
+
+        // ✅ (المرحلة الدراسية) بُعد مستقل عن اختيار المدرس — لو المدرس معندوش مراحل مفعّلة، الحقل يفضل مخفي واختياري
+        if (Array.isArray(result.levels) && result.levels.length > 0) {
+          const levelWrap = document.getElementById('levelFieldWrap');
+          const levelSelect = document.getElementById('levelSelectInput');
+          levelSelect.innerHTML = '<option value="">-- اختر المرحلة الدراسية --</option>' + result.levels.map(function(lvl) {
+            return '<option value="' + lvl.id + '">' + escapeHtmlLocal(lvl.name) + '</option>';
+          }).join('');
+          levelWrap.style.display = 'block';
+        }
+
+        document.getElementById('regLoading').style.display = 'none';
+        document.getElementById('regFormContainer').style.display = 'block';
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showError('حصل خطأ أثناء تحميل بيانات الرابط، حاول تاني');
+      }
+    }
+
+    function escapeHtmlLocal(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    init();
+
+    async function submitRegistration() {
+      const studentName = document.getElementById('studentNameInput').value.trim();
+      const studentPhone = document.getElementById('studentPhoneInput').value.trim();
+      const parentName = document.getElementById('parentNameInput').value.trim();
+      const parentPhone = document.getElementById('parentPhoneInput').value.trim();
+      const notes = document.getElementById('notesInput').value.trim();
+      const instructorNameIds = Array.from(document.querySelectorAll('.instructorCb:checked')).map(function(cb) { return cb.value; });
+      const levelId = document.getElementById('levelSelectInput').value;
+
+      const msgEl = document.getElementById('regMessage');
+      msgEl.textContent = '';
+
+      if (!studentName || !studentPhone || !parentPhone) {
+        msgEl.textContent = '⚠️ اسم الطالب ورقم هاتف الطالب ورقم هاتف ولي الأمر مطلوبين';
+        msgEl.style.color = 'var(--danger)';
+        return;
+      }
+      if (!/^01[0125][0-9]{8}$/.test(studentPhone)) {
+        msgEl.textContent = '⚠️ رقم هاتف الطالب غير صحيح';
+        msgEl.style.color = 'var(--danger)';
+        return;
+      }
+      if (!/^01[0125][0-9]{8}$/.test(parentPhone)) {
+        msgEl.textContent = '⚠️ رقم هاتف ولي الأمر غير صحيح';
+        msgEl.style.color = 'var(--danger)';
+        return;
+      }
+      const instructorWrapVisible = document.getElementById('instructorFieldWrap').style.display !== 'none';
+      if (instructorWrapVisible && instructorNameIds.length === 0) {
+        msgEl.textContent = '⚠️ اختر مدرس واحد على الأقل';
+        msgEl.style.color = 'var(--danger)';
+        return;
+      }
+      // ✅ (المرحلة الدراسية) لو الحقل ظاهر (يعني المدرس عنده مراحل مفعّلة)، بقى مطلوب — وإلا اختياري
+      const levelWrapVisible = document.getElementById('levelFieldWrap').style.display !== 'none';
+      if (levelWrapVisible && !levelId) {
+        msgEl.textContent = '⚠️ اختر المرحلة الدراسية';
+        msgEl.style.color = 'var(--danger)';
+        return;
+      }
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/submit-registration-request', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'submit', token: registrationToken, studentName, studentPhone, parentName, parentPhone, instructorNameIds, levelId: levelId || null, notes })
+        });
+        const result = await response.json();
+        msgEl.textContent = result.message;
+        msgEl.style.color = result.success ? 'var(--success)' : 'var(--danger)';
+        if (result.success) {
+          document.getElementById('studentNameInput').value = '';
+          document.getElementById('studentPhoneInput').value = '';
+          document.getElementById('parentNameInput').value = '';
+          document.getElementById('parentPhoneInput').value = '';
+          document.getElementById('notesInput').value = '';
+          document.querySelectorAll('.instructorCb:checked').forEach(function(cb) { cb.checked = false; });
+          document.getElementById('levelSelectInput').value = '';
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        msgEl.textContent = '❌ حصل خطأ، حاول تاني';
+        msgEl.style.color = 'var(--danger)';
+      }
+    }
+  </script>
+</body>
+</html>

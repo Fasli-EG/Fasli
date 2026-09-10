@@ -1,0 +1,2520 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إدارة النظام - فَصلي</title>
+  <meta name="description" content="لوحة إدارة النظام العامة (الماستر) في فَصلي - إدارة المدرسين والكروت والإعدادات">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B1C33">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+      background: #f0f4f8;
+      direction: rtl;
+    }
+    
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 18px;
+      color: #2d3748;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 12px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      font-weight: 500;
+      color: #2d3748;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: #48bb78;
+      box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1);
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .field-hint {
+      font-size: 12px;
+      color: #a0aec0;
+      margin-top: 4px;
+    }
+    /* ✅ (طلب) مراجعة شاملة للتنسيقات — شيلنا ~60 سطر CSS ميتة (.perm-grid مكرر مرتين،
+       .perm-card، .perm-check وكل الـ dark-mode بتاعتهم) كانت خاصة بواجهة اختيار صلاحيات فردية
+       لكل مدرس اتشالت من الصفحة نفسها من فترة (كل مدرس بياخد كل الصلاحيات تلقائياً حاليًا) لكن
+       الـ CSS بتاعتها فضل موجود من غير أي استخدام في الـ HTML */
+
+
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #48bb78; color: white; }
+    .btn-primary:hover { background: #38a169; }
+    .btn-danger { background: #fc8181; color: white; }
+    .btn-danger:hover { background: #e53e3e; }
+    .btn-warning { background: #ecc94b; color: #2d3748; }
+    .btn-warning:hover { background: #d69e2e; }
+    /* ✅ (طلب) الكلاسين دول كانوا مستخدمين على 5 أزرار (تبويب الكروت + مودال تعديل مدرس) من
+       غير ما يتعرّفوا في الصفحة دي خالص — الأزرار كانت بتبان بشكل المتصفح الافتراضي (بدون لون)
+       في الوضعين. عرّفناهم بنفس شكل باقي أزرار .btn في الصفحة */
+    .btn-secondary { background: #e2e8f0; color: #2d3748; }
+    .btn-secondary:hover { background: #cbd5e0; }
+    .btn-outline { background: transparent; color: #4a5568; border: 1.5px solid #e2e8f0; }
+    .btn-outline:hover { background: #f7fafc; }
+    body.dark-mode .btn-secondary { background: #2A2F3A; color: #E8E9EE; }
+    body.dark-mode .btn-secondary:hover { background: #3A3F4A; }
+    body.dark-mode .btn-outline { color: #C3C8D0; border-color: #2A2F3A; }
+    body.dark-mode .btn-outline:hover { background: #242938; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th {
+      background: #f7fafc;
+      padding: 12px 16px;
+      text-align: right;
+      font-weight: 600;
+      color: #4a5568;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    tr:hover td { background: #f7fafc; }
+    body.dark-mode tr:hover td { background: #242938; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-active {
+      background: #f0fff4;
+      color: #38a169;
+    }
+    .status-inactive {
+      background: #fff5f5;
+      color: #e53e3e;
+    }
+    .status-expired {
+      background: #fefcbf;
+      color: #d69e2e;
+    }
+    /* ✅ (طلب) الشارات دي كانت بتفضل بخلفياتها الفاتحة الأصلية حتى في الوضع الليلي (متجاهلة
+       تمامًا)، فكانت بتبان كبقعة فاتحة صارخة فوق كارت غامق — دلوقتي ليها خلفيات غامقة شفافة
+       مناسبة مع نفس ألوان النص الأصلية (المقروءة أصلاً في الوضعين) */
+    body.dark-mode .status-active { background: rgba(56,161,105,0.16); color: #6FCF97; }
+    body.dark-mode .status-inactive { background: rgba(229,62,62,0.16); color: #FC8181; }
+    body.dark-mode .status-expired { background: rgba(214,158,46,0.18); color: #F0C674; }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted-text);
+      padding: 30px;
+    }
+    .loading {
+      text-align: center;
+      color: var(--muted-text);
+      padding: 20px;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .message.success { display: block; background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5; }
+    .message.error { display: block; background: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; }
+    .message.info { display: block; background: #FDF1CC; color: #8A6300; border: 1px solid #F2D98A; }
+    /* ✅ (طلب) نفس مشكلة الشارات — لافتات النجاح/الخطأ/المعلومات فوق كل تبويب كانت بتفضل
+       بخلفياتها الفاتحة الأصلية في الوضع الليلي */
+    body.dark-mode .message.success { background: rgba(56,161,105,0.14); border-color: rgba(56,161,105,0.35); color: #6FCF97; }
+    body.dark-mode .message.error { background: rgba(229,62,62,0.14); border-color: rgba(229,62,62,0.35); color: #FC8181; }
+    body.dark-mode .message.info { background: rgba(242,183,5,0.12); border-color: rgba(242,183,5,0.35); color: #F5C842; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 { font-size: 18px; color: #2d3748; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #a0aec0;
+    }
+    .modal-close:hover { color: #e53e3e; }
+
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .field-row { grid-template-columns: 1fr; }
+      .container { padding: 12px; }
+      .header { padding: 12px 16px; }
+    }
+    .btn-reset-password {
+      background: linear-gradient(135deg, #0B1C33, var(--primary));
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+    }
+    .btn-reset-password:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+      background: linear-gradient(135deg, #0A0C10, #B8890A);
+    }
+    .btn-reset-password:active {
+      transform: scale(0.95);
+    }
+    .btn-reset-password i {
+      font-size: 13px;
+    }
+    .btn-reset-password .btn-label {
+      display: inline-block;
+    }
+    @media (max-width: 768px) {
+      .btn-reset-password .btn-label {
+        display: none;
+      }
+      .btn-reset-password {
+        padding: 6px 10px;
+      }
+      .btn-reset-password i {
+        font-size: 14px;
+      }
+    }
+    /* ✅ (طلب) مراجعة شاملة للتنسيقات — متغيّر واحد لكل نصوص الوصف الرمادية المتكررة في
+       الصفحة دي (كانت لون ثابت #718096 مصمم لخلفية بيضاء، فبيبقى شبه مقروء فوق كارت غامق) */
+    /* ✅ (طلب) الصفحة دي كانت بتستخدم var(--primary) في أكتر من 6 أماكن (تظليل التاب النشط في
+       القائمة الجانبية، دائرة الأفاتار، خلفية زرار "إعادة تعيين كلمة المرور"...) من غير ما
+       تُعرّف المتغير ده في أي مكان يوصله (style.css نفسه مش متربط بالصفحة دي أصلاً) — النتيجة:
+       كل القيم دي كانت بتتجاهل بصمت، فمكان التاب النشط في القائمة الجانبية ودائرة الأفاتار
+       كانوا من غير أي تلوين خالص، في الوضعين الليلي والنهاري. عرّفناه هنا محليًا بنفس قيمة
+       العلامة التجارية المستخدمة في باقي النظام */
+    :root { --primary: #F2B705; --primary-light: #FFF4D6; --primary-dark: #B8890A; --muted-text: #718096; --panel-bg: #f8fafc; --panel-border: #e2e8f0; --info-box-bg: #eff6ff; --info-box-border: #bfdbfe; --info-box-text: #1e40af; }
+    body.dark-mode { --primary-light: #362B0F; --muted-text: #9AA1AC; --panel-bg: #1C2029; --panel-border: #2A2F3A; --info-box-bg: #1A2A3A; --info-box-border: #2A3F55; --info-box-text: #7FB0FF; }
+    /* ============ الوضع الليلي ============ */
+    body.dark-mode { background: #0B1C33; color: #E8E9EE; }
+    body.dark-mode .card { background: #1C2029; border: 1px solid #2A2F3A; }
+    body.dark-mode .card h2 { color: #E8E9EE; }
+    body.dark-mode .field label { color: #C3C8D0; }
+    body.dark-mode .field input,
+    body.dark-mode .field select { background: #0B1C33; border-color: #2A2F3A; color: #E8E9EE; }
+    body.dark-mode table { color: #E8E9EE; }
+    body.dark-mode th { background: #0B1C33 !important; color: #C3C8D0 !important; }
+    body.dark-mode td { border-color: #2A2F3A !important; }
+    body.dark-mode .modal-box { background: #1C2029; }
+    body.dark-mode .modal-header h3 { color: #E8E9EE; }
+    body.dark-mode .field-hint { color: #7A8290; }
+    /* ============ القائمة الجانبية (موحّدة مع باقي صفحات النظام) ============ */
+    .app-shell { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 240px; flex-shrink: 0; background: #0B1C33; color: #fff;
+      display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+      z-index: 100; transition: transform 0.25s ease;
+    }
+    .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-brand .logo-icon { width: 34px; height: 34px; border-radius: 9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+    .sidebar-brand .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
+    .sidebar-brand h1 { font-size: 17px; font-weight: 800; color: #fff; }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; scrollbar-width: none; -ms-overflow-style: none; }
+    .sidebar-nav::-webkit-scrollbar { display: none; }
+    .sidebar-item {
+      display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 9px;
+      color: rgba(255,255,255,0.75); font-size: 13.5px; font-weight: 500;
+      transition: all 0.2s; cursor: pointer; border: none; background: transparent; width: 100%; text-align: right; font-family: inherit;
+    }
+    .sidebar-item i { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+    .sidebar-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .sidebar-item.active { background: var(--primary); color: #0B1C33; }
+    .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .sidebar-user .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #0B1C33; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
+    .sidebar-user .u-info { overflow: hidden; }
+    .sidebar-user .u-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-user .u-role { font-size: 11px; color: rgba(255,255,255,0.5); }
+    .sidebar-footer-actions { display: flex; gap: 8px; }
+    .sidebar-footer-actions button {
+      flex: 1; background: rgba(255,255,255,0.06); border: none; color: rgba(255,255,255,0.8);
+      border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 5px; font-family: inherit;
+    }
+    .sidebar-footer-actions button:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    .main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; padding: 14px 24px;
+      background: #F7F8FA; border-bottom: 1px solid #E1E4E9; position: sticky; top: 0; z-index: 90;
+    }
+    .topbar h2 { font-size: 17px; font-weight: 700; color: #0B1C33; }
+    .sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: #333B47; cursor: pointer; padding: 4px; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+    .sidebar-backdrop.open { display: block; }
+    .sidebar.collapsed { width: 0; overflow: hidden; }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; right: 0; top: 0; transform: translateX(100%); box-shadow: -8px 0 24px rgba(0,0,0,0.2); }
+      .sidebar.open { transform: translateX(0); }
+    }
+    body.dark-mode .topbar { background: #1C2029; border-bottom-color: #2A2F3A; }
+    body.dark-mode .topbar h2 { color: #E8E9EE; }
+    body.dark-mode .sidebar-toggle-btn { color: #C3C8D0; }
+    .sub-tab-btn {
+      background: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 20px;
+      padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+    }
+    .sub-tab-btn:hover { background: #e2e8f0; }
+    .sub-tab-btn.active { background: var(--primary, #F2B705); color: #0B1C33; border-color: var(--primary, #F2B705); }
+    /* ✅ (طلب) مراجعة شاملة للتنسيقات — الصفحة دي بتستخدم كلاس body.dark-mode للوضع الليلي
+       (مش خاصية [data-theme="dark"] المستخدمة في باقي صفحات النظام)، فالقاعدتين دول كانوا
+       ميت كود تماماً (السيلكتور مش هيتطابق أبداً) وكمان بيستخدموا متغيرات (--gray-200 وغيرها)
+       مش متعرّفة في الصفحة دي أصلاً. النتيجة: أزرار التبويبات الفرعية (كل الكروت/استقبال
+       المخزون...) كانت فاضلة رمادي فاتح عايم فوق خلفية غامقة في الوضع الليلي. */
+    body.dark-mode .sub-tab-btn { background: #2A2F3A; color: #C3C8D0; border-color: #3A3F4A; }
+    body.dark-mode .sub-tab-btn.active { background: var(--primary, #F2B705); color: #0B1C33; }
+  </style>
+</head>
+<body>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
+        <h1>فَصلي</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="sidebar-item active" id="tabBtnTeachers" onclick="switchAdminTab('teachers')"><i class="fas fa-chalkboard-user"></i> إدارة المدرسين</button>
+        <button class="sidebar-item" id="tabBtnCards" onclick="switchAdminTab('cards')"><i class="fas fa-id-card"></i> كروت المنظومة</button>
+        <button class="sidebar-item" id="tabBtnSettings" onclick="switchAdminTab('settings')"><i class="fas fa-gear"></i> إعدادات النظام</button>
+        <button class="sidebar-item" id="tabBtnProfile" onclick="switchAdminTab('profile')"><i class="fas fa-user-shield"></i> الملف الشخصي</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar">🛡️</div>
+          <div class="u-info">
+            <div class="u-name" id="adminName">مرحباً، المشرف</div>
+            <div class="u-role">حساب المشرف</div>
+          </div>
+        </div>
+        <div class="sidebar-footer-actions">
+          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
+          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <div class="topbar">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h2>إدارة النظام</h2>
+        <div style="width:24px;"></div>
+      </div>
+
+  <div id="panelTeachers" class="container">
+    <div id="message" class="message"></div>
+
+    <div class="card">
+      <h2>➕ إضافة حساب جديد</h2>
+
+      <div class="field-row">
+        <div class="field">
+          <label id="newClientIdLabel">كود المدرس (Client ID)</label>
+          <input type="text" id="newClientId" placeholder="مثال: teacher_001">
+        </div>
+        <div class="field">
+          <label id="newNameLabel">اسم المدرس</label>
+          <input type="text" id="newName" placeholder="الاسم الكامل">
+        </div>
+      </div>
+      <div id="teacherOnlyFields">
+      <div class="field-row">
+        <div class="field">
+          <label>تاريخ انتهاء الصلاحية</label>
+          <input type="date" id="newExpiryDate">
+          <div class="field-hint">💡 اتركها فارغة لصلاحية غير محدودة</div>
+        </div>
+        <div class="field">
+          <label>الحد الأقصى للطلاب</label>
+          <input type="number" id="newMaxStudents" placeholder="مثال: 50 (اتركها 0 لغير محدود)" min="0">
+        </div>
+      </div>
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
+          <input type="checkbox" id="newIsCenter" style="width:16px;height:16px;"> 🏢 هذا الحساب سنتر
+        </label>
+        <div class="field-hint">
+          💡 السنتر بيتعامل زي أي مدرس بالظبط، لكنه بيقدر كمان يضيف "أسماء مدرسين" (تاجات بدون تسجيل دخول) من صفحة "إدارة فريق العمل" بعد ما يدخل، ويستخدمها وقت تسجيل الحضور لتحديد مين من مدرسيه الطالب بياخد عنده.
+        </div>
+      </div>
+      <button class="btn btn-primary" id="addAccountBtn" onclick="addTeacher()">➕ إضافة مدرس</button>
+    </div>
+
+    <div class="card">
+      <h2>📋 قائمة المدرسين</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>كود المدرس</th>
+              <th>الاسم</th>
+              <th>الحالة</th>
+              <th>تاريخ الانتهاء</th>
+              <th>الأيام المتبقية</th>
+              <th>الطلاب</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="teachersBody">
+            <tr><td colspan="7" class="loading">⏳ جاري التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="panelCards" class="container" style="display:none;">
+    <div id="cardsMessage" class="message"></div>
+
+    <!-- ✅ تبويبات فرعية عشان الشاشة متبقاش طويلة — قسم واحد بس ظاهر في كل مرة -->
+    <div class="sidebar-sub-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+      <button class="sub-tab-btn active" data-subtab="all" onclick="switchCardsSubTab('all')">🪪 كل الكروت</button>
+      <button class="sub-tab-btn" data-subtab="receive" onclick="switchCardsSubTab('receive')">📥 استقبال المخزون</button>
+      <button class="sub-tab-btn" data-subtab="assign" onclick="switchCardsSubTab('assign')">📦 تخصيص لمدرس</button>
+      <button class="sub-tab-btn" data-subtab="teacher" onclick="switchCardsSubTab('teacher')">🪪 كروت مدرس معيّن</button>
+      <button class="sub-tab-btn" data-subtab="config" onclick="switchCardsSubTab('config')">⚙️ إعدادات</button>
+    </div>
+
+    <div class="card cards-subtab-panel" data-subtab-panel="all">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <h2 style="margin:0;">🪪 كل الكروت في النظام</h2>
+        <span style="background:var(--primary,#F2B705);color:#0B1C33;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;" id="totalCardsBadge">0 كارت</span>
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>بحث برقم الكارت (UID) بالظبط</label>
+        <input type="text" id="cardSearchInput" placeholder="اكتب رقم الكارت كامل..." dir="ltr" oninput="searchCardByUid()">
+      </div>
+      <div id="cardSearchResult" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card cards-subtab-panel" data-subtab-panel="receive" style="display:none;">
+      <h2>📥 استقبال كروت المخزون</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
+        دوس "بدء الاستقبال"، وبعدين مرّغ الكروت واحد ورا التاني على بورد الماستر المخصص. كل كارت هيتسجّل في المخزون لوحده.
+      </p>
+      <button class="btn btn-primary" id="scanModeBtn" onclick="toggleMasterScanMode()">▶️ بدء الاستقبال</button>
+      <button class="btn btn-secondary" onclick="showMasterDeviceSecret()">🔑 عرض مفتاح جهاز الماستر</button>
+      <div id="masterSecretBox" style="display:none;margin-top:12px;padding:12px;border-radius:10px;background:var(--panel-bg);border:1px solid var(--panel-border);">
+        <div style="font-size:12.5px;color:var(--muted-text);margin-bottom:4px;">DEVICE_SECRET (الصقيه في كود بورد الماستر):</div>
+        <div style="font-family:monospace;font-size:13px;direction:ltr;text-align:left;word-break:break-all;" id="masterSecretText">—</div>
+      </div>
+      <!-- ✅ (طلب) كان النص هنا أزرق غامق (#1e40af) ثابت جوه بوكس خلفيته بتتحول لأزرق-نيڤي غامق
+           في الوضع الليلي (var(--info-box-bg)) — يعني نص غامق فوق خلفية غامقة، شبه مختفي.
+           بقى بيستخدم متغيّر --info-box-text اللي بيتحول للون أزرق فاتح في الوضع الليلي -->
+      <div id="scanModeStatus" style="display:none;margin-top:16px;padding:14px;border-radius:10px;background:var(--info-box-bg);border:1px solid var(--info-box-border);">
+        <div style="font-size:13.5px;color:var(--info-box-text);">🟢 وضع الاستقبال شغّال — آخر كارت اتمرّغ: <strong id="lastScannedUidText">—</strong></div>
+        <div style="font-size:12.5px;color:var(--muted-text);margin-top:6px;">عدد الكروت في المخزون دلوقتي: <strong id="inStockCountText">0</strong></div>
+      </div>
+    </div>
+
+    <div class="card cards-subtab-panel" data-subtab-panel="assign" style="display:none;">
+      <h2>📦 تخصيص كروت المخزون</h2>
+      <div class="field" style="margin-bottom:14px;">
+        <label>تخصيص لـ</label>
+        <div style="display:flex;gap:16px;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="radio" name="assignTargetType" value="teacher" checked onchange="onAssignTargetTypeChange()"> 👨‍🏫 مدرس مستقل
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="radio" name="assignTargetType" value="center" onchange="onAssignTargetTypeChange()"> 🏢 سنتر (متاح لكل مدرسيه)
+          </label>
+        </div>
+      </div>
+      <div class="field" id="assignTeacherField">
+        <label>المدرس</label>
+        <select id="assignTeacherSelect">
+          <option value="">-- اختر المدرس --</option>
+        </select>
+      </div>
+      <div class="field" id="assignCenterField" style="display:none;">
+        <label>السنتر</label>
+        <select id="assignCenterTargetSelect">
+          <option value="">-- اختر السنتر --</option>
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="inStockSelectAll" onchange="toggleSelectAllInStock()"> تحديد الكل
+      </label>
+      <input type="text" id="inStockCardsFilter" placeholder="🔍 فلترة برقم الكارت..." oninput="filterInStockCards()" style="width:100%;padding:8px 10px;border:1px solid var(--panel-border);border-radius:8px;font-size:12.5px;margin-bottom:8px;" dir="ltr">
+      <div id="inStockCardsCount" style="font-size:12px;color:var(--muted-text);margin-bottom:6px;"></div>
+      <div id="inStockCardsList" style="margin:4px 0 12px;max-height:260px;overflow-y:auto;border:1px solid var(--panel-border);border-radius:8px;padding:8px;">
+        <p style="color:var(--muted-text);font-size:13px;">اختر مدرس عشان تشوف كروت المخزون المتاحة.</p>
+      </div>
+      <button class="btn btn-primary" onclick="assignSelectedCards()">📦 تخصيص الكروت المختارة</button>
+      <button class="btn btn-danger" onclick="deleteSelectedStockCards()">🗑️ حذف الكروت المختارة</button>
+    </div>
+
+    <div class="card cards-subtab-panel" data-subtab-panel="teacher" style="display:none;">
+      <h2>🪪 كروت مدرس معيّن (تفعيل/تعطيل)</h2>
+      <div class="field">
+        <label>فلترة بالمدرس</label>
+        <select id="filterTeacherSelect" onchange="loadTeacherCards()">
+          <option value="">-- اختر المدرس --</option>
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="teacherCardsSelectAll" onchange="toggleSelectAllTeacherCards()"> تحديد الكل
+      </label>
+      <input type="text" id="teacherCardsFilter" placeholder="🔍 فلترة برقم الكارت أو اسم الطالب..." oninput="filterTeacherCards()" style="width:100%;padding:8px 10px;border:1px solid var(--panel-border);border-radius:8px;font-size:12.5px;margin-bottom:8px;">
+      <div id="teacherCardsCount" style="font-size:12px;color:var(--muted-text);margin-bottom:6px;"></div>
+      <div id="teacherCardsList" style="margin:4px 0 12px;">
+        <p style="color:var(--muted-text);font-size:13px;">اختر مدرس عشان تشوف كروته.</p>
+      </div>
+      <button class="btn btn-secondary" onclick="returnSelectedCardsToStock()">↩️ إرجاع المحدد للمخزون</button>
+      <button class="btn btn-danger" onclick="deleteSelectedTeacherCards()">🗑️ حذف المحدد نهائياً</button>
+      <button class="btn btn-primary" onclick="bulkToggleTeacherCards(true)">✅ تفعيل المحدد</button>
+      <button class="btn btn-secondary" onclick="bulkToggleTeacherCards(false)">⛔ تعطيل المحدد</button>
+    </div>
+
+    <div class="card cards-subtab-panel" data-subtab-panel="config" style="display:none;">
+      <h2>⚙️ إعداد التحقق الإجباري</h2>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;">
+        <input type="checkbox" id="requireCardsToggle" onchange="toggleRequireCards()" style="width:18px;height:18px;">
+        رفض أي كارت مش مسجّل رسمياً ومفعّل (تفعيل ده هيمنع أي كارت غير مصرّح له من تسجيل حضور)
+      </label>
+    </div>
+  </div>
+
+  <div id="panelSettings" class="container" style="display:none;">
+    <div id="settingsMessage" class="message"></div>
+
+    <!-- ✅ نفس أسلوب التبويبات الفرعية اللي في صفحة الكروت -->
+    <div class="sidebar-sub-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+      <button class="sub-tab-btn active" data-subtab="contact" onclick="switchSettingsSubTab('contact')">⚙️ بيانات التواصل</button>
+      <button class="sub-tab-btn" data-subtab="downloads" onclick="switchSettingsSubTab('downloads')">📥 روابط التحميل</button>
+      <button class="sub-tab-btn" data-subtab="ads" onclick="switchSettingsSubTab('ads')">🖼️ الصور الإعلانية</button>
+      <button class="sub-tab-btn" data-subtab="background" onclick="switchSettingsSubTab('background')">🖼️ صور الخلفية</button>
+      <button class="sub-tab-btn" data-subtab="portalBanner" onclick="switchSettingsSubTab('portalBanner')">📣 لافتة صفحة الطالب/ولي الأمر</button>
+      <button class="sub-tab-btn" data-subtab="pushNotif" onclick="switchSettingsSubTab('pushNotif')">🔔 الإشعارات الحقيقية</button>
+    </div>
+
+    <div class="card settings-subtab-panel" data-subtab-panel="contact">
+      <h2>⚙️ بيانات التواصل الظاهرة للمستخدمين</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
+        تظهر هذه البيانات في صفحة تسجيل الدخول، ولصفحة "الحساب غير مفعّل" اللي بتظهر للمدرسين اللي انتهى ترخيصهم.
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>رقم الواتساب (بصيغة دولية بدون + أو مسافات)</label>
+          <input type="text" id="settingsWhatsapp" placeholder="مثال: 201143264206" dir="ltr">
+        </div>
+        <div class="field">
+          <label>رقم الهاتف (للعرض والاتصال المباشر)</label>
+          <input type="text" id="settingsPhone" placeholder="مثال: 01143264206" dir="ltr">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>رابط صفحة الفيسبوك</label>
+          <input type="text" id="settingsFacebook" placeholder="https://facebook.com/..." dir="ltr">
+        </div>
+        <div class="field">
+          <label>رابط قناة اليوتيوب</label>
+          <input type="text" id="settingsYoutube" placeholder="https://youtube.com/@..." dir="ltr">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>رابط تيك توك</label>
+          <input type="text" id="settingsTiktok" placeholder="https://tiktok.com/@..." dir="ltr">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
+    </div>
+
+    <div class="card settings-subtab-panel" data-subtab-panel="downloads" style="display:none;">
+      <h2>📥 روابط تحميل النظام</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
+        تظهر هذي الروابط ككارتين إعلانيين في صفحة تسجيل الدخول. اتركها فاضية لو مش عايز الكارت يظهر.
+      </p>
+      <!-- ✅ (طلب) تحكم مستقل في إظهار/إخفاء القسم بالكامل، مش بس الاعتماد على وجود الروابط -->
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;font-size:14px;">
+        <input type="checkbox" id="settingsShowDownloadSection" checked style="width:auto;"> إظهار قسم روابط التحميل في صفحة تسجيل الدخول
+      </label>
+      <div class="field-row">
+        <div class="field">
+          <label>رابط تحميل نسخة الكمبيوتر</label>
+          <input type="text" id="settingsDesktopUrl" placeholder="https://..." dir="ltr">
+        </div>
+        <div class="field">
+          <label>رابط تحميل تطبيق الهاتف</label>
+          <input type="text" id="settingsMobileUrl" placeholder="https://..." dir="ltr">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
+    </div>
+
+    <div class="card settings-subtab-panel" data-subtab-panel="ads" style="display:none;">
+      <h2>🖼️ الصور الإعلانية في صفحة تسجيل الدخول</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
+        تظهر الصور دي في مساحة إعلانية بصفحة تسجيل الدخول (خطط اشتراكات، إعلانات، إلخ). عدد الصور مش محدود، والمساحة بتختفي تلقائياً لو مفيش أي صورة مضافة.
+      </p>
+      <!-- ✅ Batch 24 (بند 7): رفع الصورة كملف فعلي من الجهاز بدل لصق رابط، مع الإبقاء على
+           خانة "رابط عند الضغط" كرابط نصي زي ما هي (ده مش ملف، ده وجهة يروح لها لما حد يدوس على الإعلان) -->
+      <div class="field-row">
+        <div class="field">
+          <label>صورة الإعلان (من جهازك)</label>
+          <input type="file" id="newAdImageFile" accept="image/png,image/jpeg,image/webp,image/gif">
+          <div id="newAdImageUploadStatus" style="font-size:12px;color:var(--muted-text);margin-top:4px;"></div>
+        </div>
+        <div class="field">
+          <label>رابط عند الضغط على الصورة (اختياري)</label>
+          <input type="text" id="newAdLinkUrl" placeholder="https://..." dir="ltr">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addLoginAd()">➕ إضافة صورة</button>
+
+      <div id="loginAdsList" style="margin-top:20px;display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+    <div class="card settings-subtab-panel" data-subtab-panel="background" style="display:none;">
+      <h2>🖼️ خلفية صفحة تسجيل الدخول (صور أو فيديوهات)</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
+        تظهر كخلفية متحركة في صفحة تسجيل الدخول، وتتبدّل تلقائياً. ارفع صور أو فيديو (mp4, webm, mov) من جهازك مباشرة — النظام بيتعرّف على النوع تلقائياً. لو مفيش أي شيء مضاف، الخلفية بترجع للتدرّج الغامق العادي تلقائياً.
+        <br>
+        💡 تقدر ترفع عدد أي من الصور وتتقلّب ورا بعضها، أو فيديو واحد يفضل شغال طول الوقت — لكن فيديو واحد بس في نفس الوقت (احذف القديم لو عايز تستبدله بفيديو تاني).
+        <br>
+        💡 أفضل مقاس مقترح: 1920×1080 بكسل (وضع landscape أفقي، نسبة 16:9) — الصورة/الفيديو بيتعرض بالكامل من غير قص على أي حجم شاشة. الحد الأقصى لحجم الملف: 3 ميجا للصور، 20 ميجا للفيديو.
+      </p>
+
+      <div class="field-row">
+        <div class="field">
+          <label>صورة أو فيديو جديد (من جهازك)</label>
+          <input type="file" id="newBgImageFile" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime">
+          <div id="newBgImageUploadStatus" style="font-size:12px;color:var(--muted-text);margin-top:4px;"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addBgImage()">➕ إضافة</button>
+
+      <div id="bgImagesList" style="margin-top:20px;display:flex;flex-wrap:wrap;gap:10px;"></div>
+    </div>
+
+    <!-- ✅ Batch 24 (بند 8) + Batch 28 (بند 1): لافتة إعلانية مستقلة بالكامل لكل جمهور من
+         الأربعة (ولي أمر / طالب / مدرس / مساعد) — كل واحدة عندها صورتها ورابطها وخيار إظهارها
+         لوحدها، عشان الماستر يقدر يستخدم إعلان مختلف تماماً لكل واحد فيهم لو حب -->
+    <div class="card settings-subtab-panel" data-subtab-panel="portalBanner" style="display:none;">
+      <h2>📣 اللافتات الإعلانية</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
+        لكل جمهور لافتة مستقلة بالكامل — صورة ورابط وخيار إظهار خاص بيه، فمتاح تحط إعلان مختلف
+        تماماً لكل واحد منهم، أو تستخدم نفس الصورة للكل، حسب ما يناسبك. اترك أي واحدة من غير صورة
+        عشان تختفي تماماً من صفحتها.
+      </p>
+      <div id="portalBannerAudiences"></div>
+    </div>
+
+    <!-- ✅ Batch 32: تفعيل الإشعارات الحقيقية (Push) على الموبايل/المتصفح — قبل كده كان الإشعار
+         بيظهر جوه جرس التطبيق بس (لازم تكون فاتح الصفحة فعلياً عشان تشوفه)، دلوقتي ممكن يوصل
+         كإشعار حقيقي على الجهاز حتى لو التطبيق مقفول، لكن محتاج مشروع Firebase مربوط -->
+    <div class="card settings-subtab-panel" data-subtab-panel="pushNotif" style="display:none;">
+      <h2>🔔 الإشعارات الحقيقية (Push) — لولي الأمر والطالب والمدرس والمساعد</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;line-height:1.8;">
+        بدون الإعدادات دي، الإشعارات بتظهر جوه جرس التطبيق بس (لازم يكون التطبيق مفتوح عشان تظهر).
+        عشان توصل كإشعار حقيقي على الموبايل/المتصفح حتى لو التطبيق مقفول، محتاج:
+        <br>1) تعمل مشروع مجاني على <span dir="ltr" style="font-family:monospace">console.firebase.google.com</span> (لو مالكش واحد).
+        <br>2) من إعدادات المشروع ⚙️ → General → "Your apps" → أضف تطبيق Web (</> ) وهتلاقي بيانات الإعدادات (Web config) تحت — انسخها في الحقول اللي تحت.
+        <br>3) من نفس الإعدادات → تبويب Cloud Messaging → "Web configuration" → "Generate key pair" وده هيديك "مفتاح VAPID" — انسخه في الحقل الأخير تحت.
+        <br>4) من ⚙️ → Service Accounts → "Generate new private key" (هينزل ملف JSON) — الملف ده متحطش هنا، لازم تضيفه كمتغير بيئة اسمه <span dir="ltr" style="font-family:monospace">FIREBASE_SERVICE_ACCOUNT</span> في إعدادات Supabase Edge Functions (Settings → Edge Functions → Secrets)، وتحط محتوى الملف كامل كنص جوّاه.
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>Firebase API Key</label>
+          <input type="text" id="settingsFirebaseApiKey" placeholder="AIzaSy..." dir="ltr">
+        </div>
+        <div class="field">
+          <label>Auth Domain</label>
+          <input type="text" id="settingsFirebaseAuthDomain" placeholder="your-project.firebaseapp.com" dir="ltr">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Project ID</label>
+          <input type="text" id="settingsFirebaseProjectId" placeholder="your-project-id" dir="ltr">
+        </div>
+        <div class="field">
+          <label>Storage Bucket</label>
+          <input type="text" id="settingsFirebaseStorageBucket" placeholder="your-project.appspot.com" dir="ltr">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Messaging Sender ID</label>
+          <input type="text" id="settingsFirebaseMessagingSenderId" placeholder="1234567890" dir="ltr">
+        </div>
+        <div class="field">
+          <label>App ID</label>
+          <input type="text" id="settingsFirebaseAppId" placeholder="1:1234567890:web:xxxxx" dir="ltr">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>مفتاح VAPID (Web Push certificate)</label>
+          <input type="text" id="settingsFirebaseVapidKey" placeholder="B..." dir="ltr">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="savePushSettings()">💾 حفظ إعدادات الإشعارات</button>
+    </div>
+  </div>
+
+  <div id="panelProfile" class="container" style="display:none;">
+    <div id="profileMessage" class="message"></div>
+    <div class="card">
+      <h2>👤 بيانات المشرف</h2>
+      <div class="field">
+        <label>الاسم (بيظهر في القائمة الجانبية عند تسجيل دخولك)</label>
+        <input type="text" id="profileName" placeholder="اسم المشرف">
+      </div>
+      <button class="btn btn-primary" onclick="saveAdminName()">💾 حفظ الاسم</button>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <h2>📝 الظهور في صفحة تسجيل الدخول</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
+        الاسم ده مختلف عن اللي فوق — ده اللي بيظهر لكل المستخدمين في تذييل صفحة تسجيل الدخول "تم تصميم هذه المنصة بكل حب من...".
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>اسمك (يظهر في تذييل صفحة تسجيل الدخول)</label>
+          <input type="text" id="settingsAdminName" placeholder="مثال: Sabry Elgammal">
+        </div>
+        <div class="field">
+          <label>رقم واتسابك (يتربط بالاسم في نفس التذييل)</label>
+          <input type="text" id="settingsAdminWhatsapp" placeholder="مثال: 201007702434" dir="ltr">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:14px 0;font-size:14px;">
+        <input type="checkbox" id="loginCreditShow" checked style="width:auto;"> إظهار هذا النص أسفل صفحة تسجيل الدخول
+      </label>
+      <div class="field">
+        <label>نص مخصص بديل (اختياري — لو سيبته فاضي هيتبني تلقائيًا من الاسم والواتساب فوق)</label>
+        <input type="text" id="loginCreditText" placeholder="مثال: بإدارة مركز كذا — للتواصل: 01xxxxxxxxx">
+      </div>
+      <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <h2>🔐 تغيير كلمة المرور</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>كلمة المرور الجديدة</label>
+          <input type="password" id="profileNewPassword" placeholder="4 أحرف على الأقل">
+        </div>
+        <div class="field">
+          <label>تأكيد كلمة المرور</label>
+          <input type="password" id="profileConfirmPassword" placeholder="أعد إدخال كلمة المرور">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveAdminPassword()">💾 تغيير كلمة المرور</button>
+    </div>
+  </div>
+
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>✏️ تعديل صلاحيات المدرس</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <input type="hidden" id="editClientId">
+      <div class="field">
+        <label>اسم المدرس</label>
+        <input type="text" id="editName">
+      </div>
+      <div class="field">
+        <label>الحالة</label>
+        <select id="editStatus">
+          <option value="true">🟢 مفعل</option>
+          <option value="false">🔴 غير مفعل</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>تاريخ الانتهاء</label>
+          <input type="date" id="editExpiryDate">
+        </div>
+        <div class="field">
+          <label>الحد الأقصى للطلاب</label>
+          <input type="number" id="editMaxStudents" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>ملاحظات</label>
+        <input type="text" id="editNotes" placeholder="ملاحظات إضافية">
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
+          <input type="checkbox" id="editIsCenter" style="width:16px;height:16px;"> 🏢 هذا الحساب سنتر
+        </label>
+      </div>
+
+      <div class="field" style="border-top:1px solid var(--panel-border);padding-top:14px;margin-top:6px;">
+        <label>🔑 مفتاح الجهاز (CLIENT_ID + DEVICE_SECRET) — لتجهيز بورد قارئ الكروت قبل التسليم للمدرس</label>
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <input type="text" id="editDeviceClientId" readonly dir="ltr" style="font-family:monospace;background:var(--panel-bg);flex:1;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="editDeviceSecret" readonly dir="ltr" style="font-family:monospace;background:var(--panel-bg);flex:1;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="copyDeviceSecretAdmin()" title="نسخ">📋</button>
+          <button type="button" class="btn btn-warning btn-sm" onclick="regenerateDeviceSecretAdmin()" title="توليد مفتاح جديد">🔄</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="updateTeacher()">💾 حفظ التعديلات</button>
+    </div>
+  </div>
+
+
+  <script>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) { return String(str || '').replace(/'/g, "\\'"); }
+
+    // ============================================
+    // CONFIG
+    // ============================================
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    // ============================================
+    // TOKEN HELPERS
+    // ============================================
+    function getToken() {
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const exp = payload.exp;
+          if (exp) {
+            const now = Math.floor(Date.now() / 1000);
+            if (exp < now) {
+              console.warn('⚠️ التوكن منتهي الصلاحية');
+              return token;
+            }
+          }
+          console.log('✅ التوكن صالح، clientId:', payload.clientId, '، role:', payload.role);
+        }
+      } catch (e) {
+        console.warn('⚠️ فشل فك تشفير التوكن:', e.message);
+      }
+      return token;
+    }
+
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      };
+    }
+
+    function isTokenValid() {
+      const token = getToken();
+      if (!token) return false;
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1]));
+        const exp = payload.exp;
+        if (exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (exp < now) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // ============================================
+    // HANDLE UNAUTHORIZED
+    // ============================================
+    let isLoggingOut = false;
+
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      if (isTokenValid()) {
+        console.warn('⚠️ 401 مع توكن صالح - عدم صلاحية');
+        showMessage('⛔ ليس لديك صلاحية للوصول إلى هذه البيانات.', 'error');
+        return;
+      }
+
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+
+      showMessage('⛔ ' + message + '، يرجى تسجيل الدخول مرة أخرى', 'error');
+
+      setTimeout(() => {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem('clientId');
+        sessionStorage.removeItem('teacherClientId');
+        sessionStorage.removeItem('userRole');
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    // ============================================
+    // SESSION
+    // ============================================
+    const clientId = sessionStorage.getItem('clientId');
+    const isAdmin = sessionStorage.getItem('isAdmin');
+
+    if (clientId !== 'master_admin' || isAdmin !== 'true') {
+      window.location.href = LOGIN_URL;
+    }
+
+    document.getElementById('adminName').textContent = '👤 مرحباً، المشرف';
+
+    function showMessage(text, type = 'info') {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = 'message ' + type;
+      setTimeout(() => {
+        msg.className = 'message';
+        msg.textContent = '';
+      }, 4000);
+    }
+
+    // ============================================
+    // LOAD TEACHERS
+    // ============================================
+    async function loadTeachers() {
+      const tbody = document.getElementById('teachersBody');
+      tbody.innerHTML = '<tr><td colspan="7" class="loading">⏳ جاري التحميل...</td></tr>';
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teachers', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ adminId: clientId })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        console.log('📦 Teachers:', result);
+
+        if (result.success) {
+          const teachers = result.data || [];
+          if (teachers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">📭 لا يوجد مدرسون</td></tr>';
+            return;
+          }
+
+          let html = '';
+          teachers.forEach(t => {
+            let status = '';
+            let statusClass = '';
+            let daysRemaining = '—';
+
+            if (t.client_id === 'master_admin') {
+              status = '👑 مشرف';
+              statusClass = 'status-active';
+              daysRemaining = 'غير محدود';
+            } else if (t.calculated_status === 'inactive') {
+              status = 'غير مفعل';
+              statusClass = 'status-inactive';
+            } else if (t.calculated_status === 'expired') {
+              status = 'منتهي';
+              statusClass = 'status-expired';
+            } else {
+              status = 'مفعل';
+              statusClass = 'status-active';
+              daysRemaining = (t.days_remaining !== null && t.days_remaining !== undefined) ? t.days_remaining + ' يوم' : 'غير محدود';
+            }
+
+            html += `
+            <tr>
+              <td><code style="background:var(--panel-bg);padding:2px 8px;border-radius:4px;font-size:12px;">${t.client_id}</code></td>
+              <td>${escapeHtml(t.name)}${t.is_center ? ' <span class="status-badge status-active" title="حساب سنتر">🏢 سنتر</span>' : ''}</td>
+              <td><span class="status-badge ${statusClass}">${status}</span></td>
+              <td>${t.expiry_date || 'غير محدود'}</td>
+              <td>${daysRemaining}</td>
+              <td>${t.student_count || 0}</td>
+              <td class="actions-cell">
+                ${t.client_id !== 'master_admin' ? `
+                  <button class="btn btn-warning btn-sm" onclick="openEditModal('${t.client_id}')"><i class="fas fa-edit"></i> تعديل</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteTeacher('${t.client_id}', '${escapeAttr(t.name)}')"><i class="fas fa-trash"></i> حذف</button>
+                  <button class="btn btn-reset-password btn-sm" onclick="resetTeacherPassword('${t.client_id}', '${escapeAttr(t.name)}')" title="إعادة تعيين كلمة المرور"><i class="fas fa-key"></i>🔑إعادة تعيين<span class="btn-label">كلمة مرور</span></button>
+                ` : `
+                  <span style="color:var(--muted-text);font-size:12px;">🔒 غير قابل للتعديل</span>
+                `}
+              </td>
+            </tr>
+          `;
+          });
+          tbody.innerHTML = html;
+        } else {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty-state">❌ ' + result.message + '</td></tr>';
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">❌ خطأ في الاتصال بالخادم</td></tr>';
+      }
+    }
+
+    // ============================================
+    // ADD TEACHER
+    // ============================================
+    // ✅ Aug 2026 (تصحيح): كروت الصلاحيات اتشالت نهائياً — كل مدرس بياخد كل الصلاحيات
+    // تلقائياً وقت الإضافة (من الباك إند)، مفيش تخصيص جزئي من هنا خالص.
+    // ✅ Aug 2026 (تعديل جوهري): مفهوم "السنتر" كحساب منفصل اتلغى تماماً — دلوقتي السنتر
+    // مجرد حساب مدرس عادي عليه علامة is_center، بيضاف من نفس الفورم دي بالظبط.
+    // ============================================
+
+    async function addTeacher() {
+      const newClientId = document.getElementById('newClientId').value.trim();
+      const name = document.getElementById('newName').value.trim();
+      const isCenter = document.getElementById('newIsCenter').checked;
+
+      if (!newClientId || !name) {
+        showMessage('⚠️ أدخل الكود والاسم', 'error');
+        return;
+      }
+
+      const expiryDate = document.getElementById('newExpiryDate').value.trim();
+      const maxStudents = document.getElementById('newMaxStudents').value.trim();
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-manage-teacher', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            action: 'add',
+            adminId: 'master_admin',
+            clientId: newClientId,
+            name: name,
+            expiryDate: expiryDate || null,
+            maxStudents: maxStudents ? parseInt(maxStudents) : 0,
+            isCenter: isCenter
+            // ✅ Aug 2026: مفيش permissions بتتبعت هنا خالص — كل مدرس بياخد كل الصلاحيات تلقائياً من الباك إند
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          const deviceSecret = result.data?.[0]?.device_secret || '';
+          showMessage(
+            '✅ ' + result.message +
+            (deviceSecret ? ` — مفتاح الجهاز: ${deviceSecret} (انسخه دلوقتي لتجهيز البورد، أو من "تعديل" لاحقاً)` : ''),
+            'success'
+          );
+          document.getElementById('newClientId').value = '';
+          document.getElementById('newName').value = '';
+          document.getElementById('newExpiryDate').value = '';
+          document.getElementById('newMaxStudents').value = '';
+          document.getElementById('newIsCenter').checked = false;
+          loadTeachers();
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل إضافة المدرس: ' + error.message, 'error');
+      }
+    }
+
+    let currentTeacher = null;
+
+    async function openEditModal(teacherClientId) {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teacher', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            adminId: 'master_admin',
+            clientId: teacherClientId
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          currentTeacher = result.data;
+          document.getElementById('editClientId').value = currentTeacher.client_id;
+          document.getElementById('editName').value = currentTeacher.name;
+          document.getElementById('editStatus').value = currentTeacher.is_active ? 'true' : 'false';
+          document.getElementById('editExpiryDate').value = currentTeacher.expiry_date || '';
+          document.getElementById('editMaxStudents').value = currentTeacher.max_students || 0;
+          document.getElementById('editNotes').value = currentTeacher.notes || '';
+          document.getElementById('editIsCenter').checked = !!currentTeacher.is_center;
+          document.getElementById('editDeviceClientId').value = currentTeacher.client_id;
+          document.getElementById('editDeviceSecret').value = currentTeacher.device_secret || '(لسه معملوش)';
+
+          document.getElementById('editModal').classList.add('open');
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل تحميل بيانات المدرس: ' + error.message, 'error');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').classList.remove('open');
+      currentTeacher = null;
+    }
+
+    function copyDeviceSecretAdmin() {
+      const value = document.getElementById('editDeviceSecret').value;
+      if (!value) return;
+      navigator.clipboard.writeText(value).then(() => {
+        showMessage('✅ تم نسخ المفتاح', 'success');
+      }).catch(() => {
+        showMessage('⚠️ تعذر النسخ التلقائي، انسخه يدوياً', 'error');
+      });
+    }
+
+    async function regenerateDeviceSecretAdmin() {
+      if (!currentTeacher) return;
+      if (!(await customConfirm(`توليد مفتاح جديد للمدرس "${currentTeacher.name}" هيوقف أي بورد شغّال بالمفتاح الحالي. متأكد؟`))) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-regenerate-device-secret', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ clientId: currentTeacher.client_id })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('editDeviceSecret').value = result.data.deviceSecret;
+          showMessage('✅ تم توليد مفتاح جديد — جهّز البورد بيه قبل ما تسلّمه للمدرس', 'success');
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل توليد مفتاح جديد: ' + error.message, 'error');
+      }
+    }
+
+    async function updateTeacher() {
+      const teacherClientId = document.getElementById('editClientId').value;
+      const name = document.getElementById('editName').value.trim();
+      const isActiveParam = document.getElementById('editStatus').value === 'true';
+      const expiryDate = document.getElementById('editExpiryDate').value || null;
+      const maxStudents = parseInt(document.getElementById('editMaxStudents').value) || 0;
+      const notes = document.getElementById('editNotes').value.trim();
+      const isCenter = document.getElementById('editIsCenter').checked;
+
+      if (!name) {
+        showMessage('⚠️ أدخل اسم المدرس', 'error');
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-manage-teacher', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            action: 'update',
+            adminId: 'master_admin',
+            clientId: teacherClientId,
+            name: name,
+            isActive: isActiveParam,
+            expiryDate: expiryDate,
+            maxStudents: maxStudents,
+            notes: notes,
+            isCenter: isCenter
+            // ✅ Aug 2026: مفيش permissions بتتبعت هنا خالص — الصلاحيات دايماً كاملة، مفيش تعديل جزئي عليها
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          showMessage('✅ ' + result.message, 'success');
+          closeModal();
+          loadTeachers();
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل تحديث البيانات: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteTeacher(teacherClientId, name) {
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف المدرس "${name}" (${teacherClientId})؟\nسيتم حذف جميع بياناته (طلاب، درجات، مدفوعات، إلخ).\nهذا الإجراء لا يمكن التراجع عنه!`))) {
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-manage-teacher', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            action: 'delete',
+            adminId: 'master_admin',
+            clientId: teacherClientId
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          showMessage('✅ ' + result.message, 'success');
+          loadTeachers();
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل حذف المدرس: ' + error.message, 'error');
+      }
+    }
+
+    async function logout() {
+      if (!(await customConfirm('هل أنت متأكد من تسجيل الخروج؟'))) return;
+      try {
+        const jwt = sessionStorage.getItem('jwtToken');
+        let pushToken = localStorage.getItem('fasliPushToken');
+        const Preferences = window.Capacitor?.Plugins?.Preferences;
+        if (!pushToken && Preferences) {
+          const stored = await Preferences.get({ key: 'fasliPushToken' }).catch(() => null);
+          pushToken = stored?.value || null;
+        }
+        if (jwt && pushToken) {
+          // ✅ منستناش رد السيرفر هنا — لو الإنترنت بطيء، مش لازم نأخّر الخروج الفعلي عشان طلب تنظيف ثانوي
+          fetch(PROJECT_URL + '/functions/v1/manage-push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ action: 'unregister', token: pushToken })
+          }).catch(() => {});
+        }
+      } catch (e) { /* تجاهل - الأولوية لإتمام تسجيل الخروج */ }
+      sessionStorage.clear(); localStorage.clear(); window.Capacitor?.Plugins?.Preferences?.clear().catch(() => {}); window.electronStore?.clear().catch(() => {});
+      window.location.href = LOGIN_URL;
+    }
+
+    window.onload = function() {
+      loadTeachers();
+      loadAdminProfile();
+      setInterval(loadTeachers, 30000);
+    };
+
+    // ============================================
+    // تبديل التابات (المدرسين / إعدادات النظام)
+    // ============================================
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (window.innerWidth <= 900) {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+
+    // ✅ تبديل التبويبات الفرعية جوه صفحة الكروت (بدل ما كل الأقسام تكون تحت بعض في صفحة طويلة)
+    function switchCardsSubTab(tab) {
+      document.querySelectorAll('.cards-subtab-panel').forEach(panel => {
+        panel.style.display = panel.dataset.subtabPanel === tab ? 'block' : 'none';
+      });
+      document.querySelectorAll('#panelCards .sub-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.subtab === tab);
+      });
+    }
+
+    // ✅ نفس فكرة تبديل التبويبات الفرعية، لكن لصفحة إعدادات النظام
+    function switchSettingsSubTab(tab) {
+      document.querySelectorAll('.settings-subtab-panel').forEach(panel => {
+        panel.style.display = panel.dataset.subtabPanel === tab ? 'block' : 'none';
+      });
+      document.querySelectorAll('#panelSettings .sub-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.subtab === tab);
+      });
+    }
+
+    function switchAdminTab(tab) {
+      document.getElementById('panelTeachers').style.display = tab === 'teachers' ? '' : 'none';
+      document.getElementById('panelCards').style.display = tab === 'cards' ? '' : 'none';
+      document.getElementById('panelSettings').style.display = tab === 'settings' ? '' : 'none';
+      document.getElementById('panelProfile').style.display = tab === 'profile' ? '' : 'none';
+      document.getElementById('tabBtnTeachers').classList.toggle('active', tab === 'teachers');
+      document.getElementById('tabBtnCards').classList.toggle('active', tab === 'cards');
+      document.getElementById('tabBtnSettings').classList.toggle('active', tab === 'settings');
+      document.getElementById('tabBtnProfile').classList.toggle('active', tab === 'profile');
+      if (tab === 'settings') loadSystemSettings();
+      if (tab === 'profile') { loadAdminProfile(); loadSystemSettings(); }
+      if (tab === 'cards') initCardsTab();
+    }
+
+    function showProfileMessage(text, type) {
+      const el = document.getElementById('profileMessage');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      el.style.display = 'block';
+    }
+
+    // ============================================
+    // تاب كروت المنظومة (v2: مخزون → تخصيص → تفعيل → ربط من عند المدرس)
+    // ============================================
+    let scanStatusPollTimer = null;
+    let masterScanIsActive = false;
+
+    async function initCardsTab() {
+      await loadTeacherListsForCards();
+      await loadCenterListForCards();
+      await loadRequireCardsToggle();
+      await refreshScanStatus();
+      await loadTotalCardsCount();
+    }
+
+    async function loadTotalCardsCount() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/list-system-cards', { method: 'POST', headers, body: '{}' });
+        const result = await response.json();
+        const total = (result.data || []).length;
+        document.getElementById('totalCardsBadge').textContent = total + (total === 1 ? ' كارت' : ' كارت');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل عدد الكروت:', error);
+      }
+    }
+
+    let cardSearchDebounce = null;
+    function searchCardByUid() {
+      const query = document.getElementById('cardSearchInput').value.trim();
+      const resultBox = document.getElementById('cardSearchResult');
+      if (cardSearchDebounce) clearTimeout(cardSearchDebounce);
+      if (!query) { resultBox.innerHTML = ''; return; }
+
+      cardSearchDebounce = setTimeout(async () => {
+        resultBox.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">جاري البحث...</p>';
+        try {
+          const headers = getAuthHeaders();
+          if (!headers) return;
+          const response = await fetch(PROJECT_URL + '/functions/v1/list-system-cards', {
+            method: 'POST', headers, body: JSON.stringify({ cardUid: query })
+          });
+          const result = await response.json();
+          const cards = result.data || [];
+          if (cards.length === 0) {
+            resultBox.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">مفيش أي كارت بالرقم ده.</p>';
+            return;
+          }
+          resultBox.innerHTML = cards.map(c => `
+            <div style="padding:12px;border:1px solid var(--panel-border);border-radius:10px;font-size:13px;">
+              <div dir="ltr" style="font-family:monospace;font-weight:600;">${escapeHtml(c.cardUid)}</div>
+              <div style="margin-top:6px;color:var(--muted-text);">
+                الحالة: ${c.status === 'in_stock' ? 'في المخزون' : 'متخصص'}
+                ${c.teacherName ? ' — المدرس: ' + escapeHtml(c.teacherName) : ''}
+                ${c.studentName ? ' — الطالب: ' + escapeHtml(c.studentName) : ''}
+                ${c.status === 'assigned' ? (c.isActive ? ' — <span style="color:#22c55e;">مفعّل</span>' : ' — <span style="color:#ef4444;">معطّل</span>') : ''}
+              </div>
+            </div>
+          `).join('');
+        } catch (error) {
+          console.error('❌ خطأ في البحث:', error);
+          resultBox.innerHTML = '<p style="color:#e53e3e;font-size:13px;">تعذر البحث.</p>';
+        }
+      }, 400);
+    }
+
+    async function loadTeacherListsForCards() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teachers', {
+          method: 'POST', headers, body: JSON.stringify({ adminId: clientId })
+        });
+        const result = await response.json();
+        const teachers = result.data || [];
+        [document.getElementById('assignTeacherSelect'), document.getElementById('filterTeacherSelect')].forEach(select => {
+          select.innerHTML = '<option value="">-- اختر المدرس --</option>';
+          teachers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.client_id;
+            opt.textContent = t.name + ' (' + t.client_id + ')';
+            select.appendChild(opt);
+          });
+        });
+      } catch (error) {
+        console.error('❌ خطأ في تحميل المدرسين:', error);
+      }
+    }
+
+    // ✅ Aug 2026: تحميل قائمة السناتر عشان يقدر الأدمن يخصص كروت لسنتر كامل (متاحة لكل مدرسيه)
+    async function loadCenterListForCards() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-center', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'listCenters' })
+        });
+        const result = await response.json();
+        const centers = result.success ? (result.data || []) : [];
+        const select = document.getElementById('assignCenterTargetSelect');
+        select.innerHTML = '<option value="">-- اختر السنتر --</option>' +
+          centers.map(c => `<option value="${c.id}">${escapeHtml(c.name)} (${escapeHtml(c.client_id)})</option>`).join('');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل السناتر:', error);
+      }
+    }
+
+    function onAssignTargetTypeChange() {
+      const isCenter = document.querySelector('input[name="assignTargetType"]:checked').value === 'center';
+      document.getElementById('assignTeacherField').style.display = isCenter ? 'none' : 'block';
+      document.getElementById('assignCenterField').style.display = isCenter ? 'block' : 'none';
+      loadInStockCards();
+    }
+
+    // ---------- استقبال المخزون ----------
+    async function showMasterDeviceSecret() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-master-device-secret', {
+          method: 'POST', headers, body: '{}'
+        });
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('masterSecretText').textContent = result.data.deviceSecret;
+          document.getElementById('masterSecretBox').style.display = 'block';
+        } else {
+          showCardsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل جلب المفتاح', 'error');
+      }
+    }
+
+    async function toggleMasterScanMode() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const scanAction = masterScanIsActive ? 'stop' : 'start';
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-master-scan', { method: 'POST', headers, body: JSON.stringify({ action: scanAction }) });
+        const result = await response.json();
+        if (result.success) {
+          masterScanIsActive = !masterScanIsActive;
+          updateScanModeUI();
+          if (masterScanIsActive) {
+            scanStatusPollTimer = setInterval(refreshScanStatus, 2500);
+          } else {
+            clearInterval(scanStatusPollTimer);
+          }
+        } else {
+          showCardsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+      }
+    }
+
+    function updateScanModeUI() {
+      const btn = document.getElementById('scanModeBtn');
+      const statusBox = document.getElementById('scanModeStatus');
+      if (masterScanIsActive) {
+        btn.textContent = '⏹️ إيقاف الاستقبال';
+        btn.classList.replace('btn-primary', 'btn-danger');
+        statusBox.style.display = 'block';
+      } else {
+        btn.textContent = '▶️ بدء الاستقبال';
+        btn.classList.replace('btn-danger', 'btn-primary');
+        statusBox.style.display = 'none';
+      }
+    }
+
+    async function refreshScanStatus() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-master-scan', { method: 'POST', headers, body: JSON.stringify({ action: 'status' }) });
+        const result = await response.json();
+        if (!result.success) return;
+        masterScanIsActive = result.isActive;
+        updateScanModeUI();
+        document.getElementById('lastScannedUidText').textContent = result.lastScannedUid || '—';
+        document.getElementById('inStockCountText').textContent = result.inStockCount;
+      } catch (error) {
+        console.error('❌ خطأ في استعلام حالة الاستقبال:', error);
+      }
+    }
+
+    // ---------- تخصيص كروت المخزون لمدرس أو سنتر ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      const assignSelect = document.getElementById('assignTeacherSelect');
+      if (assignSelect) assignSelect.addEventListener('change', loadInStockCards);
+      const assignCenterSelect = document.getElementById('assignCenterTargetSelect');
+      if (assignCenterSelect) assignCenterSelect.addEventListener('change', loadInStockCards);
+    });
+
+    function getAssignTarget() {
+      const isCenter = document.querySelector('input[name="assignTargetType"]:checked').value === 'center';
+      return isCenter
+        ? { isCenter: true, teacherId: '', centerId: document.getElementById('assignCenterTargetSelect').value }
+        : { isCenter: false, teacherId: document.getElementById('assignTeacherSelect').value, centerId: '' };
+    }
+
+    async function loadInStockCards() {
+      const container = document.getElementById('inStockCardsList');
+      const target = getAssignTarget();
+      if (!target.teacherId && !target.centerId) {
+        container.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">اختر مدرس أو سنتر عشان تشوف كروت المخزون المتاحة.</p>';
+        return;
+      }
+      container.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">جاري التحميل...</p>';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/list-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ statusFilter: 'in_stock' })
+        });
+        const result = await response.json();
+        const cards = result.data || [];
+        if (cards.length === 0) {
+          container.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">مفيش أي كروت في المخزون حالياً.</p>';
+          return;
+        }
+        container.innerHTML = cards.map(c => `
+          <label class="instock-card-row" data-uid="${escapeHtml(c.cardUid.toLowerCase())}" style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #f1f5f9;font-size:13px;cursor:pointer;">
+            <input type="checkbox" class="instock-card-cb" value="${c.id}" onchange="updateInStockCount()">
+            <span dir="ltr">${escapeHtml(c.cardUid)}</span>
+          </label>
+        `).join('');
+        updateInStockCount();
+      } catch (error) {
+        console.error('❌ خطأ في تحميل كروت المخزون:', error);
+      }
+    }
+
+    function filterInStockCards() {
+      const q = document.getElementById('inStockCardsFilter').value.trim().toLowerCase();
+      document.querySelectorAll('#inStockCardsList .instock-card-row').forEach(row => {
+        row.style.display = row.dataset.uid.includes(q) ? '' : 'none';
+      });
+    }
+
+    function updateInStockCount() {
+      const total = document.querySelectorAll('.instock-card-cb').length;
+      const selected = document.querySelectorAll('.instock-card-cb:checked').length;
+      const countEl = document.getElementById('inStockCardsCount');
+      if (countEl) countEl.textContent = total ? `📊 الإجمالي: ${total} كارت — المحدد: ${selected}` : '';
+    }
+
+    function toggleSelectAllInStock() {
+      const checked = document.getElementById('inStockSelectAll').checked;
+      document.querySelectorAll('.instock-card-cb').forEach(cb => { cb.checked = checked; });
+      updateInStockCount();
+    }
+
+    async function deleteSelectedStockCards() {
+      const selectedIds = [...document.querySelectorAll('.instock-card-cb:checked')].map(cb => Number(cb.value));
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف ${selectedIds.length} كارت نهائياً من المخزون؟`))) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'revoke', cardIds: selectedIds })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          document.getElementById('inStockSelectAll').checked = false;
+          loadInStockCards();
+          refreshScanStatus();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل حذف الكروت', 'error');
+      }
+    }
+
+    async function assignSelectedCards() {
+      const target = getAssignTarget();
+      const selectedIds = [...document.querySelectorAll('.instock-card-cb:checked')].map(cb => Number(cb.value));
+
+      if (!target.teacherId && !target.centerId) { showCardsMessage('⚠️ اختر المدرس أو السنتر الأول', 'error'); return; }
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-system-cards', {
+          method: 'POST', headers,
+          body: JSON.stringify({
+            action: 'assign', cardIds: selectedIds,
+            ...(target.isCenter ? { centerId: target.centerId } : { teacherId: target.teacherId }),
+          })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          loadInStockCards();
+          refreshScanStatus();
+          if (!target.isCenter && document.getElementById('filterTeacherSelect').value === target.teacherId) loadTeacherCards();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل تخصيص الكروت', 'error');
+      }
+    }
+
+    // ---------- كروت مدرس معيّن (تفعيل/تعطيل) ----------
+    async function loadTeacherCards() {
+      const container = document.getElementById('teacherCardsList');
+      const teacherId = document.getElementById('filterTeacherSelect').value;
+      if (!teacherId) {
+        container.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">اختر مدرس عشان تشوف كروته.</p>';
+        return;
+      }
+      container.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">جاري التحميل...</p>';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/list-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ teacherId })
+        });
+        const result = await response.json();
+        const cards = result.data || [];
+        if (cards.length === 0) {
+          container.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">مفيش أي كروت متخصصة للمدرس ده لسه.</p>';
+          return;
+        }
+        container.innerHTML = cards.map(c => `
+          <div class="teacher-card-row" data-search="${escapeHtml((c.cardUid + ' ' + (c.studentName || '')).toLowerCase())}" style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--panel-border);border-radius:10px;margin-bottom:8px;">
+            <input type="checkbox" class="teacher-card-cb" value="${c.id}" onchange="updateTeacherCardsCount()">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" ${c.isActive ? 'checked' : ''} onchange="toggleCardActive(${c.id}, this.checked)">
+              <span style="font-size:12px;color:${c.isActive ? '#22c55e' : '#a0aec0'};">${c.isActive ? 'مفعّل' : 'معطّل'}</span>
+            </label>
+            <div style="flex:1;">
+              <div style="font-size:12.5px;" dir="ltr">${escapeHtml(c.cardUid)}</div>
+              <div style="font-size:11px;color:var(--muted-text);">${c.studentName ? '👤 ' + escapeHtml(c.studentName) : '— لسه مش مربوط بطالب —'}</div>
+            </div>
+          </div>
+        `).join('');
+        updateTeacherCardsCount();
+      } catch (error) {
+        console.error('❌ خطأ في تحميل كروت المدرس:', error);
+      }
+    }
+
+    function filterTeacherCards() {
+      const q = document.getElementById('teacherCardsFilter').value.trim().toLowerCase();
+      document.querySelectorAll('#teacherCardsList .teacher-card-row').forEach(row => {
+        row.style.display = row.dataset.search.includes(q) ? '' : 'none';
+      });
+    }
+
+    function updateTeacherCardsCount() {
+      const total = document.querySelectorAll('.teacher-card-cb').length;
+      const selected = document.querySelectorAll('.teacher-card-cb:checked').length;
+      const countEl = document.getElementById('teacherCardsCount');
+      if (countEl) countEl.textContent = total ? `📊 الإجمالي: ${total} كارت — المحدد: ${selected}` : '';
+    }
+
+    function toggleSelectAllTeacherCards() {
+      const checked = document.getElementById('teacherCardsSelectAll').checked;
+      document.querySelectorAll('.teacher-card-cb').forEach(cb => { cb.checked = checked; });
+      updateTeacherCardsCount();
+    }
+
+    async function returnSelectedCardsToStock() {
+      const selectedIds = [...document.querySelectorAll('.teacher-card-cb:checked')].map(cb => Number(cb.value));
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+      if (!(await customConfirm(`↩️ هل تؤكد إرجاع ${selectedIds.length} كارت للمخزون؟ هيتشال ربطه بالمدرس والطالب.`))) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'returnToStock', cardIds: selectedIds })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          document.getElementById('teacherCardsSelectAll').checked = false;
+          loadTeacherCards();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل إرجاع الكروت للمخزون', 'error');
+      }
+    }
+
+    async function deleteSelectedTeacherCards() {
+      const selectedIds = [...document.querySelectorAll('.teacher-card-cb:checked')].map(cb => Number(cb.value));
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف ${selectedIds.length} كارت نهائياً؟`))) return;
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'revoke', cardIds: selectedIds })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          document.getElementById('teacherCardsSelectAll').checked = false;
+          loadTeacherCards();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل حذف الكروت', 'error');
+      }
+    }
+
+    async function bulkToggleTeacherCards(isActive) {
+      const selectedIds = [...document.querySelectorAll('.teacher-card-cb:checked')].map(cb => Number(cb.value));
+      if (selectedIds.length === 0) { showCardsMessage('⚠️ اختر كارت واحد على الأقل', 'error'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'toggleActive', cardIds: selectedIds, isActive })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          document.getElementById('teacherCardsSelectAll').checked = false;
+          loadTeacherCards();
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showCardsMessage('❌ فشل تحديث الكروت', 'error');
+      }
+    }
+
+    async function toggleCardActive(cardId, isActive) {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-system-cards', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'toggleActive', cardId, isActive })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        loadTeacherCards();
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+      }
+    }
+
+    // ---------- إعداد التحقق الإجباري ----------
+    async function loadRequireCardsToggle() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-system-settings', { method: 'POST', headers, body: '{}' });
+        const result = await response.json();
+        document.getElementById('requireCardsToggle').checked = !!(result.data && result.data.require_registered_cards);
+      } catch (error) { console.error('❌ خطأ:', error); }
+    }
+
+    async function toggleRequireCards() {
+      const checked = document.getElementById('requireCardsToggle').checked;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-system-settings', {
+          method: 'POST', headers, body: JSON.stringify({ requireRegisteredCards: checked })
+        });
+        const result = await response.json();
+        showCardsMessage(result.success ? '✅ تم تحديث الإعداد' : '❌ ' + result.message, result.success ? 'success' : 'error');
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+      }
+    }
+
+    function showCardsMessage(text, type) {
+      const el = document.getElementById('cardsMessage');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    async function loadAdminProfile() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teacher', {
+          method: 'POST', headers,
+          body: JSON.stringify({ adminId: 'master_admin', clientId: 'master_admin' })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('profileName').value = result.data.name || '';
+          if (result.data.name) {
+            document.getElementById('adminName').textContent = '👤 مرحباً، ' + result.data.name;
+          }
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحميل بيانات المشرف:', error);
+      }
+    }
+
+    async function saveAdminName() {
+      const name = document.getElementById('profileName').value.trim();
+      if (!name) { showProfileMessage('⚠️ أدخل الاسم', 'error'); return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-admin-profile', {
+          method: 'POST', headers, body: JSON.stringify({ name })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showProfileMessage('✅ ' + result.message, 'success');
+          document.getElementById('adminName').textContent = '👤 مرحباً، ' + name;
+          sessionStorage.setItem('teacherName', name);
+        } else {
+          showProfileMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حفظ الاسم:', error);
+        showProfileMessage('❌ فشل حفظ الاسم: ' + error.message, 'error');
+      }
+    }
+
+    async function saveAdminPassword() {
+      const newPassword = document.getElementById('profileNewPassword').value;
+      const confirmPassword = document.getElementById('profileConfirmPassword').value;
+
+      if (!newPassword || newPassword.length < 4) { showProfileMessage('⚠️ كلمة المرور يجب أن تكون 4 أحرف على الأقل', 'error'); return; }
+      if (newPassword !== confirmPassword) { showProfileMessage('⚠️ كلمتا المرور غير متطابقتين', 'error'); return; }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/change-password', {
+          method: 'POST', headers,
+          body: JSON.stringify({ username: 'master_admin', newPassword, role: 'teacher' })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showProfileMessage('✅ تم تغيير كلمة المرور بنجاح', 'success');
+          document.getElementById('profileNewPassword').value = '';
+          document.getElementById('profileConfirmPassword').value = '';
+        } else {
+          showProfileMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تغيير كلمة المرور:', error);
+        showProfileMessage('❌ فشل تغيير كلمة المرور: ' + error.message, 'error');
+      }
+    }
+
+    // ============================================
+    // الوضع الليلي
+    // ============================================
+    function getAdminThemeKey() { return 'theme_master_admin'; }
+    (function() {
+      const savedTheme = localStorage.getItem(getAdminThemeKey());
+      if (savedTheme === 'dark') document.body.classList.add('dark-mode');
+    })();
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem(getAdminThemeKey(), isDark ? 'dark' : 'light');
+      document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const isDark = document.body.classList.contains('dark-mode');
+      document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+    });
+
+    function showSettingsMessage(text, type) {
+      const el = document.getElementById('settingsMessage');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      el.style.display = 'block';
+    }
+
+    async function loadSystemSettings() {
+      try {
+        renderPortalBannerAudiences();
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-system-settings');
+        const result = await response.json();
+        const data = result.data || {};
+        document.getElementById('settingsWhatsapp').value = data.whatsapp_number || '';
+        document.getElementById('settingsPhone').value = data.phone_number || '';
+        document.getElementById('settingsFacebook').value = data.facebook_url || '';
+        document.getElementById('settingsYoutube').value = data.youtube_url || '';
+        document.getElementById('settingsTiktok').value = data.tiktok_url || '';
+        document.getElementById('settingsAdminName').value = data.admin_name || '';
+        document.getElementById('settingsAdminWhatsapp').value = data.admin_whatsapp || '';
+        document.getElementById('loginCreditShow').checked = data.login_credit_show !== false;
+        document.getElementById('loginCreditText').value = data.login_credit_text || '';
+        document.getElementById('settingsDesktopUrl').value = data.desktop_download_url || '';
+        document.getElementById('settingsMobileUrl').value = data.mobile_app_url || '';
+        document.getElementById('settingsFirebaseApiKey').value = data.firebase_api_key || '';
+        document.getElementById('settingsFirebaseAuthDomain').value = data.firebase_auth_domain || '';
+        document.getElementById('settingsFirebaseProjectId').value = data.firebase_project_id || '';
+        document.getElementById('settingsFirebaseStorageBucket').value = data.firebase_storage_bucket || '';
+        document.getElementById('settingsFirebaseMessagingSenderId').value = data.firebase_messaging_sender_id || '';
+        document.getElementById('settingsFirebaseAppId').value = data.firebase_app_id || '';
+        document.getElementById('settingsFirebaseVapidKey').value = data.firebase_vapid_key || '';
+        document.getElementById('settingsShowDownloadSection').checked = data.show_download_section !== false;
+        PORTAL_BANNER_AUDIENCES.forEach(a => {
+          document.getElementById(pbId(a.key, 'show')).checked = !!data[a.dataShowKey];
+        });
+        loadPortalBanners();
+        loadLoginAds();
+      } catch (error) {
+        console.error('❌ خطأ في تحميل إعدادات النظام:', error);
+        showSettingsMessage('❌ تعذر تحميل الإعدادات الحالية', 'error');
+      }
+    }
+
+    async function saveSystemSettings() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const whatsappNumber = document.getElementById('settingsWhatsapp').value.trim();
+      const phoneNumber = document.getElementById('settingsPhone').value.trim();
+      const facebookUrl = document.getElementById('settingsFacebook').value.trim();
+      const youtubeUrl = document.getElementById('settingsYoutube').value.trim();
+      const tiktokUrl = document.getElementById('settingsTiktok').value.trim();
+      const adminName = document.getElementById('settingsAdminName').value.trim();
+      const adminWhatsapp = document.getElementById('settingsAdminWhatsapp').value.trim();
+      const desktopDownloadUrl = document.getElementById('settingsDesktopUrl').value.trim();
+      const mobileAppUrl = document.getElementById('settingsMobileUrl').value.trim();
+      const loginCreditShow = document.getElementById('loginCreditShow').checked;
+      const loginCreditText = document.getElementById('loginCreditText').value.trim();
+      const showDownloadSection = document.getElementById('settingsShowDownloadSection').checked;
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-system-settings', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ whatsappNumber, phoneNumber, facebookUrl, youtubeUrl, tiktokUrl, desktopDownloadUrl, mobileAppUrl, adminName, adminWhatsapp, loginCreditShow, loginCreditText, showDownloadSection })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حفظ الإعدادات:', error);
+        showSettingsMessage('❌ فشل حفظ الإعدادات: ' + error.message, 'error');
+      }
+    }
+
+    // ✅ Batch 32: حفظ إعدادات Firebase (منفصلة عن saveSystemSettings عشان لو الأدمن غيّر
+    // تاب الإشعارات بس، منبعتش قيم فاضية تمسح باقي إعدادات التبويبات التانية بالغلط)
+    async function savePushSettings() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const firebaseApiKey = document.getElementById('settingsFirebaseApiKey').value.trim();
+      const firebaseAuthDomain = document.getElementById('settingsFirebaseAuthDomain').value.trim();
+      const firebaseProjectId = document.getElementById('settingsFirebaseProjectId').value.trim();
+      const firebaseStorageBucket = document.getElementById('settingsFirebaseStorageBucket').value.trim();
+      const firebaseMessagingSenderId = document.getElementById('settingsFirebaseMessagingSenderId').value.trim();
+      const firebaseAppId = document.getElementById('settingsFirebaseAppId').value.trim();
+      const firebaseVapidKey = document.getElementById('settingsFirebaseVapidKey').value.trim();
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-system-settings', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ firebaseApiKey, firebaseAuthDomain, firebaseProjectId, firebaseStorageBucket, firebaseMessagingSenderId, firebaseAppId, firebaseVapidKey })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) showSettingsMessage('✅ تم حفظ إعدادات الإشعارات', 'success');
+        else showSettingsMessage('❌ ' + result.message, 'error');
+      } catch (error) {
+        console.error('❌ خطأ في حفظ إعدادات الإشعارات:', error);
+        showSettingsMessage('❌ فشل حفظ الإعدادات: ' + error.message, 'error');
+      }
+    }
+
+    // ✅ Batch 24 (بند 8) + Batch 28 (بند 1): 4 لافتات إعلانية مستقلة بالكامل — واحدة لكل
+    // جمهور (ولي أمر / طالب / مدرس / مساعد) — كل واحدة صورتها ورابطها وخيار إظهارها منفصل
+    // عن التانية، عن طريق دالة عامة واحدة parameterized بمفتاح الجمهور بدل تكرار الكود 4 مرات
+    const PORTAL_BANNER_AUDIENCES = [
+      { key: 'parent', label: 'ولي الأمر', page: 'parent-dashboard.html', field: 'Parent', dataUrlKey: 'portal_banner_parent_url', dataLinkKey: 'portal_banner_parent_link_url', dataShowKey: 'portal_banner_show_parent' },
+      { key: 'student', label: 'الطالب', page: 'student-portal.html', field: 'Student', dataUrlKey: 'portal_banner_student_url', dataLinkKey: 'portal_banner_student_link_url', dataShowKey: 'portal_banner_show_student' },
+      { key: 'teacher', label: 'المدرس', page: 'لوحة المدرس', field: 'Teacher', dataUrlKey: 'portal_banner_teacher_url', dataLinkKey: 'portal_banner_teacher_link_url', dataShowKey: 'portal_banner_show_teacher' },
+      { key: 'assistant', label: 'المساعد', page: 'لوحة المساعد', field: 'Assistant', dataUrlKey: 'portal_banner_assistant_url', dataLinkKey: 'portal_banner_assistant_link_url', dataShowKey: 'portal_banner_show_assistant' },
+    ];
+    // ✅ Batch 33 (بند 1): كل جمهور بقى يقدر ياخد أكتر من صورة لافتة، كل واحدة برابطها
+    // الخاص، وبتتقلّب تلقائياً في صفحة العرض — بدل صورة واحدة بس زي ما كانت قبل كده.
+    // بيستخدم نفس جدول/دالة الصور الإعلانية بتاعة صفحة تسجيل الدخول (login_ads) بس بجدول
+    // مستقل (portal_banners) معزول بعمود audience، عبر manage-login-ad بـ type:"portal_banner"
+    function pbId(key, suffix) { return `portalBanner_${key}_${suffix}`; }
+    let currentPortalBanners = { parent: [], student: [], teacher: [], assistant: [] };
+
+    function renderPortalBannerAudiences() {
+      const container = document.getElementById('portalBannerAudiences');
+      if (!container) return;
+      container.innerHTML = PORTAL_BANNER_AUDIENCES.map(a => `
+        <div class="card" style="background:var(--panel-bg);margin-bottom:14px;">
+          <h3 style="margin:0 0 10px;font-size:15px;">🏷️ لافتة ${a.label} <span style="font-size:12px;color:var(--muted-text);font-weight:normal;">(${a.page})</span></h3>
+          <div id="${pbId(a.key, 'list')}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+          <div class="field-row">
+            <div class="field">
+              <label>إضافة صورة جديدة (من جهازك) — تتضاف لآخر القائمة وتتقلّب مع الباقي</label>
+              <input type="file" id="${pbId(a.key, 'file')}" accept="image/png,image/jpeg,image/webp,image/gif">
+              <div id="${pbId(a.key, 'status')}" style="font-size:12px;color:var(--muted-text);margin-top:4px;"></div>
+              <div style="font-size:11.5px;color:var(--muted-text);margin-top:4px;">💡 أفضل مقاس مقترح: عرض 1200 بكسل × ارتفاع 300 بكسل تقريباً (نسبة عرض لارتفاع حوالي 4:1)، حجم الملف مفضّل يكون أقل من نص ميجا لسرعة التحميل.</div>
+            </div>
+            <div class="field">
+              <label>رابط عند الضغط على الصورة دي (اختياري)</label>
+              <input type="text" id="${pbId(a.key, 'link')}" placeholder="https://..." dir="ltr">
+            </div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:4px;" onclick="addPortalBanner('${a.key}')">➕ إضافة صورة</button>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;margin-top:14px;">
+            <input type="checkbox" id="${pbId(a.key, 'show')}" style="width:auto;" onchange="savePortalBannerShow('${a.key}')"> إظهار اللافتة في ${a.page}
+          </label>
+        </div>
+      `).join('');
+      renderAllPortalBannerLists();
+    }
+
+    function renderAllPortalBannerLists() {
+      PORTAL_BANNER_AUDIENCES.forEach(a => {
+        const listEl = document.getElementById(pbId(a.key, 'list'));
+        if (!listEl) return;
+        const banners = currentPortalBanners[a.key] || [];
+        if (banners.length === 0) {
+          listEl.innerHTML = '<p style="color:var(--muted-text);font-size:13px;margin:0;">مفيش صور مضافة لسه.</p>';
+          return;
+        }
+        listEl.innerHTML = banners.map(b => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--panel-border);border-radius:10px;">
+            <img src="${b.image_url}" style="width:70px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;" onerror="this.style.opacity=0.3">
+            <div style="flex:1;overflow:hidden;">
+              <div style="font-size:12px;color:var(--muted-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">${b.image_url}</div>
+              ${b.link_url ? `<div style="font-size:11px;color:var(--muted-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">🔗 ${b.link_url}</div>` : ''}
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deletePortalBanner(${b.id}, '${a.key}')"><i class="fas fa-trash"></i></button>
+          </div>
+        `).join('');
+      });
+    }
+
+    async function addPortalBanner(key) {
+      const audience = PORTAL_BANNER_AUDIENCES.find(a => a.key === key);
+      if (!audience) return;
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const fileInput = document.getElementById(pbId(key, 'file'));
+      const statusEl = document.getElementById(pbId(key, 'status'));
+      const linkInput = document.getElementById(pbId(key, 'link'));
+      const file = fileInput.files && fileInput.files[0];
+      const linkUrl = linkInput.value.trim();
+      if (!file) { showSettingsMessage('⚠️ اختر صورة أولاً', 'error'); return; }
+
+      try {
+        const imageUrl = await uploadMediaFile(file, headers, statusEl);
+        if (!imageUrl) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-login-ad', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'add', type: 'portal_banner', audience: key, imageUrl, linkUrl: linkUrl || null })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ تم إضافة الصورة للافتة ' + audience.label, 'success');
+          fileInput.value = '';
+          linkInput.value = '';
+          await loadPortalBanners();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إضافة اللافتة الإعلانية:', error);
+        showSettingsMessage('❌ فشل إضافة الصورة', 'error');
+      }
+    }
+
+    async function deletePortalBanner(bannerId, key) {
+      if (!(await customConfirm('⚠️ هل أنت متأكد من حذف الصورة دي؟'))) return;
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-login-ad', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'delete', type: 'portal_banner', bannerId })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ تم حذف الصورة', 'success');
+          await loadPortalBanners();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حذف اللافتة:', error);
+      }
+    }
+
+    async function savePortalBannerShow(key) {
+      const audience = PORTAL_BANNER_AUDIENCES.find(a => a.key === key);
+      if (!audience) return;
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const show = document.getElementById(pbId(key, 'show')).checked;
+      try {
+        const body = {};
+        body[`portalBannerShow${audience.field}`] = show;
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-system-settings', {
+          method: 'POST', headers: headers, body: JSON.stringify(body)
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) showSettingsMessage('✅ تم حفظ إظهار لافتة ' + audience.label, 'success');
+        else showSettingsMessage('❌ ' + result.message, 'error');
+      } catch (error) {
+        console.error('❌ خطأ في حفظ إظهار اللافتة:', error);
+      }
+    }
+
+    // ✅ بيتحمّل من نفس نداء get-login-ads (بقى راجع portalBanners كمان جنب باقي البيانات)
+    async function loadPortalBanners() {
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-login-ads');
+        const result = await response.json();
+        currentPortalBanners = result.portalBanners || { parent: [], student: [], teacher: [], assistant: [] };
+        renderAllPortalBannerLists();
+      } catch (error) {
+        console.error('❌ خطأ في تحميل اللافتات الإعلانية:', error);
+      }
+    }
+
+    // ✅ اسم داخلي ثابت للألبوم المستخدم كخلفية — المستخدم مش شايف مفهوم "الألبوم" خالص، بس حقل صور بسيط
+    const BG_ALBUM_TITLE = '__login_background__';
+    let cachedBgAlbumId = null;
+
+    async function loadLoginAds() {
+      const container = document.getElementById('loginAdsList');
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/get-login-ads');
+        const result = await response.json();
+        const ads = result.data || [];
+        const bgAlbum = (result.albums || []).find(a => a.is_background);
+        cachedBgAlbumId = bgAlbum ? bgAlbum.id : null;
+        renderBgImagesAdmin(bgAlbum ? bgAlbum.images : []);
+        if (ads.length === 0) {
+          container.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">مفيش صور مضافة حالياً.</p>';
+          return;
+        }
+        container.innerHTML = ads.map(ad => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--panel-border);border-radius:10px;">
+            <img src="${ad.image_url}" style="width:70px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;" onerror="this.style.opacity=0.3">
+            <div style="flex:1;overflow:hidden;">
+              <div style="font-size:12px;color:var(--muted-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">${ad.image_url}</div>
+              ${ad.link_url ? `<div style="font-size:11px;color:var(--muted-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">🔗 ${ad.link_url}</div>` : ''}
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deleteLoginAd(${ad.id})"><i class="fas fa-trash"></i></button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الصور الإعلانية:', error);
+        container.innerHTML = '<p style="color:#e53e3e;font-size:13px;">تعذر تحميل الصور.</p>';
+      }
+    }
+
+    function renderBgImagesAdmin(images) {
+      const container = document.getElementById('bgImagesList');
+      if (!images || !images.length) {
+        container.innerHTML = '<p style="color:var(--muted-text);font-size:13px;">مفيش صور أو فيديوهات خلفية مضافة لسه — الخلفية هتفضل التدرّج الغامق العادي.</p>';
+        return;
+      }
+      const isVideo = (url) => /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+      container.innerHTML = images.map(img => `
+        <div style="position:relative;">
+          ${isVideo(img.image_url)
+            ? `<video src="${img.image_url}" muted style="width:84px;height:84px;object-fit:cover;border-radius:10px;"></video>`
+            : `<img src="${img.image_url}" style="width:84px;height:84px;object-fit:cover;border-radius:10px;" onerror="this.style.opacity=0.3">`}
+          <button onclick="deleteBgImage(${img.id})" title="حذف"
+            style="position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:#e53e3e;color:#fff;border:none;font-size:12px;cursor:pointer;">×</button>
+        </div>
+      `).join('');
+    }
+
+    // ✅ Batch 24 (بند 7): بترفع الملف المختار فعلياً لتخزين Supabase Storage وترجّع رابطه العام —
+    // نفس منطق رفع شعار المدرس (uploadLogo) بالظبط، بس هنا لصور/فيديوهات الخلفية والإعلانات
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadMediaFile(file, headers, statusEl) {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      const maxSize = ['mp4', 'webm', 'mov'].includes(ext) ? 20 * 1024 * 1024 : 3 * 1024 * 1024;
+      if (file.size > maxSize) {
+        showSettingsMessage(`⚠️ حجم الملف أكبر من الحد المسموح (${maxSize / (1024 * 1024)} ميجا)`, 'error');
+        return null;
+      }
+      if (statusEl) statusEl.textContent = '⏳ جاري رفع الملف...';
+      const base64 = await readFileAsBase64(file);
+      const response = await fetch(PROJECT_URL + '/functions/v1/manage-login-ad', {
+        method: 'POST', headers: headers,
+        body: JSON.stringify({ action: 'upload', fileBase64: base64, fileExt: ext })
+      });
+      if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return null; }
+      const result = await response.json();
+      if (statusEl) statusEl.textContent = '';
+      if (!result.success) { showSettingsMessage('❌ ' + result.message, 'error'); return null; }
+      return result.url;
+    }
+
+    async function addBgImage() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      const fileInput = document.getElementById('newBgImageFile');
+      const statusEl = document.getElementById('newBgImageUploadStatus');
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) { showSettingsMessage('⚠️ اختر صورة أو فيديو أولاً', 'error'); return; }
+
+      try {
+        const imageUrl = await uploadMediaFile(file, headers, statusEl);
+        if (!imageUrl) return;
+
+        // ✅ لو لسه مفيش ألبوم خلفية اتعمل، نعمله بصمت الأول (المستخدم مش شايف الخطوة دي خالص)
+        if (!cachedBgAlbumId) {
+          const createRes = await fetch(PROJECT_URL + '/functions/v1/manage-login-ad', {
+            method: 'POST', headers: headers,
+            body: JSON.stringify({ action: 'add', type: 'album', title: BG_ALBUM_TITLE, isBackground: true })
+          });
+          if (createRes.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+          const createResult = await createRes.json();
+          if (!createResult.success) { showSettingsMessage('❌ ' + createResult.message, 'error'); return; }
+          cachedBgAlbumId = createResult.data.id;
+        }
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-login-ad', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'add', type: 'album_image', albumId: cachedBgAlbumId, imageUrl })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ تم إضافة صورة الخلفية', 'success');
+          fileInput.value = '';
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إضافة صورة الخلفية:', error);
+        showSettingsMessage('❌ فشل إضافة الصورة', 'error');
+      }
+    }
+
+    async function deleteBgImage(imageId) {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-login-ad', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'delete', type: 'album_image', imageId })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حذف الصورة:', error);
+      }
+    }
+
+    async function addLoginAd() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const fileInput = document.getElementById('newAdImageFile');
+      const statusEl = document.getElementById('newAdImageUploadStatus');
+      const file = fileInput.files && fileInput.files[0];
+      const linkUrl = document.getElementById('newAdLinkUrl').value.trim();
+
+      if (!file) { showSettingsMessage('⚠️ اختر صورة الإعلان أولاً', 'error'); return; }
+
+      try {
+        const imageUrl = await uploadMediaFile(file, headers, statusEl);
+        if (!imageUrl) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-login-ad', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ action: 'add', imageUrl, linkUrl: linkUrl || undefined })
+        });
+
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+          fileInput.value = '';
+          document.getElementById('newAdLinkUrl').value = '';
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في إضافة الصورة:', error);
+        showSettingsMessage('❌ فشل إضافة الصورة', 'error');
+      }
+    }
+
+    async function deleteLoginAd(adId) {
+      if (!(await customConfirm('⚠️ هل أنت متأكد من حذف الصورة دي؟'))) return;
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-login-ad', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ action: 'delete', adId })
+        });
+
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+
+        const result = await response.json();
+        if (result.success) {
+          showSettingsMessage('✅ ' + result.message, 'success');
+          loadLoginAds();
+        } else {
+          showSettingsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حذف الصورة:', error);
+        showSettingsMessage('❌ فشل حذف الصورة', 'error');
+      }
+    }
+
+    async function resetTeacherPassword(teacherClientId, teacherName) {
+      const newPassword = await customPrompt(`إعادة تعيين كلمة مرور المدرس "${teacherName}" — أدخل كلمة المرور الجديدة (4 أحرف على الأقل):`);
+      if (newPassword === null) {
+        showMessage('❌ تم إلغاء العملية', 'info');
+        return;
+      }
+      if (newPassword.length < 4) {
+        showMessage('⚠️ كلمة المرور يجب أن تكون 4 أحرف على الأقل', 'error');
+        return;
+      }
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من إعادة تعيين كلمة مرور المدرس "${teacherName}"؟`))) {
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-password-reset', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            action: 'teacher',
+            clientId: teacherClientId,
+            newPassword: newPassword
+          })
+        });
+
+        if (response.status === 401) {
+          handleUnauthorized('انتهت صلاحية الجلسة');
+          return;
+        }
+
+        const result = await response.json();
+        console.log('📦 Reset response:', result);
+
+        if (result.success) {
+          showMessage('✅ ' + result.message, 'success');
+          loadTeachers();
+        } else {
+          showMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('❌ فشل إعادة تعيين كلمة المرور: ' + error.message, 'error');
+      }
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+<script src="branding.js?v=2"></script>
+<script src="custom-dialogs.js?v=2"></script>
+</body>
+</html>

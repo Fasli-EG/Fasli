@@ -1,0 +1,21 @@
+mkdir classget-project && cd classget-project
+npm install -D supabase
+npx supabase login
+
+
+
+
+
+npx supabase link --project-ref yxkyxxzcnxpxefodfxnl
+
+
+
+
+
+npx supabase secrets set JWT_SECRET=...
+npx supabase secrets set SERVICE_ROLE=...
+
+
+
+
+npx supabase functions deploy

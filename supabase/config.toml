@@ -1,0 +1,248 @@
+# supabase/config.toml
+# تم توليده تلقائياً — كل الدوال verify_jwt = false
+# لأن النظام مبني على نظام توكن مخصص (JWT_SECRET خاص) مش Supabase Auth
+# ✅ محدّث بعد 4 دفعات دمج كاملة + كل الميزات الجديدة (اختبارات، سنتر، حصص، مصروفات، إلخ)
+
+project_id = "yxkyxxzcnxpxefodfxnl"
+
+# ============================================
+# ✅ الدوال الموحّدة (نتيجة كل عمليات الدمج، بديل عن 55 دالة قديمة)
+# ============================================
+[functions.manage-student]
+verify_jwt = false
+
+[functions.manage-grade]
+verify_jwt = false
+
+[functions.manage-payment]
+verify_jwt = false
+
+[functions.manage-book]
+verify_jwt = false
+
+[functions.manage-book-payment]
+verify_jwt = false
+
+[functions.manage-assistant]
+verify_jwt = false
+
+[functions.manage-group]
+verify_jwt = false
+
+[functions.admin-manage-teacher]
+verify_jwt = false
+
+[functions.manage-master-scan]
+verify_jwt = false
+
+[functions.manage-card-registration]
+verify_jwt = false
+
+[functions.admin-manage-card-registration]
+verify_jwt = false
+
+[functions.manage-password-reset]
+verify_jwt = false
+
+[functions.manage-push-token]
+verify_jwt = false
+
+[functions.manage-backup]
+verify_jwt = false
+
+[functions.get-titles]
+verify_jwt = false
+
+[functions.manage-login-ad]
+verify_jwt = false
+
+[functions.manage-system-cards]
+verify_jwt = false
+
+[functions.card-action-mode]
+verify_jwt = false
+
+[functions.get-student-full-profile]
+verify_jwt = false
+
+# ============================================
+# ✅ ميزات جديدة كاملة (اختبارات، سنتر، حصص، مصروفات، رفع ملفات، إنذار مبكر)
+# ============================================
+[functions.manage-group-sessions]
+verify_jwt = false
+
+[functions.check-session-absences]
+verify_jwt = false
+
+[functions.manage-exam]
+verify_jwt = false
+
+[functions.take-exam]
+verify_jwt = false
+
+[functions.check-scheduled-exams]
+verify_jwt = false
+
+[functions.get-exams-for-student]
+verify_jwt = false
+
+[functions.get-exam-report]
+verify_jwt = false
+
+[functions.manage-expense]
+verify_jwt = false
+
+[functions.upload-book-file]
+verify_jwt = false
+
+[functions.manage-center]
+verify_jwt = false
+
+[functions.get-center-dashboard]
+verify_jwt = false
+
+[functions.get-at-risk-students]
+verify_jwt = false
+
+[functions.create-payment-title]
+verify_jwt = false
+
+[functions.create-exam-title]
+verify_jwt = false
+
+# ============================================
+# باقي الدوال الأصلية (مش متأثرة بأي دمج)
+# ============================================
+[functions.admin-get-students-for-teacher]
+verify_jwt = false
+
+[functions.admin-get-teacher]
+verify_jwt = false
+
+[functions.admin-get-teachers]
+verify_jwt = false
+
+[functions.change-password]
+verify_jwt = false
+
+[functions.check-student-uid]
+verify_jwt = false
+
+[functions.delete-activity-log]
+verify_jwt = false
+
+[functions.generate-report]
+verify_jwt = false
+
+[functions.get-activity-logs]
+verify_jwt = false
+
+[functions.get-assistants]
+verify_jwt = false
+
+[functions.get-book-payment]
+verify_jwt = false
+
+[functions.get-book-status]
+verify_jwt = false
+
+[functions.get-books]
+verify_jwt = false
+
+[functions.get-dashboard]
+verify_jwt = false
+
+[functions.get-device-secret]
+verify_jwt = false
+
+[functions.get-financial-summary]
+verify_jwt = false
+
+[functions.get-grades]
+verify_jwt = false
+
+[functions.get-groups]
+verify_jwt = false
+
+[functions.get-latest-rfid-scan]
+verify_jwt = false
+
+[functions.get-login-ads]
+verify_jwt = false
+
+[functions.get-master-device-secret]
+verify_jwt = false
+
+[functions.get-notifications]
+verify_jwt = false
+
+[functions.get-parent-children]
+verify_jwt = false
+
+[functions.get-payments]
+verify_jwt = false
+
+[functions.get-students]
+verify_jwt = false
+
+[functions.get-system-settings]
+verify_jwt = false
+
+[functions.get-teacher-contact]
+verify_jwt = false
+
+[functions.get-today-attendance]
+verify_jwt = false
+
+[functions.list-system-cards]
+verify_jwt = false
+
+[functions.login]
+verify_jwt = false
+
+[functions.mark-notification-read]
+verify_jwt = false
+
+[functions.record-attendance]
+verify_jwt = false
+
+[functions.reset-system]
+verify_jwt = false
+
+[functions.send-bulk-message]
+verify_jwt = false
+
+[functions.submit-master-card-scan]
+verify_jwt = false
+
+[functions.submit-rfid-scan]
+verify_jwt = false
+
+[functions.teacher-start-new-student-scan]
+verify_jwt = false
+
+[functions.transfer-student]
+verify_jwt = false
+
+[functions.update-admin-profile]
+verify_jwt = false
+
+[functions.update-system-settings]
+verify_jwt = false
+
+[functions.update-teacher-contact]
+verify_jwt = false
+
+[functions.manage-registration-requests]
+verify_jwt = false
+
+[functions.submit-registration-request]
+verify_jwt = false
+
+[functions.bulk-import-students]
+verify_jwt = false
+
+[functions.manage-levels]
+verify_jwt = false
+
+
