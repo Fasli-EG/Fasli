@@ -359,23 +359,28 @@ serve(async (req) => {
       const workingDaysSet = new Set(workingDaysData.map(d => d.date));
       const totalWorkingDays = workingDaysSet.size;
 
+      // ✅ تحسين أداء: كانت بتعمل استعلام count منفصل لكل طالب (لغاية عدد أعضاء المجموعة كلهم
+      // مرة واحدة لكل تقرير) — استعلام واحد مجمّع بـ .in("student_uid", ...) وتجميع النتيجة
+      // في الذاكرة بدل الحلقة، بنفس منطق workingDaysData فوق.
+      const presentCountByStudent: Record<string, number> = {};
+      if (totalWorkingDays > 0) {
+        const { data: presentRows, error: presentRowsError } = await supabase
+          .from("attendance")
+          .select("student_uid")
+          .in("student_uid", studentUids)
+          .eq("status", "present")
+          .in("date", Array.from(workingDaysSet));
+
+        if (!presentRowsError) {
+          (presentRows || []).forEach((r: any) => {
+            presentCountByStudent[r.student_uid] = (presentCountByStudent[r.student_uid] || 0) + 1;
+          });
+        }
+      }
+
       const reportData = [];
       for (const student of students) {
-        let presentDays = 0;
-        if (totalWorkingDays > 0) {
-          const workingDatesArray = Array.from(workingDaysSet);
-          const { count: presentCount, error: presentError } = await supabase
-            .from("attendance")
-            .select("date", { count: "exact", head: true })
-            .eq("student_uid", student.uid)
-            .eq("status", "present")
-            .in("date", workingDatesArray);
-
-          if (!presentError) {
-            presentDays = presentCount || 0;
-          }
-        }
-
+        const presentDays = presentCountByStudent[student.uid] || 0;
         const absentDays = totalWorkingDays - presentDays;
         const percent = totalWorkingDays > 0 ? Math.round((presentDays / totalWorkingDays) * 100) : 0;
         const colorClass = percent >= 75 ? "rpt-good" : (percent >= 50 ? "rpt-warn" : "rpt-bad");

@@ -263,7 +263,9 @@ serve(async (req) => {
     let query = supabase.from("grades").select("*").eq("teacher_id", tokenClientId);
     if (groupName) query = query.eq("group_name", groupName);
 
-    const { data, error } = await query.order("created_at", { ascending: false });
+    // ✅ تحسين أداء: سقف أمان (٥٠٠٠ سجل) يمنع استعلام بلا حدود فعلي — بدون تعديل واجهة الصفحة
+    // اللي متوقعة القائمة كاملة في استجابة واحدة، فمش pagination حقيقي، مجرد حد أقصى دفاعي.
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(5000);
     if (error) throw new Error(error.message);
 
     return new Response(

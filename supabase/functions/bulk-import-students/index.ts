@@ -102,25 +102,13 @@ Deno.serve(async (req) => {
     const results: { row: number; name: string; status: string; uid?: string; reason?: string }[] = [];
     const phoneRegex = /^01[0125][0-9]{8}$/;
 
-    // ✅ (طلب) لو أي مجموعة وصلت لحدها الأقصى (max_students)، لازم نرفض إضافة طلاب جدد ليها —
-    // حتى وسط استيراد جماعي فيه كذا صف بيستهدفوا نفس المجموعة. بنحسب المساحة المتبقية لكل
-    // مجموعة مرة واحدة قبل الحلقة، وبعدين بننقصها صف بصف كل ما صف ينجح، عشان صفين في نفس
-    // الملف يستهدفوا نفس المجموعة الممتلئة ما يعدّوش الحد الأقصى مع بعض.
-    const distinctGroupNames = [...new Set(students.map((r: any) => String(r.groupName || "").trim()).filter(Boolean))];
-    const remainingCapacity: Record<string, number> = {}; // مفيش مفتاح للمجموعة = بلا حد أقصى
-    if (distinctGroupNames.length > 0) {
-      const { data: groupRows } = await supabase
-        .from("groups").select("name, max_students").eq("teacher_id", tokenClientId).in("name", distinctGroupNames);
-      for (const g of groupRows || []) {
-        if (!g.max_students || g.max_students <= 0) continue;
-        const { count: primaryCount } = await supabase
-          .from("students").select("uid", { count: "exact", head: true }).eq("teacher_id", tokenClientId).eq("group_name", g.name);
-        const { count: linkedCount } = await supabase
-          .from("student_group_links").select("id", { count: "exact", head: true }).eq("teacher_id", tokenClientId).eq("group_name", g.name);
-        remainingCapacity[g.name] = g.max_students - ((primaryCount || 0) + (linkedCount || 0));
-      }
-    }
-
+    // ✅ تحسين أداء: النسخة القديمة كانت بتعمل لغاية 5 استعلامات فحص UID + استعلام فحص ولي أمر
+    // لكل صف — يعني لغاية ~3000 round-trip لملف 500 طالب. دلوقتي: تحقق أساسي من الحقول (بلا
+    // استعلامات) في تمريرة أولى، بعدين استعلام واحد مجمّع لأرقام أولياء الأمور كلهم، والـ UID
+    // بيتولّد ويتحط في الـ insert على طول من غير فحص مسبق (فرصة تصادم عشوائي من 36^8 احتمال
+    // ضئيلة جداً — لو حصل نادراً بيتعمل محاولة واحدة بس بـ UID جديد قبل ما الصف يُعتبر فاشل).
+    type Candidate = { rowNum: number; name: string; parentPhone: string; phone: string | null; groupName: string };
+    const candidates: Candidate[] = [];
     for (let i = 0; i < students.length; i++) {
       const row = students[i];
       const rowNum = i + 2; // ✅ صف 1 في الإكسل هو العناوين، فأول طالب فعلي بيبدأ من صف 2
@@ -141,31 +129,71 @@ Deno.serve(async (req) => {
         results.push({ row: rowNum, name, status: "failed", reason: "رقم هاتف الطالب غير صحيح" });
         continue;
       }
+      candidates.push({ rowNum, name, parentPhone, phone, groupName });
+    }
+
+    // ✅ (طلب) لو أي مجموعة وصلت لحدها الأقصى (max_students)، لازم نرفض إضافة طلاب جدد ليها —
+    // حتى وسط استيراد جماعي فيه كذا صف بيستهدفوا نفس المجموعة. بنحسب المساحة المتبقية لكل
+    // مجموعة مرة واحدة قبل الحلقة (استعلام واحد لكل الطلاب + استعلام واحد لكل الروابط، بدل
+    // استعلامين منفصلين لكل مجموعة)، وبعدين بننقصها صف بصف كل ما صف ينجح.
+    const distinctGroupNames = [...new Set(candidates.map((c) => c.groupName))];
+    const remainingCapacity: Record<string, number> = {}; // مفيش مفتاح للمجموعة = بلا حد أقصى
+    if (distinctGroupNames.length > 0) {
+      const { data: groupRows } = await supabase
+        .from("groups").select("name, max_students").eq("teacher_id", tokenClientId).in("name", distinctGroupNames);
+      const cappedGroupNames = (groupRows || []).filter((g) => g.max_students > 0).map((g) => g.name);
+      const countByGroup: Record<string, number> = {};
+      if (cappedGroupNames.length > 0) {
+        const [{ data: primaryRows }, { data: linkedRows }] = await Promise.all([
+          supabase.from("students").select("group_name").eq("teacher_id", tokenClientId).in("group_name", cappedGroupNames),
+          supabase.from("student_group_links").select("group_name").eq("teacher_id", tokenClientId).in("group_name", cappedGroupNames),
+        ]);
+        (primaryRows || []).forEach((r: any) => { countByGroup[r.group_name] = (countByGroup[r.group_name] || 0) + 1; });
+        (linkedRows || []).forEach((r: any) => { countByGroup[r.group_name] = (countByGroup[r.group_name] || 0) + 1; });
+      }
+      for (const g of groupRows || []) {
+        if (!g.max_students || g.max_students <= 0) continue;
+        remainingCapacity[g.name] = g.max_students - (countByGroup[g.name] || 0);
+      }
+    }
+
+    // فحص أولياء الأمور الموجودين مسبقًا باستعلام واحد مجمّع بدل استعلام لكل صف
+    const distinctParentPhones = [...new Set(candidates.map((c) => c.parentPhone))];
+    const existingParentSet = new Set<string>();
+    if (distinctParentPhones.length > 0) {
+      const { data: existingParents } = await supabase.from("parents").select("phone").in("phone", distinctParentPhones);
+      (existingParents || []).forEach((p: any) => existingParentSet.add(p.phone));
+    }
+    const newParentPhonesInBatch = new Set<string>();
+
+    for (const c of candidates) {
+      const { rowNum, name, parentPhone, phone, groupName } = c;
+
       if (groupName in remainingCapacity && remainingCapacity[groupName] <= 0) {
         results.push({ row: rowNum, name, status: "failed", reason: `المجموعة "${groupName}" وصلت للحد الأقصى لعدد الطلاب` });
         continue;
       }
 
-      let uid = generateUid();
-      let uidAttempts = 0;
-      while (uidAttempts < 5) {
-        const { data: existingStudent } = await supabase.from("students").select("uid").eq("uid", uid).maybeSingle();
-        if (!existingStudent) break;
-        uid = generateUid();
-        uidAttempts++;
-      }
-
-      const { data: existingParent } = await supabase.from("parents").select("phone").eq("phone", parentPhone).maybeSingle();
-      if (!existingParent) {
+      if (!existingParentSet.has(parentPhone) && !newParentPhonesInBatch.has(parentPhone)) {
+        newParentPhonesInBatch.add(parentPhone);
         const hashedPassword = await hashPassword(parentPhone);
         await supabase.from("parents").insert({
           phone: parentPhone, name: `ولي أمر ${name}`, password_hash: hashedPassword, must_change_password: true, is_active: true,
         });
       }
 
-      const { error: insertError } = await supabase.from("students").insert({
+      let uid = generateUid();
+      let insertError = (await supabase.from("students").insert({
         uid, name, phone: phone || null, parent_phone: parentPhone, group_name: groupName, teacher_id: tokenClientId,
-      });
+      })).error;
+
+      // تصادم UID عشوائي (احتمال ضئيل جداً من 36^8) — محاولة واحدة إضافية بـ UID جديد قبل الاستسلام
+      if (insertError?.message?.includes("duplicate")) {
+        uid = generateUid();
+        insertError = (await supabase.from("students").insert({
+          uid, name, phone: phone || null, parent_phone: parentPhone, group_name: groupName, teacher_id: tokenClientId,
+        })).error;
+      }
 
       if (insertError) {
         results.push({ row: rowNum, name, status: "failed", reason: insertError.message.includes("duplicate") ? "الطالب موجود بالفعل" : "فشل الحفظ" });

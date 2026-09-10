@@ -263,7 +263,11 @@ serve(async (req) => {
     let query = supabase.from("payments").select("*").eq("teacher_id", tokenClientId);
     if (groupName) query = query.eq("group_name", groupName);
 
-    const { data, error } = await query.order("created_at", { ascending: false });
+    // ✅ تحسين أداء: كان بيجيب كل سجل مدفوعات للمدرس من غير أي حد، من غير تعديل واجهة الصفحة
+    // (اللي متوقعة القائمة كاملة في استجابة واحدة) مش آمن نحط pagination حقيقي دلوقتي — الحد ده
+    // سقف أمان بس (٥٠٠٠ سجل) يمنع استعلام بلا حدود فعلي لو حساب تراكم عليه سنين من البيانات،
+    // من غير ما يأثر على أي حساب حالي بعدد سجلات طبيعي.
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(5000);
     if (error) throw new Error(error.message);
 
     return new Response(

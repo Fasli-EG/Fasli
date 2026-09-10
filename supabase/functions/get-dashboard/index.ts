@@ -267,11 +267,44 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { data: teacher, error: teacherError } = await supabase
-      .from("teachers")
-      .select("*")
-      .eq("client_id", finalClientId)
-      .single();
+    const today = new Date().toISOString().split("T")[0];
+    const sevenDaysAgoPre = new Date();
+    sevenDaysAgoPre.setDate(sevenDaysAgoPre.getDate() - 6);
+    const sevenDaysAgoStrPre = sevenDaysAgoPre.toISOString().split("T")[0];
+    const oneHourAgoPre = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    // ✅ تحسين أداء: الاستعلامات السبعة دي مستقلة عن بعض (مفيش واحد محتاج نتيجة التاني)
+    // فكانت بتتنفذ واحد ورا التاني بالتتابع (7 round-trips) رغم إنهم يقدروا يتنفذوا مع بعض.
+    // Promise.all بيبعتهم كلهم مرة واحدة، فزمن التنفيذ الكلي بقى = أبطأ استعلام لوحده
+    // بدل مجموع الكل — get-dashboard ده بيتنادى في كل تحميل للوحة التحكم.
+    const [
+      { data: teacher, error: teacherError },
+      { count: totalStudents, error: countError },
+      { data: todayAttendance, error: attendanceError },
+      { data: groupsData, error: groupsError },
+      { data: groupRows, error: groupRowsError },
+      { data: weekAttendance, error: weekAttError },
+      { data: activities, error: activitiesError },
+    ] = await Promise.all([
+      supabase.from("teachers").select("*").eq("client_id", finalClientId).single(),
+      supabase.from("students").select("id", { count: "exact", head: true })
+        .eq("teacher_id", finalClientId).is("archived_at", null),
+      supabase.from("attendance").select("student_uid, status")
+        .eq("teacher_id", finalClientId).eq("date", today),
+      supabase.from("students").select("group_name")
+        .eq("teacher_id", finalClientId).not("group_name", "is", null).is("archived_at", null),
+      supabase.from("groups").select("name").eq("teacher_id", finalClientId),
+      supabase.from("attendance").select("date")
+        .eq("teacher_id", finalClientId).eq("status", "present").gte("date", sevenDaysAgoStrPre),
+      supabase.from("activity_logs")
+        .select(`id, action_type, details, performer_id, performer_role, performer_name, created_at`)
+        .eq("client_id", finalClientId)
+        .gte("created_at", oneHourAgoPre)
+        .or("performer_role.is.null,performer_role.neq.admin")
+        .or("performer_id.is.null,performer_id.neq.master_admin")
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
 
     if (teacherError || !teacher) {
       console.error("❌ المدرس غير موجود:", teacherError);
@@ -280,27 +313,12 @@ serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const { count: totalStudents, error: countError } = await supabase
-      .from("students")
-      .select("id", { count: "exact", head: true })
-      .eq("teacher_id", finalClientId)
-      .is("archived_at", null);
-
-    if (countError) {
-      throw new Error(`فشل جلب عدد الطلاب: ${countError.message}`);
-    }
-
-    const today = new Date().toISOString().split("T")[0];
-    const { data: todayAttendance, error: attendanceError } = await supabase
-      .from("attendance")
-      .select("student_uid, status")
-      .eq("teacher_id", finalClientId)
-      .eq("date", today);
-
-    if (attendanceError) {
-      throw new Error(`فشل جلب حضور اليوم: ${attendanceError.message}`);
-    }
+    if (countError) throw new Error(`فشل جلب عدد الطلاب: ${countError.message}`);
+    if (attendanceError) throw new Error(`فشل جلب حضور اليوم: ${attendanceError.message}`);
+    if (groupsError) throw new Error(`فشل جلب المجموعات: ${groupsError.message}`);
+    if (groupRowsError) throw new Error(`فشل جلب جدول المجموعات: ${groupRowsError.message}`);
+    if (weekAttError) console.error("خطأ في جلب حضور آخر 7 أيام:", weekAttError);
+    if (activitiesError) console.error("❌ خطأ في جلب النشاطات:", activitiesError);
 
     // ✅ Batch 24 (بند 1): بعد ما بقى مسموح للطالب يحضر أكتر من حصة في نفس اليوم (كل حصة صف
     // حضور منفصل)، عدّ الصفوف الخام هنا كان بيضخّم الرقم — طالب حضر حصتين النهاردة كان بيتحسب
@@ -314,19 +332,8 @@ serve(async (req) => {
     const presentToday = Array.from(statusByStudent.values()).filter((s) => s === "present").length;
     const absentToday = Array.from(statusByStudent.values()).filter((s) => s === "absent").length;
 
-    const { data: groupsData, error: groupsError } = await supabase
-      .from("students")
-      .select("group_name")
-      .eq("teacher_id", finalClientId)
-      .not("group_name", "is", null)
-      .is("archived_at", null);
-
-    if (groupsError) {
-      throw new Error(`فشل جلب المجموعات: ${groupsError.message}`);
-    }
-
     const groupCounts: Record<string, number> = {};
-    groupsData.forEach((s: any) => {
+    (groupsData || []).forEach((s: any) => {
       const name = s.group_name || "بدون مجموعة";
       groupCounts[name] = (groupCounts[name] || 0) + 1;
     });
@@ -334,32 +341,12 @@ serve(async (req) => {
     // ✅ إصلاح (Aug 2026): عدد المجموعات كان بيتحسب من أسماء مجموعات الطلاب بس، فأي مجموعة اتعملت
     // فعلاً في جدول groups بس لسه معندهاش طلاب (زي مجموعة جديدة فاضية) كانت مش بتتحسب خالص —
     // نضيفها هنا بعدد 0 طالب، بنفس منطق الدمج المستخدم في manage-group's handleListDetailed
-    const { data: groupRows, error: groupRowsError } = await supabase
-      .from("groups").select("name").eq("teacher_id", finalClientId);
-    if (groupRowsError) {
-      throw new Error(`فشل جلب جدول المجموعات: ${groupRowsError.message}`);
-    }
     (groupRows || []).forEach((g: any) => {
       if (!(g.name in groupCounts)) groupCounts[g.name] = 0;
     });
 
     const groups = Object.keys(groupCounts);
     const groupCountsArray = Object.values(groupCounts);
-
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
-
-    const { data: weekAttendance, error: weekAttError } = await supabase
-      .from("attendance")
-      .select("date")
-      .eq("teacher_id", finalClientId)
-      .eq("status", "present")
-      .gte("date", sevenDaysAgoStr);
-
-    if (weekAttError) {
-      console.error("خطأ في جلب حضور آخر 7 أيام:", weekAttError);
-    }
 
     const dayCounts: Record<string, number> = {};
     (weekAttendance || []).forEach((r: any) => {
@@ -372,30 +359,6 @@ serve(async (req) => {
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
       weeklyData.push({ date: dateStr, count: dayCounts[dateStr] || 0 });
-    }
-
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-
-    const { data: activities, error: activitiesError } = await supabase
-      .from("activity_logs")
-      .select(`
-        id,
-        action_type,
-        details,
-        performer_id,
-        performer_role,
-        performer_name,
-        created_at
-      `)
-      .eq("client_id", finalClientId)
-      .gte("created_at", oneHourAgo)
-      .or("performer_role.is.null,performer_role.neq.admin")
-      .or("performer_id.is.null,performer_id.neq.master_admin")
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (activitiesError) {
-      console.error("❌ خطأ في جلب النشاطات:", activitiesError);
     }
 
     const formattedActivities = activities || [];
