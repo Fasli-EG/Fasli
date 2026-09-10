@@ -10,9 +10,12 @@
   <link rel="stylesheet" href="style.css?v=52">
   <style>
     body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: var(--gray-50); }
-    .reg-box { max-width: 460px; width: 100%; background: #fff; border-radius: 18px; padding: 32px 28px; box-shadow: var(--shadow-lg); }
+    .reg-box { max-width: 460px; width: 100%; background: #fff; border-radius: 18px; padding: 32px 28px; box-shadow: var(--shadow-lg); border-top: 4px solid var(--primary); }
     [data-theme="dark"] .reg-box { background: var(--gray-100); }
-    .reg-box h2 { text-align: center; margin-bottom: 6px; }
+    .reg-brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px; }
+    .reg-brand img { width: 30px; height: 30px; border-radius: 8px; }
+    .reg-brand span { font-family: var(--font-display); font-weight: 900; font-size: 17px; color: var(--gray-900); }
+    .reg-box h2 { text-align: center; margin-bottom: 6px; font-family: var(--font-display); font-weight: 800; font-size: 21px; color: var(--gray-900); }
     .reg-box .sub { text-align: center; color: var(--gray-500); font-size: 13.5px; margin-bottom: 24px; }
     .reg-box .field { margin-bottom: 14px; }
     .reg-box input, .reg-box select, .reg-box textarea {
@@ -31,6 +34,7 @@
     </div>
 
     <div id="regFormContainer" style="display:none;">
+      <div class="reg-brand"><img src="assets/logo-icon.svg" alt="شعار فَصلي"><span>فَصلي</span></div>
       <h2>📝 سجّل ابنك معانا</h2>
       <p class="sub" id="teacherNameLabel">هنتواصل معاك في أقرب وقت لتأكيد التسجيل</p>
 

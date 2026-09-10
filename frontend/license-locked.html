@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
     --indigo:#0B1C33; --indigo-deep:#0A0C10; --indigo-soft:#E3F1EC;
@@ -32,7 +32,10 @@
     display:flex; align-items:center; justify-content:center; margin:0 auto 20px;
   }
   .icon svg{ width:34px; height:34px; }
-  h1{ font-family:'IBM Plex Sans Arabic', sans-serif; font-weight:800; font-size:22px; margin-bottom:8px; }
+  h1{ font-family:'Cairo', sans-serif; font-weight:800; font-size:22px; margin-bottom:8px; }
+  .brand-lockup{ display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:18px; }
+  .brand-lockup img{ width:28px; height:28px; border-radius:7px; }
+  .brand-lockup span{ font-family:'Cairo',sans-serif; font-weight:900; font-size:16px; color:var(--indigo); }
   .reason{ color:var(--danger); font-weight:600; font-size:14px; margin-bottom:6px; }
   p.lede{ color:var(--muted); font-size:14px; line-height:1.9; margin-bottom:26px; }
 
@@ -53,6 +56,7 @@
 </head>
 <body>
   <div class="box">
+    <div class="brand-lockup"><img src="assets/logo-icon.svg" alt="شعار فَصلي"><span>فَصلي</span></div>
     <div class="icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
     </div>
