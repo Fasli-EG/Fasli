@@ -54,9 +54,12 @@
   /* ---------- اتجاه بصري جديد (خط عرض + ظلال ملوّنة + تدرجات) ---------- */
   --font-display: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
   --teal-deep: #0A5850;
-  --shadow-primary: 0 14px 30px -14px rgba(184,137,10,0.5);
+  /* ملاحظة: أول نسخة من التدرج كانت بين لونين قريبين من بعض (دهبي فاتح/غامق) فكان
+     الفرق صعب يتلاحظ في الأزرار الصغيرة. النسخة دي بتضيف وقفة تمييز فاتحة (#FFD84D)
+     في الأول عشان مدى الألوان يبقى أوضح، وظل بـ"حافة" سفلية (0 4px 0) بيدّي إحساس زرار مجسّم حقيقي. */
+  --shadow-primary: 0 4px 0 0 rgba(122,88,6,0.5), 0 20px 40px -12px rgba(184,137,10,0.6);
   --shadow-teal: 0 14px 30px -14px rgba(10,88,80,0.45);
-  --gradient-primary: linear-gradient(155deg, var(--primary) 0%, var(--primary-dark) 100%);
+  --gradient-primary: linear-gradient(135deg, #FFD84D 0%, var(--primary) 45%, var(--primary-dark) 100%);
 }
 
 /* ---------- استيراد خطوط الهوية الجديدة ---------- */
@@ -1917,21 +1920,22 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
 .sidebar-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
 /* ✅ اتجاه بصري جديد: مؤشر نشاط بشريط متوهج + تدرج خفيف بدل التعبئة المصمتة السابقة */
 .sidebar-item.active {
-  background: linear-gradient(90deg, rgba(242,183,5,0.22), rgba(242,183,5,0.04));
+  background: linear-gradient(90deg, rgba(242,183,5,0.35), rgba(242,183,5,0.06));
   color: #fff;
+  font-weight: 700;
 }
-.sidebar-item.active i { color: var(--primary); }
+.sidebar-item.active i { color: var(--primary); text-shadow: 0 0 12px rgba(242,183,5,0.8); }
 .sidebar-item.active::before {
   content: "";
   position: absolute;
   inset-inline-start: 2px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 18px;
-  border-radius: 3px;
-  background: var(--primary);
-  box-shadow: 0 0 10px rgba(242,183,5,0.65);
+  width: 4px;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #FFD84D, var(--primary));
+  box-shadow: 0 0 14px 2px rgba(242,183,5,0.75);
 }
 .sidebar-item .badge-dot { margin-inline-start: auto; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display:flex; align-items:center; justify-content:center; padding: 0 3px; }
 
