@@ -35,21 +35,23 @@
 
   function escapeAttr(s) { return String(s).replace(/"/g, '&quot;'); }
 
-  function navItemHtml(item, activeKey) {
+  function navItemHtml(item, activeKey, gateMessages) {
     var isActive = item.key === activeKey;
-    var idAttr = item.id ? ' id="' + item.id + '"' : '';
-    var styleAttr = item.gated ? ' style="display:none;"' : '';
+    var isGated = item.gated || (gateMessages && item.key === 'messages');
+    var idAttr = item.id ? ' id="' + item.id + '"' : (item.key === 'messages' ? ' id="navMessages"' : '');
+    var styleAttr = isGated ? ' style="display:none;"' : '';
     var cls = 'sidebar-item' + (isActive ? ' active' : ' ');
     var onclickAttr = item.onclick ? ' onclick="' + escapeAttr(item.onclick) + '"' : '';
     return '<a href="' + item.href + '"' + onclickAttr + ' class="' + cls + '"' + idAttr + styleAttr + '>' +
            '<i class="fas ' + item.icon + '"></i> ' + item.label + '</a>';
   }
 
-  function sidebarHtml(activeKey) {
+  function sidebarHtml(activeKey, gateMessages, notifStartsHidden) {
     var nav = NAV_SECTIONS.map(function (section) {
       var label = section.label ? '<div class="sidebar-section-label">' + section.label + '</div>' : '';
-      return label + section.items.map(function (it) { return navItemHtml(it, activeKey); }).join('');
+      return label + section.items.map(function (it) { return navItemHtml(it, activeKey, gateMessages); }).join('');
     }).join('');
+    var notifWrapStyle = notifStartsHidden ? ' style="display:none;"' : '';
 
     return (
       '<aside class="sidebar" id="sidebar">' +
@@ -71,7 +73,7 @@
             '<i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام' +
           '</button>' +
           '<div class="sidebar-footer-actions">' +
-            '<div class="notif-wrap" id="notifWrap" style="display:none;">' +
+            '<div class="notif-wrap" id="notifWrap"' + notifWrapStyle + '>' +
               '<button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">' +
                 '<i class="fas fa-bell"></i><span class="notif-badge" id="notifBadge" style="display:none;">0</span>' +
               '</button>' +
@@ -92,6 +94,61 @@
     opts = opts || {};
     document.body.insertAdjacentHTML('afterbegin', '<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>');
     var slot = document.getElementById('app-shell-sidebar-slot');
-    if (slot) slot.outerHTML = sidebarHtml(opts.active);
+    var notifStartsHidden = opts.notifStartsHidden !== false; /* default true (teacher pages); pass false for assistant-dashboard */
+    if (slot) slot.outerHTML = sidebarHtml(opts.active, !!opts.gateMessages, notifStartsHidden);
+  };
+
+  /* ---------- سايدبار صاحب السنتر (center_owner) — عناصر مختلفة تماماً عن سايدبار المدرس ---------- */
+  var CENTER_NAV = [
+    { items: [
+      { key: 'dashboard', href: 'center-dashboard.html', id: 'centerNavDashboard', icon: 'fa-house', label: 'لوحة السنتر' },
+      { key: 'messages', href: 'center-messages.html', id: 'centerNavMessages', icon: 'fa-paper-plane', label: 'رسائل السنتر' }
+    ]},
+    { label: '🏫 الإدارة', items: [
+      { key: 'teachers', href: 'center-teachers.html', id: 'centerNavTeachers', icon: 'fa-chalkboard-user', label: 'المدرسين' },
+      { key: 'students', href: 'center-students.html', id: 'centerNavStudents', icon: 'fa-user-graduate', label: 'الطلاب' },
+      { key: 'cards', href: 'center-cards.html', id: 'centerNavCards', icon: 'fa-id-card', label: 'البطاقات' },
+      { key: 'schedule', href: 'center-schedule.html', id: 'centerNavSchedule', icon: 'fa-calendar-days', label: 'جدول الحصص' }
+    ]},
+    { label: '📊 التقارير', items: [
+      { key: 'reports', href: 'center-reports.html', id: 'centerNavReports', icon: 'fa-chart-simple', label: 'التقارير والمالية' }
+    ]},
+    { label: '⚙️ الإعدادات', items: [
+      { key: 'settings', href: 'center-settings.html', id: 'centerNavSettings', icon: 'fa-palette', label: 'الشعار واللون' }
+    ]}
+  ];
+
+  function centerSidebarHtml(activeKey) {
+    var nav = CENTER_NAV.map(function (section) {
+      var label = section.label ? '<div class="sidebar-section-label">' + section.label + '</div>' : '';
+      return label + section.items.map(function (it) {
+        var cls = 'sidebar-item' + (it.key === activeKey ? ' active' : '');
+        return '<a href="' + it.href + '" class="' + cls + '" id="' + it.id + '"><i class="fas ' + it.icon + '"></i> ' + it.label + '</a>';
+      }).join('');
+    }).join('');
+
+    return (
+      '<aside class="sidebar" id="sidebar">' +
+        '<div class="sidebar-brand"><div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div><h1>فَصلي</h1></div>' +
+        '<nav class="sidebar-nav">' + nav + '</nav>' +
+        '<div class="sidebar-footer">' +
+          '<div class="sidebar-user">' +
+            '<div class="avatar" id="userAvatar">س</div>' +
+            '<div class="u-info"><div class="u-name" id="centerNameHeader">مركز فَصلي</div><div class="u-role">حساب سنتر</div></div>' +
+          '</div>' +
+          '<div class="sidebar-footer-actions">' +
+            '<button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>' +
+            '<button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>' +
+          '</div>' +
+        '</div>' +
+      '</aside>'
+    );
+  }
+
+  window.renderCenterShell = function (opts) {
+    opts = opts || {};
+    document.body.insertAdjacentHTML('afterbegin', '<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>');
+    var slot = document.getElementById('app-shell-sidebar-slot');
+    if (slot) slot.outerHTML = centerSidebarHtml(opts.active);
   };
 })();

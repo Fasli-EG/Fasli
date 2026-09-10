@@ -14,45 +14,10 @@
 </head>
 <body>
 
-  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
   <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
-        <h1>فَصلي</h1>
-      </div>
-
-      <nav class="sidebar-nav">
-        <a href="center-dashboard.html" class="sidebar-item" id="centerNavDashboard"><i class="fas fa-house"></i> لوحة السنتر</a>
-        <a href="center-messages.html" class="sidebar-item active" id="centerNavMessages"><i class="fas fa-paper-plane"></i> رسائل السنتر</a>
-
-        <div class="sidebar-section-label">🏫 الإدارة</div>
-        <a href="center-teachers.html" class="sidebar-item" id="centerNavTeachers"><i class="fas fa-chalkboard-user"></i> المدرسين</a>
-        <a href="center-students.html" class="sidebar-item" id="centerNavStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="center-cards.html" class="sidebar-item" id="centerNavCards"><i class="fas fa-id-card"></i> البطاقات</a>
-        <a href="center-schedule.html" class="sidebar-item" id="centerNavSchedule"><i class="fas fa-calendar-days"></i> جدول الحصص</a>
-
-        <div class="sidebar-section-label">📊 التقارير</div>
-        <a href="center-reports.html" class="sidebar-item" id="centerNavReports"><i class="fas fa-chart-simple"></i> التقارير والمالية</a>
-
-        <div class="sidebar-section-label">⚙️ الإعدادات</div>
-        <a href="center-settings.html" class="sidebar-item" id="centerNavSettings"><i class="fas fa-palette"></i> الشعار واللون</a>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="avatar" id="userAvatar">س</div>
-          <div class="u-info">
-            <div class="u-name" id="centerNameHeader">مركز فَصلي</div>
-            <div class="u-role">حساب سنتر</div>
-          </div>
-        </div>
-        <div class="sidebar-footer-actions">
-          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
-          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
-        </div>
-      </div>
-    </aside>
+    <div id="app-shell-sidebar-slot"></div>
+    <script src="layout.js?v=1"></script>
+    <script>renderCenterShell({active:'messages'});</script>
 
     <div class="main-area">
       <div class="topbar">
