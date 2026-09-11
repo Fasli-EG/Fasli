@@ -48,7 +48,7 @@ async function getKey() {
 }
 
 /** عميل Supabase بصلاحيات كاملة، مخصص لفحص الترخيص فقط (بدون تكرار الاستيراد في كل دالة) */
-async function licenseCheckClient() {
+export async function licenseCheckClient() {
   const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.4");
   // ✅ ترتيب المتغيرات هنا لازم يطابق باقي المشروع (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY الأول) —
   // كان معكوس هنا تحديدًا (نفس فئة الباج التاريخي اللي كسر الأوث قبل كده)
@@ -152,6 +152,68 @@ export function requireParentPhone(payload: TokenPayload, requestedPhone?: strin
     throw new AuthError("⛔ غير مصرح لك بمشاهدة بيانات هذا الطالب", 403);
   }
   return payload.phone;
+}
+
+/**
+ * يتأكد إن باقة المدرس (المُحدّدة من الأدمن) فيها الميزة المطلوبة.
+ * لو المفتاح مش موجود في permissions (مدرس قديم قبل إضافة الميزة دي) بنسمح افتراضياً (توافق مع الحسابات القديمة).
+ * لا تُستدعى لحساب master_admin.
+ */
+export async function requireTeacherPlanPermission(clientId: string, permKey: string): Promise<void> {
+  if (clientId === "master_admin") return;
+  const supabase = await licenseCheckClient();
+  const { data: teacher } = await supabase
+    .from("teachers").select("permissions").eq("client_id", clientId).maybeSingle();
+  const perms = teacher?.permissions || {};
+  if (perms[permKey] === false) {
+    throw new AuthError("⛔ هذه الميزة غير متاحة في باقتك الحالية، تواصل مع الإدارة لتفعيلها", 403, "PLAN_RESTRICTED");
+  }
+}
+
+/**
+ * يتأكد إن المساعد عنده صلاحية محددة منحها له المدرس. لا تأثير على المدرس نفسه (دايماً مسموح له).
+ */
+export async function requireAssistantPermission(payload: TokenPayload, permKey: string): Promise<void> {
+  if (payload.role !== "assistant") return;
+  const supabase = await licenseCheckClient();
+  const { data: assistant } = await supabase
+    .from("assistants").select("permissions").eq("id", payload.sub).maybeSingle();
+  const perms = assistant?.permissions || {};
+  if (perms[permKey] !== true) {
+    throw new AuthError("⛔ ليس لديك صلاحية لهذا الإجراء، تواصل مع المدرس", 403);
+  }
+}
+
+/**
+ * يتحقق من هوية جهاز قارئ الكروت (ESP32) عن طريق سر خاص بكل مدرس،
+ * بديل عن التوكن العادي لأن الجهاز مش عنده تسجيل دخول. يرجّع بيانات المدرس لو صح.
+ */
+export async function verifyDeviceSecret(clientId: string, deviceSecret: string): Promise<void> {
+  if (!clientId || !deviceSecret) {
+    throw new AuthError("⚠️ بيانات الجهاز ناقصة (clientId أو deviceSecret)", 401);
+  }
+  const supabase = await licenseCheckClient();
+  const { data: teacher, error } = await supabase
+    .from("teachers")
+    .select("device_secret, is_active, expiry_date")
+    .eq("client_id", clientId)
+    .maybeSingle();
+
+  if (error || !teacher || !teacher.device_secret) {
+    throw new AuthError("⛔ جهاز غير معروف", 401);
+  }
+  if (teacher.device_secret !== deviceSecret) {
+    throw new AuthError("⛔ سر الجهاز غير صحيح", 401);
+  }
+  if (teacher.is_active === false) {
+    throw new AuthError("⛔ حساب المدرس معطّل", 402, "LICENSE_EXPIRED");
+  }
+  if (teacher.expiry_date) {
+    const today = new Date().toISOString().split("T")[0];
+    if (teacher.expiry_date < today) {
+      throw new AuthError("⛔ انتهت صلاحية الترخيص", 402, "LICENSE_EXPIRED");
+    }
+  }
 }
 
 /** يحوّل AuthError لـ Response جاهزة */
