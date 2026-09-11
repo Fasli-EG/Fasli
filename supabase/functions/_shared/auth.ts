@@ -50,8 +50,10 @@ async function getKey() {
 /** عميل Supabase بصلاحيات كاملة، مخصص لفحص الترخيص فقط (بدون تكرار الاستيراد في كل دالة) */
 async function licenseCheckClient() {
   const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.4");
-  const url = Deno.env.get("DATABASE_URL") || Deno.env.get("SUPABASE_URL") || "";
-  const key = Deno.env.get("SERVICE_ROLE") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  // ✅ ترتيب المتغيرات هنا لازم يطابق باقي المشروع (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY الأول) —
+  // كان معكوس هنا تحديدًا (نفس فئة الباج التاريخي اللي كسر الأوث قبل كده)
+  const url = Deno.env.get("SUPABASE_URL") || Deno.env.get("DATABASE_URL") || "";
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE") || "";
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 

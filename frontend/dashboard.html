@@ -2600,7 +2600,9 @@ async function checkSessionAbsences() {
 // ✅ بتتنادى دورياً — بتنشر تلقائياً أي اختبار وصل وقت جدولته (بديل عن جدولة سيرفر مخصصة)
 async function checkScheduledExams() {
   try {
-    await fetch(PROJECT_URL + '/functions/v1/check-scheduled-exams', { method: 'POST' });
+    const headers = getAuthHeaders();
+    if (!headers) return;
+    await fetch(PROJECT_URL + '/functions/v1/check-scheduled-exams', { method: 'POST', headers, body: '{}' });
   } catch (error) { /* تجاهل بهدوء */ }
 }
 

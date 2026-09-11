@@ -13,8 +13,9 @@ export interface RateLimitOptions {
 }
 
 function adminClient() {
-  const url = Deno.env.get("DATABASE_URL") || Deno.env.get("SUPABASE_URL") || "";
-  const key = Deno.env.get("SERVICE_ROLE") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  // ✅ نفس التصحيح المطبّق في _shared/auth.ts — الترتيب الصحيح SUPABASE_* الأول
+  const url = Deno.env.get("SUPABASE_URL") || Deno.env.get("DATABASE_URL") || "";
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE") || "";
   return _createRateLimitClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 

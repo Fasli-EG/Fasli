@@ -989,8 +989,11 @@
 
     // ✅ فحص دوري — بينشر أي اختبار وصل وقت جدولته تلقائياً (بديل عن جدولة سيرفر مخصصة)
     async function checkScheduledExams() {
-      try { await fetch(PROJECT_URL + '/functions/v1/check-scheduled-exams', { method: 'POST' }); }
-      catch (error) { /* تجاهل بهدوء */ }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/check-scheduled-exams', { method: 'POST', headers, body: '{}' });
+      } catch (error) { /* تجاهل بهدوء */ }
     }
 
     // ✅ Aug 2026: تبديل تبويبات صفحة الطالب — كل بيانات الصفحة بتتحمّل مرة واحدة في
