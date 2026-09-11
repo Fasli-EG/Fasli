@@ -8,7 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   // ✅ (طلب) x-cron-secret مضافة عشان استدعاء الجدولة الدورية (pg_cron) اللي بيغطي كل
   // المدرسين مرة واحدة، بدل الاعتماد بس على فتح لوحة تحكم مدرس بعينه
