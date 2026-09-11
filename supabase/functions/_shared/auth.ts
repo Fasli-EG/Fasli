@@ -18,7 +18,7 @@ export interface TokenPayload {
   teacherId?: string;
   username?: string;
   phone?: string;
-  role: "teacher" | "assistant" | "parent";
+  role: "teacher" | "assistant" | "parent" | "student";
   name: string;
   exp: number;
 }
