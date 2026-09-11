@@ -2,31 +2,7 @@
 // ✅ دالة موحّدة تجمع start-master-scan-mode + stop-master-scan-mode + get-master-scan-status
 // action: start | stop | status — كلها بمصادقة أدمن (JWT)، بعكس submit-master-card-scan اللي فضلت منفصلة (مصادقة جهاز)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
-};
-
-interface TokenPayload { sub: string; clientId?: string; role: string; name: string; }
-
-class AuthError extends Error {
-  status: number; code?: string;
-  constructor(message: string, status = 401, code?: string) { super(message); this.status = status; this.code = code; }
-}
-
-async function verifyToken(req: Request): Promise<TokenPayload> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) throw new AuthError("⚠️ التوكن مطلوب", 401);
-  const token = authHeader.substring(7);
-  const JWT_SECRET = Deno.env.get("JWT_SECRET");
-  if (!JWT_SECRET) throw new Error("⚠️ JWT_SECRET غير مضبوط");
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(JWT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-  try { return (await verify(token, key, "HS256")) as unknown as TokenPayload; }
-  catch (_e) { throw new AuthError("⚠️ التوكن غير صالح أو منتهي الصلاحية", 401); }
-}
+import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
 
 function requireAdmin(payload: TokenPayload) {
   if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
