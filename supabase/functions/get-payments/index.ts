@@ -246,7 +246,7 @@ serve(async (req) => {
       );
     }
 
-    const { clientId, groupName, title } = await req.json();
+    const { clientId, groupName, title, page } = await req.json();
     if (clientId && clientId !== tokenClientId) {
       return new Response(
         JSON.stringify({ success: false, message: "⛔ غير مصرح" }),
@@ -260,23 +260,55 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    let query = supabase.from("payments").select("*").eq("teacher_id", tokenClientId);
-    if (groupName) query = query.eq("group_name", groupName);
-    // ✅ فلترة اختيارية بالبند من السيرفر — لما المستخدم يختار بند معيّن (الاستخدام الأشيع يوميًا)
-    // بنجيب سجلاته بس بدل كل بنود المجموعة، من غير أي تأثير على منطق "غير المسددين" (لسه بيشتغل
-    // بنفس الطريقة، بس على نطاق بند واحد بدل كل البنود مع بعض — الفرونت إند بيطلب طلاب المجموعة
-    // كاملين زي ما هو دايمًا لحساب المقارنة صح)
-    if (title) query = query.eq("title", title);
+    if (groupName) {
+      // ✅ مجموعة محددة — نفس السلوك القديم بالظبط، من غير تغيير. النطاق ده دايمًا محدود
+      // بعمر المجموعة نفسها (مش كل تاريخ المدرس)، فمش محتاج pagination من الأساس.
+      let query = supabase.from("payments").select("*").eq("teacher_id", tokenClientId).eq("group_name", groupName);
+      if (title) query = query.eq("title", title);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(5000);
+      if (error) throw new Error(error.message);
+      return new Response(
+        JSON.stringify({ success: true, data: data || [] }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // ✅ تحسين أداء: كان بيجيب كل سجل مدفوعات للمدرس من غير أي حد، من غير تعديل واجهة الصفحة
-    // (اللي متوقعة القائمة كاملة في استجابة واحدة) مش آمن نحط pagination حقيقي دلوقتي — الحد ده
-    // سقف أمان بس (٥٠٠٠ سجل) يمنع استعلام بلا حدود فعلي لو حساب تراكم عليه سنين من البيانات،
-    // من غير ما يأثر على أي حساب حالي بعدد سجلات طبيعي.
-    const { data, error } = await query.order("created_at", { ascending: false }).limit(5000);
-    if (error) throw new Error(error.message);
+    // ✅ (تنفيذ حذر) عرض "كل المجموعات" هو النطاق الوحيد اللي فعلاً بلا حدود (كل مدفوعات المدرس
+    // من أول يوم). بدل pagination بالصف الخام (اللي كان هيكسر حساب "غير المسددين" — محتاج يشوف
+    // كل سجلات المجموعة مع بعض عشان يقارن صح)، بنعمل pagination بوحدة "مجموعة كاملة" — كل صفحة
+    // = مجموعة واحدة كاملة، بنفس البيانات اللي كانت هتترجع لو اخترتها إنتِ يدويًا بالظبط. كده
+    // منطق المقارنة (يعتمد على get-students بنفس اسم المجموعة من الفرونت إند) يفضل صحيح 100%،
+    // ومفيش أي تعديل مطلوب في get-students خالص.
+    let groupsQuery = supabase.from("payments").select("group_name").eq("teacher_id", tokenClientId);
+    if (title) groupsQuery = groupsQuery.eq("title", title);
+    // ✅ سقف دفاعي هنا كمان — العمود ده خفيف (اسم مجموعة بس) فمش نفس خطورة select("*")،
+    // بس بره أي حد خالص برضو مش آمن على المدى الطويل
+    const { data: groupRows, error: groupsErr } = await groupsQuery.limit(20000);
+    if (groupsErr) throw new Error(groupsErr.message);
+
+    const allGroupNames = Array.from(
+      new Set((groupRows || []).map((r: any) => r.group_name).filter(Boolean))
+    ).sort((a: any, b: any) => String(a).localeCompare(String(b), "ar"));
+
+    const totalGroups = allGroupNames.length;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const currentGroupName = allGroupNames[pageNum - 1] || null;
+
+    let data: any[] = [];
+    if (currentGroupName) {
+      let pageQuery = supabase.from("payments").select("*").eq("teacher_id", tokenClientId).eq("group_name", currentGroupName);
+      if (title) pageQuery = pageQuery.eq("title", title);
+      const { data: pageData, error: pageErr } = await pageQuery.order("created_at", { ascending: false }).limit(5000);
+      if (pageErr) throw new Error(pageErr.message);
+      data = pageData || [];
+    }
 
     return new Response(
-      JSON.stringify({ success: true, data: data || [] }),
+      JSON.stringify({
+        success: true,
+        data,
+        pagination: { page: pageNum, totalPages: totalGroups, currentGroupName, hasMore: pageNum < totalGroups },
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

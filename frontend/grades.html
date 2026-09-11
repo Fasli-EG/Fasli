@@ -147,10 +147,10 @@
       <div class="card-header">
         <h3><i class="fas fa-list" style="color:var(--primary);"></i> الدرجات المسجلة</h3>
         <div class="search-bar">
-          <select id="filterGroup" onchange="localStorage.setItem('gradesFilterGroup_' + clientId, this.value); loadGrades(); loadFilterExamNames();">
+          <select id="filterGroup" onchange="localStorage.setItem('gradesFilterGroup_' + clientId, this.value); gradesCurrentPage = 1; loadGrades(); loadFilterExamNames();">
             <option value="ALL">📚 جميع المجموعات</option>
           </select>
-          <select id="filterExam" onchange="localStorage.setItem('gradesFilterExam_' + clientId, this.value); loadGrades();">
+          <select id="filterExam" onchange="localStorage.setItem('gradesFilterExam_' + clientId, this.value); gradesCurrentPage = 1; loadGrades();">
             <option value="">📝 كل الامتحانات</option>
           </select>
           <input type="number" id="filterScore" onkeyup="filterTable()" placeholder="🎯 درجة محددة..." style="max-width:130px;">
@@ -178,6 +178,11 @@
               </td></tr>
             </tbody>
           </table>
+        </div>
+        <div id="gradesPager" style="display:none;align-items:center;justify-content:center;gap:14px;padding:16px;border-top:1px solid var(--gray-200);">
+          <button class="btn btn-outline btn-sm" id="gradesPagerPrev" onclick="goToGradesPage(gradesCurrentPage - 1)"><i class="fas fa-chevron-right"></i> المجموعة السابقة</button>
+          <span id="gradesPagerLabel" style="font-size:13px;color:var(--gray-600);font-weight:600;"></span>
+          <button class="btn btn-outline btn-sm" id="gradesPagerNext" onclick="goToGradesPage(gradesCurrentPage + 1)">المجموعة التالية <i class="fas fa-chevron-left"></i></button>
         </div>
       </div>
     </div>
@@ -1742,10 +1747,13 @@
       }
     }
 
+    let gradesCurrentPage = 1;
+
     async function loadGrades() {
       const myLoadToken = ++gradesLoadToken;
       const filterGroup = document.getElementById('filterGroup').value;
       const filterExamValue = document.getElementById('filterExam').value;
+      const isAllGroups = filterGroup === 'ALL';
       const tbody = document.getElementById('gradesBody');
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
         '<i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i> جاري التحميل...</td></tr>';
@@ -1754,17 +1762,36 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        // ✅ الطلبين بيشتغلوا في نفس الوقت (مش واحد ورا التاني) لتقليل وقت الانتظار الكلي للنص تقريباً
-        const [response, studentsResponse] = await Promise.all([
-          fetch(PROJECT_URL + '/functions/v1/get-grades', {
+        let response, studentsResponse;
+        if (isAllGroups) {
+          // ✅ (تنفيذ حذر) نفس أسلوب payments.html بالظبط — "كل المجموعات" محتاج pagination
+          // بوحدة مجموعة كاملة، عشان حساب "لم يحضر" يفضل صحيح 100%.
+          response = await fetch(PROJECT_URL + '/functions/v1/get-grades', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup, examName: filterExamValue || null })
-          }),
-          fetch(PROJECT_URL + '/functions/v1/get-students', {
+            body: JSON.stringify({ clientId, groupName: null, examName: filterExamValue || null, page: gradesCurrentPage })
+          });
+          if (myLoadToken !== gradesLoadToken) return;
+          if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+          const preResult = await response.json();
+          const resolvedGroupName = preResult?.pagination?.currentGroupName || null;
+          studentsResponse = await fetch(PROJECT_URL + '/functions/v1/get-students', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
-          }),
-        ]);
+            body: JSON.stringify({ clientId, groupName: resolvedGroupName })
+          });
+          response = { status: response.status, json: async () => preResult };
+        } else {
+          // ✅ مجموعة محددة — نفس السلوك القديم بالظبط، الطلبين متوازيين زي ما كانوا
+          [response, studentsResponse] = await Promise.all([
+            fetch(PROJECT_URL + '/functions/v1/get-grades', {
+              method: 'POST', headers: headers,
+              body: JSON.stringify({ clientId, groupName: filterGroup, examName: filterExamValue || null })
+            }),
+            fetch(PROJECT_URL + '/functions/v1/get-students', {
+              method: 'POST', headers: headers,
+              body: JSON.stringify({ clientId, groupName: filterGroup })
+            }),
+          ]);
+        }
 
         if (response.status === 401 || studentsResponse.status === 401) {
           handleUnauthorized('انتهت صلاحية الجلسة');
@@ -1778,6 +1805,7 @@
         const allStudentsForGrades = studentsResultForGrades.success ? (studentsResultForGrades.data || []) : [];
 
         const result = await response.json();
+        updateGradesPager(isAllGroups ? result.pagination : null);
         if (result.success) {
           const grades = result.data || [];
           const examNames = [...new Set(grades.map(g => g.exam_name))];
@@ -1852,6 +1880,28 @@
         console.error('❌ خطأ:', error);
         showToast('❌ فشل تحميل البيانات', 'error');
       }
+    }
+
+    // ✅ تظهر بس لو الفلتر على "كل المجموعات" — كل صفحة = مجموعة كاملة
+    function updateGradesPager(pagination) {
+      const pager = document.getElementById('gradesPager');
+      if (!pagination || !pagination.totalPages || pagination.totalPages <= 1) {
+        pager.style.display = 'none';
+        return;
+      }
+      pager.style.display = 'flex';
+      const label = pagination.currentGroupName
+        ? `مجموعة "${pagination.currentGroupName}" — ${pagination.page} من ${pagination.totalPages}`
+        : `${pagination.page} من ${pagination.totalPages}`;
+      document.getElementById('gradesPagerLabel').textContent = label;
+      document.getElementById('gradesPagerPrev').disabled = pagination.page <= 1;
+      document.getElementById('gradesPagerNext').disabled = !pagination.hasMore;
+    }
+
+    function goToGradesPage(page) {
+      if (page < 1) return;
+      gradesCurrentPage = page;
+      loadGrades();
     }
 
     function filterTable() {

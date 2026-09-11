@@ -189,10 +189,10 @@
       <div class="card-header">
         <h3><i class="fas fa-list" style="color:var(--primary);"></i> المدفوعات المسجلة</h3>
         <div class="search-bar">
-          <select id="filterGroup" onchange="localStorage.setItem('paymentsFilterGroup_' + clientId, this.value); loadPayments();">
+          <select id="filterGroup" onchange="localStorage.setItem('paymentsFilterGroup_' + clientId, this.value); paymentsCurrentPage = 1; loadPayments();">
             <option value="ALL">📚 جميع المجموعات</option>
           </select>
-          <select id="filterTitle" onchange="localStorage.setItem('paymentsFilterTitle_' + clientId, this.value); loadPayments();">
+          <select id="filterTitle" onchange="localStorage.setItem('paymentsFilterTitle_' + clientId, this.value); paymentsCurrentPage = 1; loadPayments();">
             <option value="">💰 كل البنود</option>
           </select>
           <select id="filterStatus" onchange="localStorage.setItem('paymentsFilterStatus_' + clientId, this.value); filterTable();">
@@ -225,6 +225,11 @@
               </td></tr>
             </tbody>
           </table>
+        </div>
+        <div id="paymentsPager" style="display:none;align-items:center;justify-content:center;gap:14px;padding:16px;border-top:1px solid var(--gray-200);">
+          <button class="btn btn-outline btn-sm" id="paymentsPagerPrev" onclick="goToPaymentsPage(paymentsCurrentPage - 1)"><i class="fas fa-chevron-right"></i> المجموعة السابقة</button>
+          <span id="paymentsPagerLabel" style="font-size:13px;color:var(--gray-600);font-weight:600;"></span>
+          <button class="btn btn-outline btn-sm" id="paymentsPagerNext" onclick="goToPaymentsPage(paymentsCurrentPage + 1)">المجموعة التالية <i class="fas fa-chevron-left"></i></button>
         </div>
       </div>
     </div>
@@ -986,11 +991,13 @@
 
     let allPaymentsData = [];
     let allStudentsForStats = [];
+    let paymentsCurrentPage = 1;
 
     async function loadPayments() {
       const myLoadToken = ++paymentsLoadToken;
       const filterGroup = document.getElementById('filterGroup').value;
       const filterTitleValue = document.getElementById('filterTitle').value;
+      const isAllGroups = filterGroup === 'ALL';
       const tbody = document.getElementById('paymentsBody');
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
         '<i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i> جاري التحميل...</td></tr>';
@@ -999,17 +1006,39 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        // ✅ الطلبين بيشتغلوا في نفس الوقت (مش واحد ورا التاني) لتقليل وقت الانتظار الكلي للنص تقريباً
-        const [response, studentsResponse] = await Promise.all([
-          fetch(PROJECT_URL + '/functions/v1/get-payments', {
+        let response, studentsResponse;
+        if (isAllGroups) {
+          // ✅ (تنفيذ حذر) "كل المجموعات" هو النطاق الوحيد اللي محتاج pagination (بلا حدود فعليًا).
+          // بنجيب صفحة المدفوعات الأول عشان نعرف اسم المجموعة اللي السيرفر رجّعها لصفحة الرقم ده،
+          // وبعدين نجيب طلاب نفس المجموعة بالظبط (نداء تاني، مش متوازي) عشان حساب "غير المسددين"
+          // يفضل صحيح 100% — نفس بيانات لو اخترتِ المجموعة دي يدويًا بالظبط.
+          response = await fetch(PROJECT_URL + '/functions/v1/get-payments', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup, title: filterTitleValue || null })
-          }),
-          fetch(PROJECT_URL + '/functions/v1/get-students', {
+            body: JSON.stringify({ clientId, groupName: null, title: filterTitleValue || null, page: paymentsCurrentPage })
+          });
+          if (myLoadToken !== paymentsLoadToken) return;
+          if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+          const preResult = await response.json();
+          const resolvedGroupName = preResult?.pagination?.currentGroupName || null;
+          studentsResponse = await fetch(PROJECT_URL + '/functions/v1/get-students', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
-          }),
-        ]);
+            body: JSON.stringify({ clientId, groupName: resolvedGroupName })
+          });
+          // نلف preResult في كائن Response-like بسيط عشان الكود اللي تحت يفضل شغال زي ما هو
+          response = { status: response.status, json: async () => preResult };
+        } else {
+          // ✅ مجموعة محددة — نفس السلوك القديم بالظبط، الطلبين متوازيين زي ما كانوا
+          [response, studentsResponse] = await Promise.all([
+            fetch(PROJECT_URL + '/functions/v1/get-payments', {
+              method: 'POST', headers: headers,
+              body: JSON.stringify({ clientId, groupName: filterGroup, title: filterTitleValue || null })
+            }),
+            fetch(PROJECT_URL + '/functions/v1/get-students', {
+              method: 'POST', headers: headers,
+              body: JSON.stringify({ clientId, groupName: filterGroup })
+            }),
+          ]);
+        }
 
         if (response.status === 401 || studentsResponse.status === 401) {
           handleUnauthorized('انتهت صلاحية الجلسة');
@@ -1023,6 +1052,7 @@
         const allStudentsInView = studentsResult.success ? (studentsResult.data || []) : [];
 
         const result = await response.json();
+        updatePaymentsPager(isAllGroups ? result.pagination : null);
         if (result.success) {
           const payments = (result.data || []).sort((a, b) => a.student_name.localeCompare(b.student_name, 'ar'));
           allPaymentsData = payments;
@@ -1107,6 +1137,28 @@
         console.error('❌ خطأ:', error);
         showToast('❌ فشل تحميل البيانات', 'error');
       }
+    }
+
+    // ✅ تظهر بس لو الفلتر على "كل المجموعات" (النطاق الوحيد اللي بيتقسّم لصفحات) — كل صفحة = مجموعة كاملة
+    function updatePaymentsPager(pagination) {
+      const pager = document.getElementById('paymentsPager');
+      if (!pagination || !pagination.totalPages || pagination.totalPages <= 1) {
+        pager.style.display = 'none';
+        return;
+      }
+      pager.style.display = 'flex';
+      const label = pagination.currentGroupName
+        ? `مجموعة "${pagination.currentGroupName}" — ${pagination.page} من ${pagination.totalPages}`
+        : `${pagination.page} من ${pagination.totalPages}`;
+      document.getElementById('paymentsPagerLabel').textContent = label;
+      document.getElementById('paymentsPagerPrev').disabled = pagination.page <= 1;
+      document.getElementById('paymentsPagerNext').disabled = !pagination.hasMore;
+    }
+
+    function goToPaymentsPage(page) {
+      if (page < 1) return;
+      paymentsCurrentPage = page;
+      loadPayments();
     }
 
     // ✅ بتتحسب من جديد في كل مرة فلتر البند يتغيّر، مش مرة واحدة بس وقت التحميل — عشان لو اخترتي بند معيّن
