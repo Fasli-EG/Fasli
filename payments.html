@@ -11,72 +11,13 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=52">
+  <link rel="stylesheet" href="style.css?v=53">
 </head>
 <body>
-    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
   <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
-        <h1>فَصلي</h1>
-      </div>
-
-      <nav class="sidebar-nav">
-        <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="messages.html" class="sidebar-item " id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
-
-        <div class="sidebar-section-label">🎓 الأكاديمية</div>
-        <a href="students.html" class="sidebar-item " id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item " id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item " id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
-
-        <div class="sidebar-section-label">💰 المالية</div>
-        <a href="payments.html" class="sidebar-item active" id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
-        <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
-
-        <div class="sidebar-section-label">📊 التقارير</div>
-        <a href="reports.html" class="sidebar-item " id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
-
-        <div class="sidebar-section-label">⚙️ الإعدادات</div>
-        <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
-        <a href="staff.html" class="sidebar-item " id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
-        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="avatar" id="userAvatar">م</div>
-          <div class="u-info">
-            <div class="u-name" id="userDisplayName">مرحباً، مدرس</div>
-            <div class="u-role" id="teacherBadge">حساب مدرس</div>
-            <span class="permission-badge" id="permissionBadge" style="display:none;font-size:10px;margin-top:4px;"></span>
-          </div>
-        </div>
-        <button class="sidebar-item" id="navResetSystem" onclick="openResetConfirm()" style="color:#FCA5A5;display:none;">
-          <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
-        </button>
-        <div class="sidebar-footer-actions">
-          <div class="notif-wrap" id="notifWrap" style="display:none;">
-            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
-              <i class="fas fa-bell"></i>
-              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-            </button>
-            <div class="notif-panel" id="notifPanel">
-              <div class="notif-panel-header">
-                <span>الإشعارات</span>
-                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
-              </div>
-              <div class="notif-list" id="notifList">
-                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
-              </div>
-            </div>
-          </div>
-          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
-          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
-        </div>
-      </div>
-    </aside>
+    <div id="app-shell-sidebar-slot"></div>
+    <script src="layout.js?v=2"></script>
+    <script>renderShell({active:'payments'});</script>
 
     <div class="main-area">
       <div class="topbar">
@@ -248,10 +189,10 @@
       <div class="card-header">
         <h3><i class="fas fa-list" style="color:var(--primary);"></i> المدفوعات المسجلة</h3>
         <div class="search-bar">
-          <select id="filterGroup" onchange="localStorage.setItem('paymentsFilterGroup_' + clientId, this.value); loadPayments();">
+          <select id="filterGroup" onchange="localStorage.setItem('paymentsFilterGroup_' + clientId, this.value); paymentsCurrentPage = 1; loadPayments();">
             <option value="ALL">📚 جميع المجموعات</option>
           </select>
-          <select id="filterTitle" onchange="localStorage.setItem('paymentsFilterTitle_' + clientId, this.value); filterTable();">
+          <select id="filterTitle" onchange="localStorage.setItem('paymentsFilterTitle_' + clientId, this.value); paymentsCurrentPage = 1; loadPayments();">
             <option value="">💰 كل البنود</option>
           </select>
           <select id="filterStatus" onchange="localStorage.setItem('paymentsFilterStatus_' + clientId, this.value); filterTable();">
@@ -284,6 +225,11 @@
               </td></tr>
             </tbody>
           </table>
+        </div>
+        <div id="paymentsPager" style="display:none;align-items:center;justify-content:center;gap:14px;padding:16px;border-top:1px solid var(--gray-200);">
+          <button class="btn btn-outline btn-sm" id="paymentsPagerPrev" onclick="goToPaymentsPage(paymentsCurrentPage - 1)"><i class="fas fa-chevron-right"></i> المجموعة السابقة</button>
+          <span id="paymentsPagerLabel" style="font-size:13px;color:var(--gray-600);font-weight:600;"></span>
+          <button class="btn btn-outline btn-sm" id="paymentsPagerNext" onclick="goToPaymentsPage(paymentsCurrentPage + 1)">المجموعة التالية <i class="fas fa-chevron-left"></i></button>
         </div>
       </div>
     </div>
@@ -1045,10 +991,13 @@
 
     let allPaymentsData = [];
     let allStudentsForStats = [];
+    let paymentsCurrentPage = 1;
 
     async function loadPayments() {
       const myLoadToken = ++paymentsLoadToken;
       const filterGroup = document.getElementById('filterGroup').value;
+      const filterTitleValue = document.getElementById('filterTitle').value;
+      const isAllGroups = filterGroup === 'ALL';
       const tbody = document.getElementById('paymentsBody');
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
         '<i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i> جاري التحميل...</td></tr>';
@@ -1057,17 +1006,39 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        // ✅ الطلبين بيشتغلوا في نفس الوقت (مش واحد ورا التاني) لتقليل وقت الانتظار الكلي للنص تقريباً
-        const [response, studentsResponse] = await Promise.all([
-          fetch(PROJECT_URL + '/functions/v1/get-payments', {
+        let response, studentsResponse;
+        if (isAllGroups) {
+          // ✅ (تنفيذ حذر) "كل المجموعات" هو النطاق الوحيد اللي محتاج pagination (بلا حدود فعليًا).
+          // بنجيب صفحة المدفوعات الأول عشان نعرف اسم المجموعة اللي السيرفر رجّعها لصفحة الرقم ده،
+          // وبعدين نجيب طلاب نفس المجموعة بالظبط (نداء تاني، مش متوازي) عشان حساب "غير المسددين"
+          // يفضل صحيح 100% — نفس بيانات لو اخترتِ المجموعة دي يدويًا بالظبط.
+          response = await fetch(PROJECT_URL + '/functions/v1/get-payments', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
-          }),
-          fetch(PROJECT_URL + '/functions/v1/get-students', {
+            body: JSON.stringify({ clientId, groupName: null, title: filterTitleValue || null, page: paymentsCurrentPage })
+          });
+          if (myLoadToken !== paymentsLoadToken) return;
+          if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+          const preResult = await response.json();
+          const resolvedGroupName = preResult?.pagination?.currentGroupName || null;
+          studentsResponse = await fetch(PROJECT_URL + '/functions/v1/get-students', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
-          }),
-        ]);
+            body: JSON.stringify({ clientId, groupName: resolvedGroupName })
+          });
+          // نلف preResult في كائن Response-like بسيط عشان الكود اللي تحت يفضل شغال زي ما هو
+          response = { status: response.status, json: async () => preResult };
+        } else {
+          // ✅ مجموعة محددة — نفس السلوك القديم بالظبط، الطلبين متوازيين زي ما كانوا
+          [response, studentsResponse] = await Promise.all([
+            fetch(PROJECT_URL + '/functions/v1/get-payments', {
+              method: 'POST', headers: headers,
+              body: JSON.stringify({ clientId, groupName: filterGroup, title: filterTitleValue || null })
+            }),
+            fetch(PROJECT_URL + '/functions/v1/get-students', {
+              method: 'POST', headers: headers,
+              body: JSON.stringify({ clientId, groupName: filterGroup })
+            }),
+          ]);
+        }
 
         if (response.status === 401 || studentsResponse.status === 401) {
           handleUnauthorized('انتهت صلاحية الجلسة');
@@ -1081,6 +1052,7 @@
         const allStudentsInView = studentsResult.success ? (studentsResult.data || []) : [];
 
         const result = await response.json();
+        updatePaymentsPager(isAllGroups ? result.pagination : null);
         if (result.success) {
           const payments = (result.data || []).sort((a, b) => a.student_name.localeCompare(b.student_name, 'ar'));
           allPaymentsData = payments;
@@ -1165,6 +1137,28 @@
         console.error('❌ خطأ:', error);
         showToast('❌ فشل تحميل البيانات', 'error');
       }
+    }
+
+    // ✅ تظهر بس لو الفلتر على "كل المجموعات" (النطاق الوحيد اللي بيتقسّم لصفحات) — كل صفحة = مجموعة كاملة
+    function updatePaymentsPager(pagination) {
+      const pager = document.getElementById('paymentsPager');
+      if (!pagination || !pagination.totalPages || pagination.totalPages <= 1) {
+        pager.style.display = 'none';
+        return;
+      }
+      pager.style.display = 'flex';
+      const label = pagination.currentGroupName
+        ? `مجموعة "${pagination.currentGroupName}" — ${pagination.page} من ${pagination.totalPages}`
+        : `${pagination.page} من ${pagination.totalPages}`;
+      document.getElementById('paymentsPagerLabel').textContent = label;
+      document.getElementById('paymentsPagerPrev').disabled = pagination.page <= 1;
+      document.getElementById('paymentsPagerNext').disabled = !pagination.hasMore;
+    }
+
+    function goToPaymentsPage(page) {
+      if (page < 1) return;
+      paymentsCurrentPage = page;
+      loadPayments();
     }
 
     // ✅ بتتحسب من جديد في كل مرة فلتر البند يتغيّر، مش مرة واحدة بس وقت التحميل — عشان لو اخترتي بند معيّن

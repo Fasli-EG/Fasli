@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=52">
+  <link rel="stylesheet" href="style.css?v=53">
   <style>
     .student-card .student-name { font-size: 18px; font-weight: 700; color: var(--gray-900); }
     .student-card .student-name .uid { font-size: 12px; font-weight: 400; color: var(--gray-400); font-family: monospace; margin-right: 6px; }
@@ -103,7 +103,7 @@
 
   <!-- ✅ Batch 24 (بند 8): لافتة إعلانية بعرض الشاشة يتحكم في ظهورها الماستر من إعدادات النظام -->
   <a id="portalAdBanner" href="#" target="_blank" rel="noopener" style="display:none;width:100%;overflow:hidden;">
-    <img id="portalAdBannerImg" style="width:100%;height:auto;max-height:320px;object-fit:contain;display:block;">
+    <img id="portalAdBannerImg" alt="إعلان" style="width:100%;height:auto;max-height:320px;object-fit:contain;display:block;">
   </a>
 
   <div class="container">
@@ -114,7 +114,7 @@
     <div id="message" class="message"></div>
 
     <div class="stats-row" id="statsRow">
-      <div class="stat-card">
+      <div class="stat-card stat-card-featured">
         <div class="stat-label">👨‍👩‍👦 عدد الأبناء</div>
         <div class="stat-value primary" id="statChildren">0</div>
       </div>

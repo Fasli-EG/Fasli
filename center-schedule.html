@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>جدول الحصص - فَصلي</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B1C33">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css?v=53">
+</head>
+<body>
+
+  <div class="app-shell">
+    <div id="app-shell-sidebar-slot"></div>
+    <script src="layout.js?v=2"></script>
+    <script>renderCenterShell({active:'schedule'});</script>
+
+    <div class="main-area">
+      <div class="topbar">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h2>جدول الحصص</h2>
+      </div>
+
+      <div class="container">
+        <div id="pageLoading" style="text-align:center;padding:60px;color:var(--gray-400);">
+          <i class="fas fa-spinner fa-spin" style="font-size:28px;display:block;margin-bottom:10px;"></i>جاري تحميل الجدول...
+        </div>
+
+        <div id="pageContent" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fas fa-calendar-days" style="color:var(--primary);"></i> حصص النهاردة لكل مدرسين السنتر</h3>
+            </div>
+            <div class="card-body">
+              <div class="field" style="max-width:280px;margin-bottom:14px;">
+                <label>فلترة بمدرس معيّن</label>
+                <select id="scheduleTeacherFilter" onchange="renderSchedule()">
+                  <option value="">كل المدرسين</option>
+                </select>
+              </div>
+              <p style="color:var(--gray-500);font-size:13px;margin-bottom:14px;">
+                عرض فقط — الحصص بتتضاف وتتعدّل من صفحة "المجموعات" عند كل مدرس، مش من هنا. الهدف إنك تشوف تعارض المواعيد بين المدرسين بسهولة.
+              </p>
+              <div id="scheduleContainer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+    const TOKEN_KEY = 'jwtToken';
+    const LOGIN_URL = 'login.html';
+
+    function getToken() { return sessionStorage.getItem(TOKEN_KEY); }
+    function getAuthHeaders() {
+      const token = getToken();
+      if (!token) return null;
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function showToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'info');
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    const centerClientId = sessionStorage.getItem('clientId');
+    if (!centerClientId) window.location.href = LOGIN_URL;
+
+    function handleUnauthorized(message = 'انتهت صلاحية الجلسة') {
+      showToast('⛔ ' + message, 'error');
+      setTimeout(() => {
+        sessionStorage.clear(); localStorage.clear();
+        window.location.href = LOGIN_URL;
+      }, 2000);
+    }
+
+    async function logout() {
+      sessionStorage.clear(); localStorage.clear();
+      window.location.href = LOGIN_URL;
+    }
+
+    function getThemeKey() { return 'theme_' + centerClientId; }
+    (function() {
+      const savedTheme = localStorage.getItem(getThemeKey());
+      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+      else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+    function toggleDarkMode() {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem(getThemeKey(), next);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (window.innerWidth <= 900) {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+    }
+
+    let allSessions = [];
+
+    async function loadSchedule() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) { window.location.href = LOGIN_URL; return; }
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-center', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'listGroupSessions' })
+        });
+        if (response.status === 401) { handleUnauthorized(); return; }
+        const result = await response.json();
+
+        if (!result.success) {
+          document.getElementById('pageLoading').innerHTML = '<p style="color:var(--danger);">❌ ' + escapeHtml(result.message) + '</p>';
+          return;
+        }
+
+        allSessions = result.data || [];
+
+        const filter = document.getElementById('scheduleTeacherFilter');
+        const seen = new Set();
+        allSessions.forEach(s => {
+          if (!seen.has(s.teacherClientId)) {
+            seen.add(s.teacherClientId);
+            const opt = document.createElement('option');
+            opt.value = s.teacherClientId;
+            opt.textContent = s.teacherName;
+            filter.appendChild(opt);
+          }
+        });
+
+        renderSchedule();
+
+        document.getElementById('pageLoading').style.display = 'none';
+        document.getElementById('pageContent').style.display = 'block';
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الجدول:', error);
+        document.getElementById('pageLoading').innerHTML = '<p style="color:var(--danger);">❌ تعذر تحميل البيانات</p>';
+      }
+    }
+
+    // ✅ Aug 2026 (Phase I follow-up 10): بدل الجدول الأسبوعي المتكرر، عرض حصص "النهاردة" الفعلية
+    // اللي اتنشأت عبر كل مدرسي السنتر (النظام القديم القائم على يوم أسبوعي متكرر اتلغى بالكامل)
+    function renderSchedule() {
+      const teacherFilter = document.getElementById('scheduleTeacherFilter').value;
+      const filtered = teacherFilter ? allSessions.filter(s => s.teacherClientId === teacherFilter) : allSessions;
+      const container = document.getElementById('scheduleContainer');
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray-400);font-size:13px;text-align:center;padding:24px;">مفيش حصص اتنشأت النهاردة لسه.</p>';
+        return;
+      }
+
+      const sorted = filtered.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const html = `<div class="table-wrapper">
+        <table>
+          <thead><tr><th>الوقت</th><th>المجموعة</th><th>الحصة</th><th>المدرس</th><th>مهلة الغياب</th></tr></thead>
+          <tbody>
+            ${sorted.map(s => `
+              <tr>
+                <td>${escapeHtml(new Date(s.createdAt).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }))}</td>
+                <td>${escapeHtml(s.groupName)}</td>
+                <td>${escapeHtml(s.sessionLabel || '—')}</td>
+                <td>${escapeHtml(s.teacherName)}${s.instructorName ? ' — ' + escapeHtml(s.instructorName) : ''}</td>
+                <td>${escapeHtml(String(s.absenceThresholdMinutes))} د</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+      container.innerHTML = html;
+    }
+
+    window.onload = function() {
+      loadSchedule();
+    };
+  </script>
+  <script src="branding.js?v=2"></script>
+</body>
+</html>

@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=52">
+  <link rel="stylesheet" href="style.css?v=53">
   <style>
     /* ✅ Batch 22 (بند 4): الشريط العلوي كان بيمشي مع السكرول عادي زي أي عنصر تاني في الصفحة،
        فلما الصفحة تطول (تبويبات + جداول) الطالب يفقد الوصول السريع للإشعارات/الوضع الليلي/الخروج
@@ -60,7 +60,7 @@
 
   <!-- ✅ Batch 24 (بند 8): لافتة إعلانية بعرض الشاشة يتحكم في ظهورها الماستر من إعدادات النظام -->
   <a id="portalAdBanner" href="#" target="_blank" rel="noopener" style="display:none;width:100%;overflow:hidden;">
-    <img id="portalAdBannerImg" style="width:100%;height:auto;max-height:300px;object-fit:contain;display:block;">
+    <img id="portalAdBannerImg" alt="إعلان" style="width:100%;height:auto;max-height:300px;object-fit:contain;display:block;">
   </a>
 
   <div class="portal-container">
@@ -83,7 +83,7 @@
 
       <div class="stats-row">
         <div class="stat-card"><div class="stat-label">📝 امتحانات اتقدّمت لها</div><div class="stat-value primary" id="statExamsTaken">0</div></div>
-        <div class="stat-card"><div class="stat-label">📊 متوسط مستواك الحالي</div><div class="stat-value success" id="statCurrentAvg">0%</div></div>
+        <div class="stat-card stat-card-featured"><div class="stat-label">📊 متوسط مستواك الحالي</div><div class="stat-value success" id="statCurrentAvg">0%</div></div>
         <div class="stat-card"><div class="stat-label">📈 اتجاه المستوى</div><div class="stat-value" id="statTrend">—</div></div>
       </div>
 
@@ -989,8 +989,11 @@
 
     // ✅ فحص دوري — بينشر أي اختبار وصل وقت جدولته تلقائياً (بديل عن جدولة سيرفر مخصصة)
     async function checkScheduledExams() {
-      try { await fetch(PROJECT_URL + '/functions/v1/check-scheduled-exams', { method: 'POST' }); }
-      catch (error) { /* تجاهل بهدوء */ }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        await fetch(PROJECT_URL + '/functions/v1/check-scheduled-exams', { method: 'POST', headers, body: '{}' });
+      } catch (error) { /* تجاهل بهدوء */ }
     }
 
     // ✅ Aug 2026: تبديل تبويبات صفحة الطالب — كل بيانات الصفحة بتتحمّل مرة واحدة في

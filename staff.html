@@ -11,73 +11,13 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=52">
+  <link rel="stylesheet" href="style.css?v=53">
 </head>
 <body>
-    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
   <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
-        <h1>فَصلي</h1>
-      </div>
-
-      <nav class="sidebar-nav">
-        <a href="#" onclick="goBackToDashboard(); return false;" class="sidebar-item "><i class="fas fa-house"></i> الرئيسية</a>
-        <a href="messages.html" class="sidebar-item " id="navMessages"><i class="fas fa-paper-plane"></i> رسائل جماعية</a>
-
-        <div class="sidebar-section-label">🎓 الأكاديمية</div>
-        <a href="students.html" class="sidebar-item " id="navStudents"><i class="fas fa-user-graduate"></i> الطلاب</a>
-        <a href="groups.html" class="sidebar-item " id="navGroups"><i class="fas fa-layer-group"></i> المجموعات</a>
-        <a href="grades.html" class="sidebar-item " id="navGrades"><i class="fas fa-file-pen"></i> الاختبارات</a>
-
-        <div class="sidebar-section-label">💰 المالية</div>
-        <a href="payments.html" class="sidebar-item " id="navPayments"><i class="fas fa-sack-dollar"></i> المدفوعات والمذكرات</a>
-        <a href="financial.html" class="sidebar-item " id="navFinancial" style="display:none;"><i class="fas fa-coins"></i> الدخل الشهري</a>
-
-        <div class="sidebar-section-label">📊 التقارير</div>
-        <a href="reports.html" class="sidebar-item " id="navReports"><i class="fas fa-chart-simple"></i> التقارير</a>
-
-        <div class="sidebar-section-label">⚙️ الإعدادات</div>
-        <a href="activity-log.html" class="sidebar-item " id="navActivityLog" style="display:none;"><i class="fas fa-clock-rotate-left"></i> سجل النشاطات</a>
-        <a href="staff.html" class="sidebar-item active" id="navManageAssistants" style="display:none;"><i class="fas fa-users-gear"></i> إدارة فريق العمل</a>
-        <a href="teacher-settings.html" class="sidebar-item " id="navSettings" style="display:none;"><i class="fas fa-gear"></i> إعدادات الحساب</a>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="avatar" id="userAvatar">م</div>
-          <div class="u-info">
-            <div class="u-name" id="userDisplayName">مرحباً، مدرس</div>
-            <div class="u-role" id="teacherBadge">حساب مدرس</div>
-            <div id="userRoleDisplay" style="display:none;"></div>
-            <span class="permission-badge" id="permissionBadge" style="display:none;font-size:10px;margin-top:4px;"></span>
-          </div>
-        </div>
-        <button class="sidebar-item" id="navResetSystem" onclick="openResetConfirm()" style="color:#FCA5A5;display:none;">
-          <i class="fas fa-triangle-exclamation"></i> إعادة تهيئة النظام
-        </button>
-        <div class="sidebar-footer-actions">
-          <div class="notif-wrap" id="notifWrap" style="display:none;">
-            <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notifBtn" title="الإشعارات">
-              <i class="fas fa-bell"></i>
-              <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-            </button>
-            <div class="notif-panel" id="notifPanel">
-              <div class="notif-panel-header">
-                <span>الإشعارات</span>
-                <button class="notif-mark-all" onclick="markAllRead()">تعليم الكل كمقروء</button>
-              </div>
-              <div class="notif-list" id="notifList">
-                <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">جاري التحميل...</div>
-              </div>
-            </div>
-          </div>
-          <button onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي"><i class="fas fa-moon"></i></button>
-          <button onclick="logout()" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i> خروج</button>
-        </div>
-      </div>
-    </aside>
+    <div id="app-shell-sidebar-slot"></div>
+    <script src="layout.js?v=2"></script>
+    <script>renderShell({active:'staff'});</script>
 
     <div class="main-area">
       <div class="topbar">
@@ -826,13 +766,13 @@
                   <button class="btn btn-warning btn-sm" onclick="openEditModal('${a.id}')" title="تعديل">
                     <i class="fas fa-edit"></i>
                   </button>` : '') + (canDeleteStaff && !isOwnRow ? `
-                  <button class="btn btn-danger btn-sm" onclick="deleteAssistant('${a.id}', '${a.name}')" title="حذف">
+                  <button class="btn btn-danger btn-sm" onclick="deleteAssistant('${a.id}', '${escapeAttr(a.name)}')" title="حذف">
                     <i class="fas fa-trash"></i>
                   </button>` : '') || '—';
 
             html += `<tr>
-              <td><span class="uid-code">${a.username}</span></td>
-              <td><strong>${a.name}</strong></td>
+              <td><span class="uid-code">${escapeHtml(a.username)}</span></td>
+              <td><strong>${escapeHtml(a.name)}</strong></td>
               <td><span class="status-badge ${statusClass}">${statusText}</span></td>
               <td>${lastLogin}</td>
               <td>${permHtml || '—'}</td>
