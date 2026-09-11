@@ -34,10 +34,17 @@ function requireAdmin(payload: TokenPayload) {
   }
 }
 
-/** ✅ صاحب سنتر أو الأدمن الرئيسي — لعمليات تخصيص/عرض الكروت المسموحة للسنتر (مش كل عمليات الأدمن) */
+/**
+ * ✅ (تصحيح باج) صاحب سنتر أو الأدمن الرئيسي — لعمليات تخصيص/عرض الكروت المسموحة للسنتر.
+ * كانت بتفحص role === "center_owner" اللي مش قيمة حقيقية أبداً — بعد إلغاء حساب السنتر
+ * المنفصل، صاحب السنتر بيسجّل دخول بـ role: "teacher" عادي (نفس منطق detectRole في login)،
+ * وبيتفرّق عن مدرس عادي بوجود صف ليه في جدول centers (بنفس الـ client_id) — بالظبط
+ * نفس النمط المستخدم في manage-center.ts. ownCenterId/requireOwnCenterTeacher تحت أصلاً
+ * بيرفضوا (404 "السنتر غير موجود") أي مدرس عادي مالوش صف في centers، فده الحد الحقيقي للصلاحية.
+ */
 function requireAdminOrCenterOwner(payload: TokenPayload): boolean {
   if (payload.role === "teacher" && payload.clientId === "master_admin") return false; // false = أدمن كامل الصلاحية
-  if (payload.role === "center_owner") return true; // true = مقيّد بسنتره بس
+  if (payload.role === "teacher" && payload.clientId) return true; // true = يُفترض صاحب سنتر — هيتأكد فعليًا من جدول centers تحت
   throw new AuthError("⛔ غير مصرح بهذه العملية", 403);
 }
 

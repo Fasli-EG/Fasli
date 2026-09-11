@@ -9,7 +9,9 @@
       "Bash(ls -la \"/c/Users/sapry/AppData/Local/Temp/claude/D--Fasli01/2447fe33-8ae8-46ba-a75a-ab741dc63a1c/scratchpad/fasli-master-plan.html\")",
       "Bash(npx --yes -p typescript@5.6.3 tsc --noEmit --noResolve --skipLibCheck --target es2020 --module esnext supabase/functions/_shared/auth.ts supabase/functions/_shared/rateLimit.ts supabase/functions/check-scheduled-exams/index.ts)",
       "Bash(xargs -0 sed -i 's/\"Access-Control-Allow-Origin\": \"\\\\*\"/\"Access-Control-Allow-Origin\": \"https:\\\\/\\\\/fasli-eg.github.io\"/g')",
-      "Bash(npx --yes -p typescript@5.6.3 tsc --noEmit --noResolve --skipLibCheck --target es2020 --module esnext supabase/functions/login/index.ts supabase/functions/get-dashboard/index.ts supabase/functions/manage-student/index.ts supabase/functions/manage-system-cards/index.ts)"
+      "Bash(npx --yes -p typescript@5.6.3 tsc --noEmit --noResolve --skipLibCheck --target es2020 --module esnext supabase/functions/login/index.ts supabase/functions/get-dashboard/index.ts supabase/functions/manage-student/index.ts supabase/functions/manage-system-cards/index.ts)",
+      "Bash(npx --yes -p typescript@5.6.3 tsc --noEmit --noResolve --skipLibCheck --target es2020 --module esnext supabase/functions/manage-system-cards/index.ts)",
+      "Bash(git checkout *)"
     ]
   }
 }
