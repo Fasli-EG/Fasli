@@ -246,7 +246,7 @@ serve(async (req) => {
       );
     }
 
-    const { clientId, groupName } = await req.json();
+    const { clientId, groupName, title } = await req.json();
     if (clientId && clientId !== tokenClientId) {
       return new Response(
         JSON.stringify({ success: false, message: "⛔ غير مصرح" }),
@@ -262,6 +262,11 @@ serve(async (req) => {
 
     let query = supabase.from("payments").select("*").eq("teacher_id", tokenClientId);
     if (groupName) query = query.eq("group_name", groupName);
+    // ✅ فلترة اختيارية بالبند من السيرفر — لما المستخدم يختار بند معيّن (الاستخدام الأشيع يوميًا)
+    // بنجيب سجلاته بس بدل كل بنود المجموعة، من غير أي تأثير على منطق "غير المسددين" (لسه بيشتغل
+    // بنفس الطريقة، بس على نطاق بند واحد بدل كل البنود مع بعض — الفرونت إند بيطلب طلاب المجموعة
+    // كاملين زي ما هو دايمًا لحساب المقارنة صح)
+    if (title) query = query.eq("title", title);
 
     // ✅ تحسين أداء: كان بيجيب كل سجل مدفوعات للمدرس من غير أي حد، من غير تعديل واجهة الصفحة
     // (اللي متوقعة القائمة كاملة في استجابة واحدة) مش آمن نحط pagination حقيقي دلوقتي — الحد ده

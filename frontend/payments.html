@@ -192,7 +192,7 @@
           <select id="filterGroup" onchange="localStorage.setItem('paymentsFilterGroup_' + clientId, this.value); loadPayments();">
             <option value="ALL">📚 جميع المجموعات</option>
           </select>
-          <select id="filterTitle" onchange="localStorage.setItem('paymentsFilterTitle_' + clientId, this.value); filterTable();">
+          <select id="filterTitle" onchange="localStorage.setItem('paymentsFilterTitle_' + clientId, this.value); loadPayments();">
             <option value="">💰 كل البنود</option>
           </select>
           <select id="filterStatus" onchange="localStorage.setItem('paymentsFilterStatus_' + clientId, this.value); filterTable();">
@@ -990,6 +990,7 @@
     async function loadPayments() {
       const myLoadToken = ++paymentsLoadToken;
       const filterGroup = document.getElementById('filterGroup').value;
+      const filterTitleValue = document.getElementById('filterTitle').value;
       const tbody = document.getElementById('paymentsBody');
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
         '<i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i> جاري التحميل...</td></tr>';
@@ -1002,7 +1003,7 @@
         const [response, studentsResponse] = await Promise.all([
           fetch(PROJECT_URL + '/functions/v1/get-payments', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
+            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup, title: filterTitleValue || null })
           }),
           fetch(PROJECT_URL + '/functions/v1/get-students', {
             method: 'POST', headers: headers,

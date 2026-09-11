@@ -150,7 +150,7 @@
           <select id="filterGroup" onchange="localStorage.setItem('gradesFilterGroup_' + clientId, this.value); loadGrades(); loadFilterExamNames();">
             <option value="ALL">📚 جميع المجموعات</option>
           </select>
-          <select id="filterExam" onchange="localStorage.setItem('gradesFilterExam_' + clientId, this.value); filterTable();">
+          <select id="filterExam" onchange="localStorage.setItem('gradesFilterExam_' + clientId, this.value); loadGrades();">
             <option value="">📝 كل الامتحانات</option>
           </select>
           <input type="number" id="filterScore" onkeyup="filterTable()" placeholder="🎯 درجة محددة..." style="max-width:130px;">
@@ -1745,6 +1745,7 @@
     async function loadGrades() {
       const myLoadToken = ++gradesLoadToken;
       const filterGroup = document.getElementById('filterGroup').value;
+      const filterExamValue = document.getElementById('filterExam').value;
       const tbody = document.getElementById('gradesBody');
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--gray-400);">' +
         '<i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px;"></i> جاري التحميل...</td></tr>';
@@ -1757,7 +1758,7 @@
         const [response, studentsResponse] = await Promise.all([
           fetch(PROJECT_URL + '/functions/v1/get-grades', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup })
+            body: JSON.stringify({ clientId, groupName: filterGroup === 'ALL' ? null : filterGroup, examName: filterExamValue || null })
           }),
           fetch(PROJECT_URL + '/functions/v1/get-students', {
             method: 'POST', headers: headers,

@@ -246,7 +246,7 @@ serve(async (req) => {
       );
     }
 
-    const { clientId, groupName } = await req.json();
+    const { clientId, groupName, examName } = await req.json();
     if (clientId && clientId !== tokenClientId) {
       return new Response(
         JSON.stringify({ success: false, message: "⛔ غير مصرح" }),
@@ -262,6 +262,9 @@ serve(async (req) => {
 
     let query = supabase.from("grades").select("*").eq("teacher_id", tokenClientId);
     if (groupName) query = query.eq("group_name", groupName);
+    // ✅ فلترة اختيارية بالامتحان من السيرفر — نفس فكرة get-payments بالظبط، من غير أي تأثير
+    // على منطق "لم يحضر" (لسه بيشتغل بنفس الطريقة على نطاق امتحان واحد بدل كل الامتحانات)
+    if (examName) query = query.eq("exam_name", examName);
 
     // ✅ تحسين أداء: سقف أمان (٥٠٠٠ سجل) يمنع استعلام بلا حدود فعلي — بدون تعديل واجهة الصفحة
     // اللي متوقعة القائمة كاملة في استجابة واحدة، فمش pagination حقيقي، مجرد حد أقصى دفاعي.
