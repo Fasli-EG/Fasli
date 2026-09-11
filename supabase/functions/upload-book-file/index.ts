@@ -1,25 +1,7 @@
 // supabase/functions/upload-book-file/index.ts
 // ✅ رفع ملف PDF فعلي لمذكرة موجودة، وحذفه لو حبيت تستبدليه
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
-};
-
-interface TokenPayload { sub: string; clientId?: string; teacherId?: string; role: string; name: string; }
-
-async function verifyToken(req: Request): Promise<TokenPayload> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) throw new Error("⚠️ التوكن مطلوب");
-  const token = authHeader.substring(7);
-  const JWT_SECRET = Deno.env.get("JWT_SECRET");
-  if (!JWT_SECRET) throw new Error("⚠️ JWT_SECRET غير مضبوط");
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(JWT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-  return (await verify(token, key, "HS256")) as unknown as TokenPayload;
-}
+import { corsHeaders, verifyToken } from "../_shared/auth.ts";
 
 // ✅ الحد الأقصى لحجم الملف — 8 ميجا (حد معقول لملف PDF مذكرة، وأقل من حد الطلبات المسموح بيه للدوال)
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;

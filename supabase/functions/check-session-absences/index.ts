@@ -1,3 +1,4 @@
+import { verifyToken } from "../_shared/auth.ts";
 // supabase/functions/check-session-absences/index.ts
 // ✅ بتتنادى دورياً (كل ما حد فاتح لوحة التحكم، أو عبر جدولة) — بتفحص كل حصص "النهاردة"
 // (attendance_sessions اللي session_date = تاريخ اليوم) اللي فات عليها مدة احتساب الغياب
@@ -5,7 +6,6 @@
 // وتسجّلهم غايبين + تبعت إشعار. (Aug 2026 — Phase I follow-up 10: استبدال النظام القديم
 // القائم على جدول أسبوعي متكرر group_sessions + عتبة عامة على مستوى المدرس)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
@@ -14,18 +14,6 @@ const corsHeaders = {
   // المدرسين مرة واحدة، بدل الاعتماد بس على فتح لوحة تحكم مدرس بعينه
   "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info, x-cron-secret",
 };
-
-interface TokenPayload { sub: string; clientId?: string; teacherId?: string; role: string; name: string; }
-
-async function verifyToken(req: Request): Promise<TokenPayload> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) throw new Error("⚠️ التوكن مطلوب");
-  const token = authHeader.substring(7);
-  const JWT_SECRET = Deno.env.get("JWT_SECRET");
-  if (!JWT_SECRET) throw new Error("⚠️ JWT_SECRET غير مضبوط");
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(JWT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-  return (await verify(token, key, "HS256")) as unknown as TokenPayload;
-}
 
 // ============================================
 // (من _shared/push.ts — مدموج مباشرة لأن Dashboard لا يدعم الاستيراد بين الدوال)

@@ -1,25 +1,7 @@
 // supabase/functions/take-exam/index.ts
 // ✅ دالة موحّدة لأداء الاختبار (جانب الطالب) — action: start | submit
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
-};
-
-interface TokenPayload { sub: string; role: string; name: string; }
-
-async function verifyToken(req: Request): Promise<TokenPayload> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) throw new Error("⚠️ التوكن مطلوب");
-  const token = authHeader.substring(7);
-  const JWT_SECRET = Deno.env.get("JWT_SECRET");
-  if (!JWT_SECRET) throw new Error("⚠️ JWT_SECRET غير مضبوط");
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(JWT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-  return (await verify(token, key, "HS256")) as unknown as TokenPayload;
-}
+import { corsHeaders, verifyToken } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
