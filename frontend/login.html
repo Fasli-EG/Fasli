@@ -33,131 +33,154 @@
     --shadow-gold:0 4px 0 0 rgba(122,88,6,0.55), 0 22px 44px -12px rgba(242,183,5,0.7);
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
-  html,body{ height:100%; overflow:hidden; }
+  html,body{ min-height:100%; }
   body{
     font-family:'IBM Plex Sans Arabic', sans-serif;
-    background:var(--indigo-deep);
+    background:
+      radial-gradient(1100px 700px at 12% 8%, rgba(242,183,5,0.10), transparent 55%),
+      radial-gradient(900px 600px at 92% 95%, rgba(14,128,116,0.12), transparent 55%),
+      var(--indigo-deep);
     color:var(--ink);
-    height:100vh;
-    position:relative;
-    overflow:hidden;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding:28px 20px;
   }
 
-  /* ===================== خلفية ملء الشاشة (صورة/فيديو) ===================== */
-  /* ✅ Batch 24 (بند 2): كانت الصورة/الفيديو بتتعرض كإطار مصغّر (78% من الشاشة) مايل ومقصوص
-     بحواف مدوّرة وظل وبردر — "كومة صور مكدّسة". اتشالت خاصية التصغير والميلان والحواف بالكامل،
-     وبقت الصورة/الفيديو بيغطّوا الشاشة بالكامل طولاً وعرضاً (100% × 100%، من غير أي تدوير أو
-     تصغير) مع الحفاظ على نسبة العرض إلى الارتفاع الأصلية بمنطق object-fit:cover */
-  /* ✅ (طلب): اتشال "الإطار" اللي كان حوالين الصورة/الفيديو بالكامل (الحد/المسافة الثابتة،
-     البردر الذهبي، الظل، والحواف المدوّرة) — الصورة/الفيديو دلوقتي بيغطّوا الشاشة بالكامل من
-     غير أي إطار حواليهم. اتحافظ على object-fit:contain عشان المحتوى يفضل ظاهر بالكامل ومتغيّر
-     حجمه تلقائي حسب حجم الشاشة (لابتوب / تابلت / موبايل) من غير أي قص أو خروج بره الشاشة. */
-  #imageShowcase{
-    position:fixed; inset:0; z-index:0; overflow:hidden;
-    background:var(--indigo-deep);
+  /* ===================== الإطار الرئيسي: لوحة تعريفية + لوحة الفورم جنب بعض ===================== */
+  .login-shell{
+    width:100%; max-width:1080px;
+    display:grid; grid-template-columns:1.05fr 1fr;
+    border-radius:28px; overflow:hidden;
+    box-shadow:0 50px 100px -30px rgba(0,0,0,0.65);
+    min-height:640px;
   }
+  @media (max-width:860px){ .login-shell{ grid-template-columns:1fr; min-height:auto; max-width:480px; } }
+
+  /* ===================== اللوحة التعريفية: الشعار + الميزات + كروت التحميل + الإعلانات ===================== */
+  .login-ambient{
+    position:relative; overflow:hidden;
+    background:linear-gradient(165deg, #0A1220 0%, #101C33 55%, #0A1220 100%);
+    padding:38px 34px;
+    display:flex; flex-direction:column; gap:22px;
+    color:#fff;
+  }
+
+  /* خلفية صورة/فيديو اختيارية (يتحكم فيها الماستر من الإعدادات) — بتتحط جوه اللوحة دلوقتي
+     بدل ما تغطي الشاشة كلها، فأي مشكلة تحميل/تشغيل فيها بتفضل محصورة في مكانها من غير ما تكسر الصفحة */
+  #imageShowcase{ position:absolute; inset:0; z-index:0; overflow:hidden; }
   #imageShowcase img,
   #imageShowcase video{
-    position:absolute; inset:0; z-index:1;
-    width:100%; height:100%;
-    object-fit:contain;
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
     opacity:0; transition:opacity 1.4s ease;
   }
   #imageShowcase img.active,
-  #imageShowcase video.active{ opacity:1; }
-  #imageShowcase::after{
-    content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
-    background:radial-gradient(circle at 30% 30%, rgba(242,183,5,0.08), transparent 60%);
+  #imageShowcase video.active{ opacity:0.32; }
+  .ambient-overlay{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:linear-gradient(180deg, rgba(10,18,32,0.15) 0%, rgba(10,18,32,0.9) 100%);
   }
-  /* ✅ تدرج غامق خلف منطقة النصوص (يمين الشاشة) عشان الكلام يفضل واضح مهما كان لون الصورة تحته */
-  #readabilityOverlay{
-    position:fixed; inset:0; z-index:1; pointer-events:none;
-    background:linear-gradient(to left, rgba(5,8,15,0.88) 0%, rgba(5,8,15,0.6) 22%, transparent 42%);
-  }
-  /* ===================== الثلث الأيمن: الشعار + كروت التحميل + النصوص + الإعلانات ===================== */
-  .right-third{
-    position:fixed; top:0; bottom:0; right:0;
-    width:min(420px, 34vw); min-width:300px;
-    z-index:2;
-    background:transparent;
-    display:flex; flex-direction:column;
-    padding:22px 24px 16px;
-    overflow:hidden;
-    justify-content:space-evenly;
-    gap:10px;
-  }
-  @media (max-width:860px){
-    .right-third{ position:relative; top:auto; bottom:auto; right:auto; width:100%; min-width:0; height:auto; }
-  }
+  .ambient-orbs{ position:absolute; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
+  .orb{ position:absolute; border-radius:50%; filter:blur(46px); }
+  .orb-gold{ width:280px; height:280px; background:rgba(242,183,5,0.4); top:-70px; inset-inline-end:-50px; }
+  .orb-teal{ width:320px; height:320px; background:rgba(14,128,116,0.42); bottom:-90px; inset-inline-start:-60px; }
+  @media (prefers-reduced-motion:no-preference){ .orb{ animation:orbPulse 8s ease-in-out infinite; } .orb-teal{ animation-delay:2s; } }
+  @keyframes orbPulse{ 0%,100%{ opacity:0.85; transform:scale(1); } 50%{ opacity:1; transform:scale(1.12); } }
+
+  .ambient-content{ position:relative; z-index:2; display:flex; flex-direction:column; gap:22px; height:100%; }
 
   .lockup{ display:flex; align-items:center; gap:10px; }
-  .mark{ width:46px; height:46px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.4); box-shadow:0 4px 14px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
+  .mark{ width:44px; height:44px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.35); box-shadow:0 4px 14px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; background:#fff; }
   .mark img{ width:82%; height:82%; object-fit:contain; }
-  .wordmark{ font-family:var(--font-display); font-weight:900; font-size:32px; line-height:1; direction:rtl; color:#fff; }
-  .wordmark span{ color:#5FBF9A; }
-  .tagline{
-    font-size:14px; color:rgba(255,255,255,0.9); margin-bottom:6px; font-weight:700;
-  }
+  .wordmark{ font-family:var(--font-display); font-weight:900; font-size:28px; line-height:1; direction:rtl; color:#fff; }
+  .wordmark span{ color:var(--coral); }
+  .tagline{ font-size:13.5px; color:rgba(255,255,255,0.85); font-weight:700; }
 
   .brand-copy h1{
     font-family:var(--font-display); font-weight:800; color:#fff;
-    font-size:22px; line-height:1.3; margin-bottom:8px;
+    font-size:21px; line-height:1.35; margin-bottom:8px;
   }
-  .brand-copy p{ color:rgba(255,255,255,0.8); font-size:13.5px; line-height:1.6; font-weight:500; }
+  .brand-copy p{ color:rgba(255,255,255,0.75); font-size:13px; line-height:1.65; font-weight:500; }
 
   .features{ list-style:none; display:flex; flex-direction:column; gap:8px; margin-top:14px; }
-  .features li{ display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; color:#fff; }
+  .features li{ display:flex; align-items:center; gap:9px; font-size:13px; font-weight:700; color:#fff; }
   .features .chk{
-    width:18px; height:18px; border-radius:5px; background:rgba(255,255,255,0.14);
+    width:18px; height:18px; border-radius:5px; background:rgba(242,183,5,0.22);
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
   .features .chk svg{ width:10px; height:10px; }
 
-  /* ===================== الكارت الزجاجي العائم في منتصف الصفحة ===================== */
-  .glass-card-wrapper{
-    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-    z-index:20; width:min(360px, 90vw); max-height:92vh; overflow-y:auto;
-    scrollbar-width:none; -ms-overflow-style:none;
-  }
-  .glass-card-wrapper::-webkit-scrollbar{ display:none; }
-  @media (max-width:860px){ .glass-card-wrapper{ position:relative; top:auto; left:auto; transform:none; margin:0 auto; } }
+  .hero-card{ position:relative; }
+  .extra-content{ flex:1; display:flex; flex-direction:column; justify-content:center; }
 
-  .form-box{
-    width:100%;
-    background:rgba(11,28,51,0.6);
-    backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
-    border:1px solid rgba(255,255,255,0.18);
-    border-radius:20px;
-    padding:26px 24px;
-    box-shadow:0 40px 90px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(242,183,5,0.1);
+  .download-section{ display:flex; flex-direction:column; }
+  .download-section-title{ font-size:11.5px; font-weight:700; color:rgba(255,255,255,0.6); margin-bottom:8px; }
+  .download-cards{ display:flex; gap:10px; }
+  .download-icon-btn{
+    width:52px; height:52px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14);
+    border-radius:14px; text-decoration:none; transition:all 0.2s;
   }
-  .form-box h2{ font-family:var(--font-display); font-weight:800; font-size:22px; margin-bottom:6px; color:#fff; }
-  .form-box .lede{ color:rgba(255,255,255,0.65); font-size:13.5px; margin-bottom:24px; }
+  .download-icon-btn:hover{ background:var(--gradient-gold); border-color:transparent; transform:translateY(-2px); }
+  .download-icon-btn .dc-icon{ font-size:24px; }
+
+  .login-ads{ width:100%; display:none; }
+  .login-ads-viewport{ position:relative; }
+  .login-ads-track{
+    display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory;
+    scroll-behavior:smooth; padding-bottom:4px;
+    -ms-overflow-style:none; scrollbar-width:none;
+  }
+  .login-ads-track::-webkit-scrollbar{ display:none; }
+  .login-ad-slide{
+    flex:0 0 auto; width:min(200px, 60%); aspect-ratio:4/3; scroll-snap-align:start;
+    border-radius:12px; overflow:hidden; background:rgba(255,255,255,0.04); display:block;
+  }
+  .login-ad-slide img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .login-ads-arrow{
+    position:absolute; top:50%; transform:translateY(-50%); z-index:3;
+    width:30px; height:30px; border-radius:50%; border:1px solid rgba(255,255,255,0.25);
+    background:rgba(15,17,23,0.7); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:18px; line-height:1; transition:background .2s; padding:0; padding-bottom:2px;
+  }
+  .login-ads-arrow:hover{ background:rgba(15,17,23,0.92); }
+  .login-ads-arrow.prev{ inset-inline-start:-4px; }
+  .login-ads-arrow.next{ inset-inline-end:-4px; }
+
+  /* ===================== لوحة الفورم: خلفية فاتحة، تباين واضح مع اللوحة الغامقة ===================== */
+  .login-form-panel{
+    background:#fff; padding:44px 40px;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  @media (max-width:520px){ .login-form-panel{ padding:32px 24px; } }
+
+  .form-eyebrow{ font-family:var(--font-display); font-weight:700; font-size:12px; color:var(--teal); letter-spacing:.02em; margin-bottom:6px; }
+  .form-box h2{ font-family:var(--font-display); font-weight:800; font-size:24px; margin-bottom:6px; color:var(--ink); }
+  .form-box .lede{ color:var(--muted); font-size:13.5px; margin-bottom:24px; }
 
   .tabs{
-    display:flex; gap:8px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1);
+    display:flex; gap:8px; background:var(--surface-soft); border:1px solid var(--line);
     border-radius:14px; padding:6px; margin-bottom:24px;
   }
   .tab{
     flex:1; border:none; background:transparent; border-radius:10px;
     padding:10px 4px; font-family:'IBM Plex Sans Arabic',sans-serif; font-weight:700;
-    font-size:13px; color:rgba(255,255,255,0.6); cursor:pointer; transition:all .18s ease;
+    font-size:13px; color:var(--muted); cursor:pointer; transition:all .18s ease;
     display:flex; flex-direction:column; align-items:center; gap:3px;
   }
   .tab .tab-emoji{ font-size:18px; }
-  .tab.active{ background:var(--gradient-gold); color:var(--indigo); box-shadow:0 10px 24px -8px rgba(242,183,5,0.55); transform:translateY(-1px); }
+  .tab.active{ background:var(--gradient-gold); color:var(--indigo); box-shadow:0 10px 24px -8px rgba(242,183,5,0.5); transform:translateY(-1px); }
 
   form{ display:flex; flex-direction:column; gap:16px; }
-  .field label{ display:block; font-size:12.5px; font-weight:600; color:rgba(255,255,255,0.85); margin-bottom:7px; }
+  .field label{ display:block; font-size:12.5px; font-weight:600; color:#374151; margin-bottom:7px; }
   .field input{
-    width:100%; border:1.5px solid rgba(255,255,255,0.16); border-radius:10px;
+    width:100%; border:1.5px solid var(--line); border-radius:10px;
     padding:11px 13px; font-family:'IBM Plex Mono', monospace; font-size:14.5px;
-    color:#fff; background:rgba(255,255,255,0.06); transition:border-color .15s ease, box-shadow .15s ease;
+    color:var(--ink); background:#FCFBF8; transition:border-color .15s ease, box-shadow .15s ease;
   }
-  .field input::placeholder{ font-family:'IBM Plex Sans Arabic',sans-serif; color:rgba(255,255,255,0.35); font-size:13.5px; }
-  .field input:focus{ outline:none; border-color:var(--coral); box-shadow:0 0 0 3px rgba(242,183,5,0.15); }
-  .hint{ font-size:11.5px; color:rgba(255,255,255,0.5); margin-top:6px; }
-  .hint strong{ color:var(--coral); }
+  .field input::placeholder{ font-family:'IBM Plex Sans Arabic',sans-serif; color:#9CA3AF; font-size:13.5px; }
+  .field input:focus{ outline:none; border-color:var(--coral); box-shadow:0 0 0 3px rgba(242,183,5,0.16); }
+  .hint{ font-size:11.5px; color:#6B7280; margin-top:6px; }
+  .hint strong{ color:var(--coral-deep); }
 
   .submit{
     margin-top:8px; background:var(--gradient-gold); color:#0B1C33; border:none; border-radius:12px;
@@ -170,184 +193,136 @@
   .submit:disabled{ opacity:.6; cursor:not-allowed; }
 
   .spinner{
-    display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.4);
-    border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; margin-left:6px;
+    display:inline-block; width:14px; height:14px; border:2px solid rgba(11,28,51,0.3);
+    border-top-color:#0B1C33; border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; margin-left:6px;
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
   .message{ margin-top:16px; font-size:13px; line-height:1.8; padding:11px 13px; border-radius:10px; display:none; }
-  .message.error{ display:block; background:rgba(229,72,77,0.15); color:#FF8A8D; }
-  .message.success{ display:block; background:rgba(31,170,109,0.15); color:#6FE0A8; }
-  .message.warning{ display:block; background:rgba(229,72,77,0.15); color:#F2B8A0; }
+  .message.error{ display:block; background:var(--danger-soft); color:#B32A2E; }
+  .message.success{ display:block; background:var(--success-soft); color:#15803D; }
+  .message.warning{ display:block; background:#FCF1E1; color:#9A5B0F; }
 
-  .foot-note{ margin-top:24px; text-align:center; font-size:12px; color:rgba(255,255,255,0.5); }
+  .foot-note{ margin-top:24px; text-align:center; font-size:12px; color:#9CA3AF; }
   .social-links{ display:flex; justify-content:center; gap:14px; margin-top:14px; }
   .social-links a{
     width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-    color:#fff; transition:all .15s ease; box-shadow:0 2px 8px rgba(0,0,0,0.25);
+    color:#fff; transition:all .15s ease; box-shadow:0 2px 8px rgba(0,0,0,0.18);
   }
   .social-links a:hover{ transform:translateY(-2px) scale(1.05); filter:brightness(1.1); }
   .social-links a svg{ width:18px; height:18px; }
-  .credit-note{ margin-top:18px; text-align:center; font-size:11.5px; color:rgba(255,255,255,0.45); }
-  .credit-note a{ color:var(--coral); font-weight:600; text-decoration:none; }
+  .credit-note{ margin-top:18px; text-align:center; font-size:11.5px; color:#9CA3AF; }
+  .credit-note a{ color:var(--coral-deep); font-weight:600; text-decoration:none; }
   .credit-note a:hover{ text-decoration:underline; }
 
   @media (max-width:860px){
-    html,body{ overflow-y:auto; height:auto; min-height:100%; }
-    body{ flex-direction:column; height:auto; }
-    .right-third{ max-height:none; overflow:visible; padding:24px 20px; }
+    .login-ambient{ padding:28px 24px; }
     .extra-content{ display:none; }
-    .lockup{ margin-bottom:6px; justify-content:center; }
-    .download-cards{ max-width:none; }
-    .login-ads{ order:99; margin:16px auto 0; max-width:320px; }
+    .lockup{ justify-content:center; }
+    .download-cards{ justify-content:center; }
   }
-  @media (max-width:520px){ .download-cards{ flex-direction:column; } }
   @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
   :focus-visible{ outline:2px solid var(--indigo); outline-offset:2px; }
-
-  .download-cards{ display:flex; gap:12px; justify-content:center; }
-  .login-ads{ width:100%; max-width:none; display:none; }
-  .login-ads-viewport{ position:relative; }
-  .login-ads-track{
-    display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
-    scroll-behavior:smooth; padding-bottom:4px;
-    -ms-overflow-style:none; scrollbar-width:none;
-  }
-  .login-ads-track::-webkit-scrollbar{ display:none; }
-  .login-ad-slide{
-    flex:0 0 auto; width:min(260px, 68%); aspect-ratio:4/3; scroll-snap-align:start;
-    border-radius:12px; overflow:hidden; background:rgba(255,255,255,0.04); display:block;
-  }
-  .login-ad-slide img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .login-ads-arrow{
-    position:absolute; top:50%; transform:translateY(-50%); z-index:3;
-    width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.25);
-    background:rgba(15,17,23,0.65); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    font-size:20px; line-height:1; transition:background .2s; padding:0; padding-bottom:3px;
-  }
-  .login-ads-arrow:hover{ background:rgba(15,17,23,0.9); }
-  .login-ads-arrow.prev{ right:-6px; }
-  .login-ads-arrow.next{ left:-6px; }
-
-
-  .download-section{ flex-direction:column; }
-  .download-section-title{ font-size:12px; font-weight:700; color:rgba(255,255,255,0.65); margin-bottom:8px; text-align:center; }
-  .download-icon-btn{
-    width:64px; height:64px; display:flex; align-items:center; justify-content:center;
-    background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16);
-    border-radius:16px; text-decoration:none; transition:all 0.2s;
-  }
-  .download-icon-btn:hover{ background:var(--coral); border-color:var(--coral); transform:translateY(-2px); }
-  .download-icon-btn .dc-icon{ font-size:30px; }
-
-  .hero-card{
-    position:relative; z-index:1;
-  }
-
-  /* ✅ اتجاه بصري جديد: توهج خلف الكارت العائم يدّي إحساس عمق بدل الخلفية المسطحة */
-  .ambient-glow{
-    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:680px; height:680px; z-index:10; pointer-events:none;
-    background:
-      radial-gradient(closest-side at 35% 35%, rgba(242,183,5,0.55), transparent 60%),
-      radial-gradient(closest-side at 68% 65%, rgba(14,128,116,0.45), transparent 62%);
-    filter:blur(30px);
-  }
-  @media (max-width:860px){ .ambient-glow{ display:none; } }
-  @media (prefers-reduced-motion:no-preference){ .ambient-glow{ animation:glowPulse 6s ease-in-out infinite; } }
-  @keyframes glowPulse{ 0%,100%{ opacity:0.8; transform:translate(-50%,-50%) scale(1); } 50%{ opacity:1; transform:translate(-50%,-50%) scale(1.06); } }
 </style>
 </head>
 <body>
 
-<div class="right-third">
-  <div class="lockup">
-    <div class="mark"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
-    <div class="wordmark">فَصلي</div>
-  </div>
-
-  <div class="download-section" id="downloadCards" style="display:none;">
-    <div class="download-section-title">حمّله دلوقتي</div>
-    <div class="download-cards">
-      <a href="#" id="desktopDownloadCard" class="download-icon-btn" style="display:none;" target="_blank" rel="noopener" title="تحميل للكمبيوتر" aria-label="تحميل للكمبيوتر">
-        <span class="dc-icon">💻</span>
-      </a>
-      <a href="#" id="mobileDownloadCard" class="download-icon-btn" style="display:none;" target="_blank" rel="noopener" title="تطبيق الهاتف" aria-label="تطبيق الهاتف">
-        <span class="dc-icon">📱</span>
-      </a>
-    </div>
-  </div>
-
-  <div class="hero-card extra-content">
-    <div class="tagline">إدارة دقيقة لسنترك، بلا فوضى</div>
-    <div class="brand-copy">
-      <h1>وداعاً لدفاتر الحضور والدرجات الورقية.</h1>
-      <p>فَصلي بيجمّعلك كل حاجة عن سنترك في مكان واحد — وبتوفّر وقتك عشان تركّز في التدريس، مش في الأوراق.</p>
-      <!-- ✅ Batch 23 (بند 11): قائمة المميزات كانت 3 بنود بس (حضور/درجات/متابعة أولياء الأمور)
-           من أيام أول إصدار، ومكانتش بتعكس أي حاجة اتضافت بعد كده (كروت NFC، الاختبارات
-           الإلكترونية، فريق العمل بصلاحيات مفصّلة، المحادثات المباشرة مع أولياء الأمور، إدارة
-           سنتر بمدرسين متعددين). بقت 6 بنود بتغطي أهم المميزات الفعلية للنظام دلوقتي -->
-      <ul class="features">
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> تسجيل الحضور بكارت NFC في ثانية واحدة</li>
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> اختبارات إلكترونية وتصحيح ودرجات أوتوماتيك</li>
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> إدارة سنتر بمدرسين ومجموعات متعددة من حساب واحد</li>
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> فريق عمل بصلاحيات مفصّلة تتحكم فيها إنت</li>
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> محادثة مباشرة مع أولياء الأمور من غير واتساب</li>
-        <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> أولياء الأمور يتابعوا الدرجات والحضور والمدفوعات لحظياً</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="hero-card login-ads" id="loginAds">
-    <div class="login-ads-viewport">
-      <button class="login-ads-arrow prev" id="loginAdsPrev" aria-label="السابق" onclick="scrollLoginAds(1)">›</button>
-      <div class="login-ads-track" id="loginAdsTrack"></div>
-      <button class="login-ads-arrow next" id="loginAdsNext" aria-label="التالي" onclick="scrollLoginAds(-1)">‹</button>
-    </div>
-  </div>
-</div>
-
-<div id="imageShowcase" aria-hidden="true"></div>
-<div id="readabilityOverlay" aria-hidden="true"></div>
-
-<div class="ambient-glow"></div>
-<div class="glass-card-wrapper">
-  <div class="form-box">
-    <h2>تسجيل الدخول</h2>
-    <p class="lede">ادخل بياناتك للمتابعة إلى حسابك</p>
-
-    <div class="tabs" role="tablist" aria-label="نوع الحساب">
-      <button type="button" class="tab active" data-group="staff" onclick="selectGroup('staff')" role="tab" aria-selected="true"><span class="tab-emoji">👥</span> الطاقم (سنتر / مدرس / مساعد)</button>
-      <button type="button" class="tab" data-group="family" onclick="selectGroup('family')" role="tab" aria-selected="false"><span class="tab-emoji">👨‍👩‍👧</span> الأسرة (ولي أمر / طالب)</button>
+<div class="login-shell">
+  <div class="login-ambient">
+    <div id="imageShowcase" aria-hidden="true"></div>
+    <div class="ambient-overlay" aria-hidden="true"></div>
+    <div class="ambient-orbs" aria-hidden="true">
+      <div class="orb orb-gold"></div>
+      <div class="orb orb-teal"></div>
     </div>
 
-    <form id="loginForm" onsubmit="handleLogin(event)">
-      <div class="field">
-        <label id="usernameLabel" for="username">كود المدرس (Client ID)</label>
-        <input type="text" id="username" placeholder="مثال: teacher_001" autocomplete="username" required>
-        <div class="hint" id="usernameHint">أدخل الكود الخاص بك من الإدارة</div>
-      </div>
-      <div class="field">
-        <label for="password">كلمة المرور</label>
-        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
-        <div class="hint" id="passwordHint">لأول مرة، استخدم <strong>نفس الكود</strong> ككلمة مرور</div>
+    <div class="ambient-content">
+      <div class="lockup">
+        <div class="mark"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
+        <div class="wordmark">فَصلي</div>
       </div>
 
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,0.75);cursor:pointer;margin-bottom:4px;">
-        <input type="checkbox" id="rememberMe" checked style="width:16px;height:16px;cursor:pointer;">
-        تذكرني (متطلبش تسجيل دخول تاني على الجهاز ده)
-      </label>
+      <div class="hero-card extra-content">
+        <div class="tagline">إدارة دقيقة لسنترك، بلا فوضى</div>
+        <div class="brand-copy">
+          <h1>وداعاً لدفاتر الحضور والدرجات الورقية.</h1>
+          <p>فَصلي بيجمّعلك كل حاجة عن سنترك في مكان واحد — وبتوفّر وقتك عشان تركّز في التدريس، مش في الأوراق.</p>
+          <!-- ✅ Batch 23 (بند 11): قائمة المميزات كانت 3 بنود بس (حضور/درجات/متابعة أولياء الأمور)
+               من أيام أول إصدار، ومكانتش بتعكس أي حاجة اتضافت بعد كده (كروت NFC، الاختبارات
+               الإلكترونية، فريق العمل بصلاحيات مفصّلة، المحادثات المباشرة مع أولياء الأمور، إدارة
+               سنتر بمدرسين متعددين). بقت 6 بنود بتغطي أهم المميزات الفعلية للنظام دلوقتي -->
+          <ul class="features">
+            <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> تسجيل الحضور بكارت NFC في ثانية واحدة</li>
+            <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> اختبارات إلكترونية وتصحيح ودرجات أوتوماتيك</li>
+            <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> إدارة سنتر بمدرسين ومجموعات متعددة من حساب واحد</li>
+            <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> فريق عمل بصلاحيات مفصّلة تتحكم فيها إنت</li>
+            <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> محادثة مباشرة مع أولياء الأمور من غير واتساب</li>
+            <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#5FBF9A" stroke-width="3" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></span> أولياء الأمور يتابعوا الدرجات والحضور والمدفوعات لحظياً</li>
+          </ul>
+        </div>
+      </div>
 
-      <button type="submit" class="submit" id="loginBtn">
-        <span id="loginText">تسجيل الدخول</span>
-      </button>
-    </form>
+      <div class="download-section" id="downloadCards" style="display:none;">
+        <div class="download-section-title">حمّله دلوقتي</div>
+        <div class="download-cards">
+          <a href="#" id="desktopDownloadCard" class="download-icon-btn" style="display:none;" target="_blank" rel="noopener" title="تحميل للكمبيوتر" aria-label="تحميل للكمبيوتر">
+            <span class="dc-icon">💻</span>
+          </a>
+          <a href="#" id="mobileDownloadCard" class="download-icon-btn" style="display:none;" target="_blank" rel="noopener" title="تطبيق الهاتف" aria-label="تطبيق الهاتف">
+            <span class="dc-icon">📱</span>
+          </a>
+        </div>
+      </div>
 
-    <div id="message" class="message"></div>
+      <div class="hero-card login-ads" id="loginAds">
+        <div class="login-ads-viewport">
+          <button class="login-ads-arrow prev" id="loginAdsPrev" aria-label="السابق" onclick="scrollLoginAds(1)">›</button>
+          <div class="login-ads-track" id="loginAdsTrack"></div>
+          <button class="login-ads-arrow next" id="loginAdsNext" aria-label="التالي" onclick="scrollLoginAds(-1)">‹</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <p class="foot-note">بتسجيل الدخول أنت توافق على استخدام النظام لإدارة بيانات فصلك</p>
-    <div class="social-links" id="socialLinks"></div>
-    <p class="credit-note" id="creditNote">تم تصميم هذه المنصة بكل حب من <a href="https://wa.me/201007702434" target="_blank" rel="noopener">Sabry Elgammal</a></p>
+  <div class="login-form-panel">
+    <div class="form-box">
+      <div class="form-eyebrow">مرحباً بعودتك</div>
+      <h2>تسجيل الدخول</h2>
+      <p class="lede">ادخل بياناتك للمتابعة إلى حسابك</p>
+
+      <div class="tabs" role="tablist" aria-label="نوع الحساب">
+        <button type="button" class="tab active" data-group="staff" onclick="selectGroup('staff')" role="tab" aria-selected="true"><span class="tab-emoji">👥</span> الطاقم (سنتر / مدرس / مساعد)</button>
+        <button type="button" class="tab" data-group="family" onclick="selectGroup('family')" role="tab" aria-selected="false"><span class="tab-emoji">👨‍👩‍👧</span> الأسرة (ولي أمر / طالب)</button>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="field">
+          <label id="usernameLabel" for="username">كود المدرس (Client ID)</label>
+          <input type="text" id="username" placeholder="مثال: teacher_001" autocomplete="username" required>
+          <div class="hint" id="usernameHint">أدخل الكود الخاص بك من الإدارة</div>
+        </div>
+        <div class="field">
+          <label for="password">كلمة المرور</label>
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+          <div class="hint" id="passwordHint">لأول مرة، استخدم <strong>نفس الكود</strong> ككلمة مرور</div>
+        </div>
+
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#4B5563;cursor:pointer;margin-bottom:4px;">
+          <input type="checkbox" id="rememberMe" checked style="width:16px;height:16px;cursor:pointer;">
+          تذكرني (متطلبش تسجيل دخول تاني على الجهاز ده)
+        </label>
+
+        <button type="submit" class="submit" id="loginBtn">
+          <span id="loginText">تسجيل الدخول</span>
+        </button>
+      </form>
+
+      <div id="message" class="message"></div>
+
+      <p class="foot-note">بتسجيل الدخول أنت توافق على استخدام النظام لإدارة بيانات فصلك</p>
+      <div class="social-links" id="socialLinks"></div>
+      <p class="credit-note" id="creditNote">تم تصميم هذه المنصة بكل حب من <a href="https://wa.me/201007702434" target="_blank" rel="noopener">Sabry Elgammal</a></p>
+    </div>
   </div>
 </div>
 
