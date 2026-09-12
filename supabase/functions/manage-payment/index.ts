@@ -3,7 +3,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { corsHeaders, TokenPayload, AuthError, verifyToken, requireTeacherPlanPermission, requireAssistantPermission, authErrorResponse } from "../_shared/auth.ts";
-import { recordPayments } from "../_shared/payments.ts";
+import { recordPayments, updatePaymentAmount } from "../_shared/payments.ts";
 
 interface ServiceAccount { client_email: string; private_key: string; project_id: string; }
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
@@ -112,87 +112,13 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const { data: oldPayment, error: fetchError } = await supabase
-    .from("payments").select("amount, total_amount, title, student_uid, student_name, group_name, teacher_id").eq("id", paymentId).single();
-  if (fetchError || !oldPayment) {
-    return new Response(JSON.stringify({ success: false, message: "الدفعة غير موجودة" }),
-      { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-  if (oldPayment.teacher_id !== tokenClientId) {
-    return new Response(JSON.stringify({ success: false, message: "⛔ هذه الدفعة ليست تابعاً لك" }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
+  const result = await updatePaymentAmount(
+    supabase,
+    { paymentId, tokenClientId, newAmount: Number(amount), assistantId, assistantName },
+    sendPushToRecipient
+  );
 
-  const oldAmount = oldPayment.amount;
-  const newAmount = Number(amount);
-  if (isNaN(newAmount) || newAmount < 0) {
-    return new Response(JSON.stringify({ success: false, message: "⚠️ أدخل مبلغاً صحيحاً" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-  if (newAmount > oldPayment.total_amount) {
-    return new Response(JSON.stringify({ success: false, message: `⚠️ المبلغ المدفوع (${newAmount}) مايصحش يكون أكبر من قيمة الاشتراك (${oldPayment.total_amount})` }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-  if (oldAmount === newAmount) {
-    return new Response(JSON.stringify({ success: true, message: "لا توجد تغييرات في المبلغ" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-
-  const { data: updatedPayment, error: updateError } = await supabase.from("payments").update({ amount: newAmount }).eq("id", paymentId).select().single();
-  if (updateError) {
-    console.error("❌ فشل تحديث الدفعة:", updateError);
-    return new Response(JSON.stringify({ success: false, message: `فشل تحديث الدفعة: ${updateError.message}` }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-
-  let teacherName = "مدرس";
-  if (oldPayment.teacher_id) {
-    const { data: teacher, error: teacherError } = await supabase.from("teachers").select("name").eq("client_id", oldPayment.teacher_id).maybeSingle();
-    if (!teacherError && teacher) teacherName = teacher.name || "مدرس";
-  }
-
-  const performerId = assistantId || oldPayment.teacher_id;
-  const performerRole = assistantId ? "assistant" : "teacher";
-  const performerName = assistantId ? (assistantName || "مساعد") : teacherName;
-  const wasFullPaid = oldAmount >= oldPayment.total_amount;
-  const isFullPaid = newAmount >= oldPayment.total_amount;
-
-  await supabase.from("activity_logs").insert({
-    client_id: oldPayment.teacher_id, teacher_id: oldPayment.teacher_id, assistant_id: assistantId ? parseInt(assistantId) : null,
-    action_type: "edit_payment", entity_type: "payment", entity_id: String(paymentId),
-    details: {
-      student_name: oldPayment.student_name, student_uid: oldPayment.student_uid, title: oldPayment.title, total_amount: oldPayment.total_amount,
-      old_amount: oldAmount, new_amount: newAmount, group_name: oldPayment.group_name,
-      changes: { amount: { old: oldAmount, new: newAmount }, status: { old: wasFullPaid ? "مدفوع بالكامل" : (oldAmount > 0 ? "دفعة جزئية" : "غير مدفوع"), new: isFullPaid ? "مدفوع بالكامل" : (newAmount > 0 ? "دفعة جزئية" : "غير مدفوع") } },
-    },
-    performer_id: performerId, performer_role: performerRole, performer_name: performerName,
-  });
-
-  const { data: studentForNotif } = await supabase.from("students").select("parent_phone").eq("uid", oldPayment.student_uid).maybeSingle();
-  {
-    const statusText = isFullPaid ? "مدفوع بالكامل" : (newAmount > 0 ? "دفعة جزئية" : "غير مدفوع");
-    const editNotifRows = [
-      ...(studentForNotif?.parent_phone ? [{
-        teacher_id: oldPayment.teacher_id, parent_phone: studentForNotif.parent_phone, student_uid: oldPayment.student_uid, type: "payment", title: "تعديل دفعة", audience: "parent",
-        message: `تم تعديل دفعة "${oldPayment.title}" لـ ${oldPayment.student_name} من ${oldAmount} ج.م إلى ${newAmount} ج.م (${statusText})`,
-        details: { student_name: oldPayment.student_name, title: oldPayment.title, old_amount: oldAmount, new_amount: newAmount, total_amount: oldPayment.total_amount, status: statusText },
-      }] : []),
-      {
-        teacher_id: oldPayment.teacher_id, student_uid: oldPayment.student_uid, type: "payment", title: "تعديل دفعة", audience: "student",
-        message: `تم تعديل دفعتك "${oldPayment.title}" من ${oldAmount} ج.م إلى ${newAmount} ج.م (${statusText})`,
-        details: { title: oldPayment.title, old_amount: oldAmount, new_amount: newAmount, total_amount: oldPayment.total_amount, status: statusText },
-      },
-    ];
-    await supabase.from("notifications").insert(editNotifRows).then(({ error }: any) => { if (error) console.error("⚠️ فشل إرسال إشعار تعديل الدفعة:", error.message); });
-    if (studentForNotif?.parent_phone) {
-      sendPushToRecipient(supabase, "parent", studentForNotif.parent_phone, "تعديل دفعة", `تم تعديل دفعة "${oldPayment.title}" لـ ${oldPayment.student_name} من ${oldAmount} ج.م إلى ${newAmount} ج.م (${statusText})`);
-    }
-    // ✅ (طلب) الطالب مكانش بيوصله Push حقيقي أبداً على أي تعديل دفعة، بس إشعار جوه التطبيق
-    sendPushToRecipient(supabase, "student", oldPayment.student_uid, "تعديل دفعة", `تم تعديل دفعتك "${oldPayment.title}" من ${oldAmount} ج.م إلى ${newAmount} ج.م (${statusText})`);
-  }
-
-  return new Response(JSON.stringify({ success: true, message: "تم تحديث الدفعة بنجاح", data: updatedPayment, changes: { amount: { old: oldAmount, new: newAmount } } }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(result), { status: result.status || 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
 // ============================================

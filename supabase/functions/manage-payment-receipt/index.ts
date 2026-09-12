@@ -5,7 +5,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { corsHeaders, TokenPayload, AuthError, verifyToken, requireTeacherPlanPermission, requireAssistantPermission, requireParentPhone, authErrorResponse } from "../_shared/auth.ts";
-import { recordPayments } from "../_shared/payments.ts";
+import { recordPayments, updatePaymentAmount } from "../_shared/payments.ts";
 
 const BUCKET = "payment-receipts";
 // ✅ صور موبايل حقيقية (تصوير إيصال) — أكبر شوية من حد صور أسئلة الامتحانات (4 ميجا)
@@ -220,11 +220,23 @@ async function handleApprove(supabase: any, payload: TokenPayload, body: any) {
   if (receipt.teacher_id !== tokenClientId) return jsonResponse({ success: false, message: "⛔ هذا الإيصال ليس تابعاً لك" }, 403);
   if (receipt.status !== "pending") return jsonResponse({ success: false, message: "⚠️ الإيصال ده اتراجع بالفعل" }, 409);
 
-  const result = await recordPayments(
-    supabase,
-    { clientId, uidsList: [receipt.student_uid], title: receipt.title, totalAmount: Number(receipt.total_amount), amount: Number(receipt.claimed_amount), assistantId, assistantName, groupName: receipt.group_name },
-    sendPushToRecipient
-  );
+  // ✅ لو فيه صف دفعة موجود بالفعل لنفس الطالب+البند (حالة الدفعة الجزئية)، لازم نعدّل
+  // مبلغه لا نحاول نضيف صف جديد — recordPayments هيرفضه كـ"مسدّد بالفعل" لأي صف موجود
+  // أصلاً حتى لو جزئي، بما إنها مبنية على منطق "تسجيل سداد جديد" مش "استكمال دفعة"
+  const { data: existingPayment } = await supabase.from("payments")
+    .select("id").eq("student_uid", receipt.student_uid).eq("teacher_id", clientId).eq("title", receipt.title).maybeSingle();
+
+  const result = existingPayment
+    ? await updatePaymentAmount(
+        supabase,
+        { paymentId: existingPayment.id, tokenClientId, newAmount: Number(receipt.claimed_amount), assistantId, assistantName },
+        sendPushToRecipient
+      )
+    : await recordPayments(
+        supabase,
+        { clientId, uidsList: [receipt.student_uid], title: receipt.title, totalAmount: Number(receipt.total_amount), amount: Number(receipt.claimed_amount), assistantId, assistantName, groupName: receipt.group_name },
+        sendPushToRecipient
+      );
 
   if (!result.success) {
     // ✅ مش بنعلّم الإيصال كـ approved لو فشل التسجيل الفعلي (مثلاً اتسجّلت دفعة تانية يدوي
