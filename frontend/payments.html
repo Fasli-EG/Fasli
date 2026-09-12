@@ -86,6 +86,10 @@
       <button class="tab" data-tab="list" onclick="switchPaymentsTab('list')">
         <i class="fas fa-list"></i> المدفوعات المسجلة
       </button>
+      <button class="tab" data-tab="receipts" onclick="switchPaymentsTab('receipts')">
+        <i class="fas fa-receipt"></i> إيصالات بانتظار المراجعة
+        <span id="receiptsPendingBadge" class="badge-primary" style="display:none;border-radius:20px;padding:1px 8px;font-size:11px;margin-right:4px;"></span>
+      </button>
     </div>
 
     <div id="paymentsTabsWrap">
@@ -230,6 +234,37 @@
           <button class="btn btn-outline btn-sm" id="paymentsPagerPrev" onclick="goToPaymentsPage(paymentsCurrentPage - 1)"><i class="fas fa-chevron-right"></i> المجموعة السابقة</button>
           <span id="paymentsPagerLabel" style="font-size:13px;color:var(--gray-600);font-weight:600;"></span>
           <button class="btn btn-outline btn-sm" id="paymentsPagerNext" onclick="goToPaymentsPage(paymentsCurrentPage + 1)">المجموعة التالية <i class="fas fa-chevron-left"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-receipts">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-receipt" style="color:var(--primary);"></i> إيصالات بانتظار المراجعة</h3>
+          <p style="color:var(--gray-500);font-size:13px;margin:6px 0 0;">
+            إيصالات حوّلها أولياء الأمور يدويًا (InstaPay/محفظة) وبيستنوا التأكيد — راجع الصورة وأكّد أو ارفض مع توضيح السبب.
+          </p>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>الطالب</th>
+                  <th>المجموعة</th>
+                  <th>البند</th>
+                  <th>المبلغ المُدّعى</th>
+                  <th>صورة الإيصال</th>
+                  <th>تاريخ الإرسال</th>
+                  <th style="text-align:center;">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="paymentReceiptsBody">
+                <tr><td colspan="7" class="loading">⏳ جاري التحميل...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -2558,6 +2593,124 @@ async function markAllRead() {
       document.querySelectorAll('#paymentsTabsWrap .tab-content').forEach(tc => tc.classList.remove('active'));
       const content = document.getElementById('tab-' + name);
       if (content) content.classList.add('active');
+      if (name === 'receipts') loadPaymentReceipts();
+    }
+
+    // ============================================
+    // ✅ إيصالات الدفع بانتظار المراجعة (الحل المجاني: حوالة يدوية + رفع صورة إيصال)
+    // ============================================
+    async function refreshReceiptsBadge() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment-receipt', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'list', clientId, status: 'pending' })
+        });
+        const result = await response.json();
+        const badge = document.getElementById('receiptsPendingBadge');
+        if (result.success && result.data.length > 0) {
+          badge.textContent = result.data.length;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (e) { /* تجاهل — البادچ مش حرج */ }
+    }
+
+    async function loadPaymentReceipts() {
+      const tbody = document.getElementById('paymentReceiptsBody');
+      tbody.innerHTML = '<tr><td colspan="7" class="loading">⏳ جاري التحميل...</td></tr>';
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment-receipt', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'list', clientId, status: 'pending' })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (!result.success) {
+          tbody.innerHTML = `<tr><td colspan="7" class="error-state">❌ ${escapeHtml(result.message)}</td></tr>`;
+          return;
+        }
+        renderPaymentReceipts(result.data || []);
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7" class="error-state">❌ تعذر تحميل الإيصالات</td></tr>';
+      }
+    }
+
+    function renderPaymentReceipts(list) {
+      const tbody = document.getElementById('paymentReceiptsBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-receipt" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>مفيش إيصالات بانتظار المراجعة</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(r => {
+        const dateStr = new Date(r.submitted_at).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' });
+        const thumb = r.receiptUrl
+          ? `<img src="${r.receiptUrl}" onclick="window.open('${r.receiptUrl}','_blank')" style="width:52px;height:52px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid var(--gray-200);" title="اضغط لعرض الصورة كاملة">`
+          : '—';
+        return `
+          <tr>
+            <td>${escapeHtml(r.student_name || r.student_uid)}</td>
+            <td>${escapeHtml(r.group_name || '—')}</td>
+            <td>${escapeHtml(r.title)}</td>
+            <td><strong>${r.claimed_amount}</strong> / ${r.total_amount} ج.م</td>
+            <td>${thumb}</td>
+            <td>${dateStr}</td>
+            <td style="text-align:center;">
+              <div class="row-actions">
+                <button class="btn btn-success btn-sm" onclick="approveReceipt(${r.id})"><i class="fas fa-check"></i> تأكيد</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectReceipt(${r.id})"><i class="fas fa-times"></i> رفض</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function approveReceipt(receiptId) {
+      if (!canRecordPayments) { showToast('⛔ ليس لديك صلاحية لتسجيل المدفوعات', 'error'); return; }
+      const confirmed = await customConfirm('تأكيد الإيصال هيسجّل الدفعة فعليًا في سجل المدفوعات. متأكد؟', { danger: false });
+      if (!confirmed) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment-receipt', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'approve', clientId, receiptId, assistantId, assistantName })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          loadPaymentReceipts();
+          refreshReceiptsBadge();
+          loadPayments();
+        }
+      } catch (e) { showToast('⚠️ تعذر الاتصال بالسيرفر', 'error'); }
+    }
+
+    async function rejectReceipt(receiptId) {
+      if (!canRecordPayments) { showToast('⛔ ليس لديك صلاحية لتسجيل المدفوعات', 'error'); return; }
+      const reason = await customPrompt('سبب رفض الإيصال (هيوصل لولي الأمر):', '');
+      if (!reason || !reason.trim()) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment-receipt', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'reject', clientId, receiptId, reason: reason.trim(), assistantId, assistantName })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          loadPaymentReceipts();
+          refreshReceiptsBadge();
+        }
+      } catch (e) { showToast('⚠️ تعذر الاتصال بالسيرفر', 'error'); }
     }
 
     window.onload = async function() {
@@ -2570,6 +2723,7 @@ async function markAllRead() {
       filterTable();
       // ✅ Aug 2026: تحميل بيانات تبويب "المذكرات" أيضاً بعد الدمج مع books.html
       loadBooks();
+      refreshReceiptsBadge();
     };
   </script>
   <script>
