@@ -971,10 +971,13 @@
         const headers = getAuthHeaders();
         if (!headers) return;
 
-        const response = await fetch(PROJECT_URL + '/functions/v1/reset-assistant-password', {
+        // ✅ (باج حقيقي اتصلّح): كانت بتنادي على /reset-assistant-password اللي مش موجودة أصلاً
+        // كدالة (404 دايماً) — نفس نمط الباج اللي اتصلّح قبل كده في students.html/admin-teachers.html
+        // — الصح هو manage-password-reset بـ action: 'assistant'
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-password-reset', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ assistantId })
+          body: JSON.stringify({ action: 'assistant', assistantId })
         });
 
         if (response.status === 401) {

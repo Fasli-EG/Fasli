@@ -809,10 +809,12 @@
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/reset-parent-password', {
+        // ✅ (باج قديم اتصلّح): كانت بتنادي على /reset-parent-password اللي مش موجودة أصلاً كدالة —
+        // نفس الباج اللي اتصلّح قبل كده في students.html و admin-teachers.html — الصح هو manage-password-reset بـ action: 'parent'
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-password-reset', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ clientId, studentUid })
+          body: JSON.stringify({ action: 'parent', studentUid })
         });
         if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
         const result = await response.json();
