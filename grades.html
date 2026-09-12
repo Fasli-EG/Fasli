@@ -11,12 +11,12 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=53">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
-    <script src="layout.js?v=3"></script>
+    <script src="layout.js?v=1"></script>
     <script>renderShell({active:'grades'});</script>
 
     <div class="main-area">
@@ -330,7 +330,15 @@
             <h4 id="questionFormTitle" style="font-size:14px;margin-bottom:10px;">➕ إضافة سؤال جديد</h4>
             <div class="field">
               <label>نص السؤال</label>
-              <textarea id="newQuestionText" rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-200);font-family:inherit;" placeholder="اكتب السؤال هنا"></textarea>
+              <textarea id="newQuestionText" rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-200);font-family:inherit;" placeholder="اكتب السؤال هنا (اختياري لو رفعت صورة للسؤال)"></textarea>
+            </div>
+            <div class="field">
+              <label>صورة السؤال <span style="color:var(--gray-500);font-weight:400;">(اختياري — لو السؤال معادلة أو رسم مش هتقدر تكتبه كنص)</span></label>
+              <input type="file" id="newQuestionImageInput" accept="image/*" onchange="onQuestionImageSelected(event)">
+              <div id="questionImagePreviewWrap" style="display:none;margin-top:8px;position:relative;max-width:280px;">
+                <img id="questionImagePreview" style="max-width:100%;border-radius:8px;border:1px solid var(--gray-200);">
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestionImage()" style="margin-top:6px;"><i class="fas fa-trash"></i> شيل الصورة</button>
+              </div>
             </div>
             <div class="field-row">
               <div class="field">
@@ -1352,13 +1360,14 @@
       container.innerHTML = questions.map((q, i) => `
         <div style="padding:12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">
           <div style="display:flex;justify-content:space-between;align-items:start;">
-            <strong>${i + 1}. ${escapeHtml(q.question_text)}</strong>
+            <strong>${i + 1}. ${q.question_text ? escapeHtml(q.question_text) : '<span style="color:var(--gray-400);font-weight:400;">(سؤال بصورة)</span>'}</strong>
             ${isPublished ? '' : `
               <div style="display:flex;gap:6px;">
                 <button class="btn btn-outline btn-sm" onclick="startEditQuestion(${q.id})" title="تعديل السؤال"><i class="fas fa-pen"></i></button>
                 <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${q.id})" title="حذف السؤال"><i class="fas fa-trash"></i></button>
               </div>`}
           </div>
+          ${q.question_image_url ? `<img src="${escapeHtml(q.question_image_url)}" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--gray-200);margin-top:6px;display:block;">` : ''}
           <div style="font-size:12px;color:var(--gray-500);margin-top:6px;">
             ${q.question_type === 'mcq' ? 'اختياري' : 'صح/خطأ'} — الدرجة: ${q.points} — الإجابة الصحيحة: ${escapeHtml(q.correct_answer === 'true' ? 'صح' : q.correct_answer === 'false' ? 'خطأ' : q.correct_answer)}
           </div>
@@ -1372,6 +1381,31 @@
       document.getElementById('trueFalseContainer').style.display = type === 'true_false' ? 'block' : 'none';
     }
 
+    // ✅ صورة نص السؤال (لمعادلات/رسومات مينفعش تتكتب كنص): pendingImageBase64 لصورة جديدة
+    // لسه ما اترفعتش، existingImageUrl لصورة السؤال الحالية وقت التعديل، removed لطلب صريح بالحذف
+    let questionImageState = { pendingImageBase64: null, existingImageUrl: null, removed: false };
+
+    function onQuestionImageSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        questionImageState.pendingImageBase64 = reader.result;
+        questionImageState.removed = false;
+        document.getElementById('questionImagePreview').src = reader.result;
+        document.getElementById('questionImagePreviewWrap').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeQuestionImage() {
+      questionImageState.pendingImageBase64 = null;
+      questionImageState.removed = !!questionImageState.existingImageUrl;
+      document.getElementById('newQuestionImageInput').value = '';
+      document.getElementById('questionImagePreviewWrap').style.display = 'none';
+      document.getElementById('questionImagePreview').src = '';
+    }
+
     function resetQuestionForm() {
       document.getElementById('newQuestionText').value = '';
       document.getElementById('newQuestionPoints').value = '';
@@ -1382,6 +1416,10 @@
       addMcqOptionField();
       addMcqOptionField();
       onQuestionTypeChange();
+      questionImageState = { pendingImageBase64: null, existingImageUrl: null, removed: false };
+      document.getElementById('newQuestionImageInput').value = '';
+      document.getElementById('questionImagePreviewWrap').style.display = 'none';
+      document.getElementById('questionImagePreview').src = '';
 
       // ✅ Aug 2026: يرجّع الفورم لوضع "إضافة سؤال جديد" (مش تعديل)
       currentEditingQuestionId = null;
@@ -1401,10 +1439,19 @@
       document.getElementById('saveQuestionBtn').textContent = '💾 حفظ التعديل';
       document.getElementById('cancelEditQuestionBtn').style.display = 'inline-flex';
 
-      document.getElementById('newQuestionText').value = q.question_text;
+      document.getElementById('newQuestionText').value = q.question_text || '';
       document.getElementById('newQuestionPoints').value = q.points;
       document.getElementById('newQuestionType').value = q.question_type;
       onQuestionTypeChange();
+
+      questionImageState = { pendingImageBase64: null, existingImageUrl: q.question_image_url || null, removed: false };
+      document.getElementById('newQuestionImageInput').value = '';
+      if (q.question_image_url) {
+        document.getElementById('questionImagePreview').src = q.question_image_url;
+        document.getElementById('questionImagePreviewWrap').style.display = 'block';
+      } else {
+        document.getElementById('questionImagePreviewWrap').style.display = 'none';
+      }
 
       document.getElementById('mcqOptionsList').innerHTML = '';
       mcqOptionCount = 0;
@@ -1448,8 +1495,9 @@
       const questionText = document.getElementById('newQuestionText').value.trim();
       const questionType = document.getElementById('newQuestionType').value;
       const points = document.getElementById('newQuestionPoints').value;
+      const hasImage = questionImageState.pendingImageBase64 || (questionImageState.existingImageUrl && !questionImageState.removed);
 
-      if (!questionText || !points) { showToast('⚠️ اكتب السؤال والدرجة', 'warning'); return; }
+      if ((!questionText && !hasImage) || !points) { showToast('⚠️ اكتب نص السؤال أو ارفع صورة له، وحدد الدرجة', 'warning'); return; }
 
       let correctAnswer, options;
       if (questionType === 'mcq') {
@@ -1466,8 +1514,8 @@
 
       const isEditing = currentEditingQuestionId !== null;
       const payload = isEditing
-        ? { action: 'updateQuestion', questionId: currentEditingQuestionId, questionText, questionType, options, correctAnswer, points }
-        : { action: 'addQuestion', examId: currentEditExamId, questionText, questionType, options, correctAnswer, points };
+        ? { action: 'updateQuestion', questionId: currentEditingQuestionId, questionText, questionType, options, correctAnswer, points, questionImageBase64: questionImageState.pendingImageBase64 || null, removeImage: !!questionImageState.removed }
+        : { action: 'addQuestion', examId: currentEditExamId, questionText, questionType, options, correctAnswer, points, questionImageBase64: questionImageState.pendingImageBase64 || null };
 
       try {
         const headers = getAuthHeaders();
@@ -1579,8 +1627,9 @@
           }
           return `
             <div style="padding:12px 0;border-bottom:1px solid var(--gray-100);">
-              <strong>${i + 1}. ${escapeHtml(q.question_text)}</strong>
+              <strong>${i + 1}. ${q.question_text ? escapeHtml(q.question_text) : ''}</strong>
               <span style="color:var(--gray-500);font-size:12px;"> (${q.points} درجة)</span>
+              ${q.question_image_url ? `<div><img src="${escapeHtml(q.question_image_url)}" style="max-width:100%;max-height:220px;margin-top:6px;"></div>` : ''}
               ${answerArea}
             </div>
           `;

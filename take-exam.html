@@ -220,7 +220,8 @@
       container.innerHTML = `
         <div class="question-card">
           <div class="q-number">سؤال ${currentQuestionIndex + 1} من ${total} — (${q.points} درجة)</div>
-          <div class="q-text">${escapeHtml(q.question_text)}</div>
+          ${q.question_text ? `<div class="q-text">${escapeHtml(q.question_text)}</div>` : ''}
+          ${q.question_image_url ? `<div style="margin:10px 0;"><img src="${escapeHtml(q.question_image_url)}" style="max-width:100%;border-radius:10px;border:1px solid var(--gray-200);"></div>` : ''}
           ${optionsHtml}
         </div>
       `;
