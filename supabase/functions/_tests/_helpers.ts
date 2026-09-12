@@ -70,7 +70,7 @@ export async function callFn(name: string, token: string | null, body?: Record<s
 export const AUTH_GATED_FUNCTIONS = [
   "admin-get-students-for-teacher", "admin-get-teacher", "admin-get-teachers",
   "admin-manage-card-registration", "admin-manage-teacher", "admin-regenerate-device-secret",
-  "bulk-import-students", "change-password", "check-student-uid",
+  "bulk-import-students", "change-password", "check-at-risk-alerts", "check-student-uid",
   "create-exam-title", "create-payment-title", "delete-activity-log",
   "generate-report", "get-activity-logs", "get-assistants", "get-at-risk-students",
   "get-book-payment", "get-book-status", "get-books", "get-dashboard",

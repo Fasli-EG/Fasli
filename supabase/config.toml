@@ -264,4 +264,7 @@ verify_jwt = false
 [functions.manage-instructor-names]
 verify_jwt = false
 
+[functions.check-at-risk-alerts]
+verify_jwt = false
+
 
