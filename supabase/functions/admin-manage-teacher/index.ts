@@ -1,52 +1,8 @@
 // supabase/functions/admin-manage-teacher/index.ts
 // ✅ دالة موحّدة تجمع admin-add-teacher + admin-update-teacher + admin-delete-teacher بـ "action" parameter
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
-  "Access-Control-Max-Age": "86400",
-};
-
-export interface TokenPayload {
-  sub: string; clientId?: string; teacherId?: string; role: "teacher" | "assistant" | "parent"; name: string; exp: number;
-}
-
-export class AuthError extends Error {
-  status: number; code?: string;
-  constructor(message: string, status = 401, code?: string) { super(message); this.status = status; this.code = code; }
-}
-
-async function getKey() {
-  const JWT_SECRET = Deno.env.get("JWT_SECRET");
-  if (!JWT_SECRET) throw new Error("⚠️ JWT_SECRET غير مضبوط في متغيرات البيئة");
-  return await crypto.subtle.importKey("raw", new TextEncoder().encode(JWT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-}
-
-export async function verifyToken(req: Request): Promise<TokenPayload> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) throw new AuthError("⚠️ التوكن مطلوب", 401);
-  const token = authHeader.substring(7);
-  const key = await getKey();
-  try { return (await verify(token, key, "HS256")) as unknown as TokenPayload; }
-  catch (_e) { throw new AuthError("⚠️ التوكن غير صالح أو منتهي الصلاحية", 401); }
-}
-
-export function requireAdmin(payload: TokenPayload) {
-  if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
-    throw new AuthError("⛔ غير مصرح بهذه العملية", 403);
-  }
-}
-
-export function authErrorResponse(error: unknown) {
-  const status = error instanceof AuthError ? error.status : 500;
-  const code = error instanceof AuthError ? error.code : undefined;
-  const message = error instanceof Error ? error.message : "⚠️ خطأ غير معروف";
-  return new Response(JSON.stringify({ success: false, message, ...(code ? { code } : {}) }),
-    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
+import { corsHeaders, TokenPayload, AuthError, verifyToken, requireAdmin, authErrorResponse } from "../_shared/auth.ts";
 
 const ITERATIONS = 100_000;
 function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
