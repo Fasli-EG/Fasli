@@ -264,4 +264,7 @@ verify_jwt = false
 [functions.check-at-risk-alerts]
 verify_jwt = false
 
+[functions.manage-payment-receipt]
+verify_jwt = false
+
 
