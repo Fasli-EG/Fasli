@@ -222,14 +222,17 @@ async function handleApprove(supabase: any, payload: TokenPayload, body: any) {
 
   // ✅ لو فيه صف دفعة موجود بالفعل لنفس الطالب+البند (حالة الدفعة الجزئية)، لازم نعدّل
   // مبلغه لا نحاول نضيف صف جديد — recordPayments هيرفضه كـ"مسدّد بالفعل" لأي صف موجود
-  // أصلاً حتى لو جزئي، بما إنها مبنية على منطق "تسجيل سداد جديد" مش "استكمال دفعة"
+  // أصلاً حتى لو جزئي، بما إنها مبنية على منطق "تسجيل سداد جديد" مش "استكمال دفعة".
+  // ✅ المبلغ الجديد هنا لازم يكون total_amount (المبلغ الكامل)، مش claimed_amount (الفرق
+  // المتبقي وقت الرفع) — لأن payments.amount بيمثّل إجمالي المدفوع لحد دلوقتي، مش آخر دفعة.
+  // بما إن الإيصال بتصميمه لازم يغطي كل المتبقي، اعتماد الإيصال دايمًا معناه "اتسدد بالكامل".
   const { data: existingPayment } = await supabase.from("payments")
     .select("id").eq("student_uid", receipt.student_uid).eq("teacher_id", clientId).eq("title", receipt.title).maybeSingle();
 
   const result = existingPayment
     ? await updatePaymentAmount(
         supabase,
-        { paymentId: existingPayment.id, tokenClientId, newAmount: Number(receipt.claimed_amount), assistantId, assistantName },
+        { paymentId: existingPayment.id, tokenClientId, newAmount: Number(receipt.total_amount), assistantId, assistantName },
         sendPushToRecipient
       )
     : await recordPayments(
