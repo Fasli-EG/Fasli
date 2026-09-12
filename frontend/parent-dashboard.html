@@ -35,6 +35,11 @@
     .student-card .student-stats .stat-item .num.orange { color: var(--warning); }
     .student-card .student-stats .stat-item .label { font-size: 11px; color: var(--gray-400); }
     .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 28px; }
+    /* ✅ minmax(300px,...) بيفرض عرض أدنى 300px حتى لو الشاشة أضيق من كده (شاشات موبايل صغيرة
+       جدًا أو webview ضيقة)، فبتطلع الكارت برّه حدود الشاشة. تحت 340px نلغي minmax تمامًا. */
+    @media (max-width: 340px) {
+      .students-grid { grid-template-columns: 1fr; }
+    }
     .student-card {
       background: #fff; border: 2px solid var(--gray-200);
       border-radius: 16px; padding: 18px 20px; cursor: pointer;

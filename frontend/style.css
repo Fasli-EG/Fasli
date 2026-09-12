@@ -1813,6 +1813,12 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
   .btn-book { padding: 6px 12px; font-size: 12px; }
   .btn-book i { font-size: 14px; }
 }
+/* ✅ minmax(300px,...) في .groups-list-grid بيفرض عرض أدنى 300px حتى لو الشاشة نفسها أضيق
+   من كده (موبايل صغير جدًا أو webview ضيقة) — بيطلع الكارت برّه حدود الشاشة. نفس الإصلاح
+   المطبّق على .students-grid في parent-dashboard.html */
+@media (max-width: 340px) {
+  .groups-list-grid { grid-template-columns: 1fr; }
+}
 .status-partial {
   background: #FCF1E1;
   color: #92400e;
