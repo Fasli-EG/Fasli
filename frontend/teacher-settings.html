@@ -191,6 +191,23 @@
       <div id="phoneVisibleToggleMessage" class="message"></div>
     </div>
 
+    <!-- ✅ (طلب) رفع إيصال الدفع الإلكتروني (الحل المجاني) — اختياري، معطّل افتراضيًا لحد ما المدرس يفعّله -->
+    <div class="wifi-card" style="margin-top:24px;">
+      <div class="page-header" style="margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:18px;">🧾 استقبال إيصالات الدفع الإلكتروني</h2>
+          <span class="sub">لما تكون مفعّلة، يقدر ولي الأمر يرفع صورة إيصال تحويل يدوي (InstaPay/محفظة) عن أي بند مش مدفوع بالكامل، وتراجعها أنت من تبويب "إيصالات بانتظار المراجعة" في صفحة المدفوعات. الإيصال لازم يغطي المبلغ المتبقي بالكامل — مفيش دفعات جزئية عن طريق الإيصال.</span>
+        </div>
+      </div>
+      <div class="wifi-form">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="electronicPaymentEnabledToggle" onchange="saveElectronicPaymentToggle()" style="width:20px;height:20px;">
+          <span>تفعيل استقبال إيصالات الدفع الإلكتروني</span>
+        </label>
+      </div>
+      <div id="electronicPaymentToggleMessage" class="message"></div>
+    </div>
+
     <div class="wifi-card" style="margin-top:24px;">
       <div class="page-header" style="margin-bottom:16px;">
         <div>
@@ -1135,6 +1152,7 @@ async function confirmReset() {
           document.getElementById('conversationsEnabledToggle').checked = result.data.conversations_enabled !== false;
           document.getElementById('whatsappVisibleToggle').checked = result.data.whatsapp_visible !== false;
           document.getElementById('phoneVisibleToggle').checked = result.data.phone_visible !== false;
+          document.getElementById('electronicPaymentEnabledToggle').checked = result.data.electronic_payment_enabled === true;
         }
       } catch (error) {
         console.error('❌ خطأ في تحميل بيانات التواصل:', error);
@@ -1224,6 +1242,35 @@ async function confirmReset() {
         }
       } catch (error) {
         console.error('❌ خطأ في حفظ حالة إظهار رقم الهاتف:', error);
+        toggle.checked = !enabled;
+      }
+    }
+
+    // ✅ (طلب) تفعيل/تعطيل استقبال إيصالات الدفع الإلكتروني — الميزة معطّلة افتراضيًا لحد ما المدرس يفعّلها بنفسه
+    async function saveElectronicPaymentToggle() {
+      const toggle = document.getElementById('electronicPaymentEnabledToggle');
+      const enabled = toggle.checked;
+      const msgEl = document.getElementById('electronicPaymentToggleMessage');
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-teacher-contact', {
+          method: 'POST', headers, body: JSON.stringify({ electronicPaymentEnabled: enabled })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          msgEl.textContent = enabled ? '✅ تم تفعيل استقبال إيصالات الدفع الإلكتروني' : '✅ تم تعطيل استقبال إيصالات الدفع الإلكتروني';
+          msgEl.className = 'message success';
+          msgEl.style.display = 'block';
+        } else {
+          toggle.checked = !enabled;
+          msgEl.textContent = '❌ ' + result.message;
+          msgEl.className = 'message error';
+          msgEl.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حفظ حالة استقبال إيصالات الدفع:', error);
         toggle.checked = !enabled;
       }
     }

@@ -273,11 +273,8 @@
     <div class="modal-box" style="max-width:420px;">
       <div class="modal-header"><h3><i class="fas fa-paperclip"></i> إرفاق إيصال الدفع</h3></div>
       <div class="modal-body">
-        <p style="margin:0 0 14px;font-size:14px;color:var(--gray-700);"><strong id="receiptModalTitle"></strong></p>
-        <div style="margin-bottom:14px;">
-          <label style="display:block;font-weight:600;font-size:13px;margin-bottom:6px;">المبلغ المدفوع (ج.م)</label>
-          <input type="number" id="receiptAmountInput" min="1" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:14px;font-family:inherit;">
-        </div>
+        <p style="margin:0 0 6px;font-size:14px;color:var(--gray-700);"><strong id="receiptModalTitle"></strong></p>
+        <p style="margin:0 0 14px;font-size:12.5px;color:var(--gray-500);"><i class="fas fa-circle-info"></i> الإيصال لازم يغطي المبلغ المتبقي بالكامل — مفيش دفعات جزئية عن طريق الإيصال.</p>
         <div style="margin-bottom:6px;">
           <label style="display:block;font-weight:600;font-size:13px;margin-bottom:6px;">صورة الإيصال</label>
           <input type="file" id="receiptFileInput" accept="image/png,image/jpeg" capture="environment" style="width:100%;font-size:13px;">
@@ -821,6 +818,8 @@
     let receiptsByTitle = {};
     window.__receiptRowData = {};
     let receiptRowSeq = 0;
+    // ✅ (طلب) رفع الإيصال اختياري بقرار المدرس — معطّل افتراضيًا لحد ما يفعّله من إعداداته
+    let electronicPaymentEnabled = false;
 
     async function loadMyReceipts(uid) {
       receiptsByTitle = {};
@@ -845,6 +844,9 @@
       const receipt = receiptsByTitle[payment.title];
       if (receipt && receipt.status === 'pending') {
         return '<span class="status-badge status-partial">⏳ قيد المراجعة</span>';
+      }
+      if (!electronicPaymentEnabled) {
+        return '—';
       }
       const key = 'r' + (receiptRowSeq++);
       window.__receiptRowData[key] = {
@@ -939,6 +941,7 @@
 
         if (result.success) {
           lastLoadedPayments = (result.data?.payments || []);
+          electronicPaymentEnabled = result.data?.info?.electronic_payment_enabled === true;
           setupParentGroupFilter(result.data?.info);
           // ✅ (طلب) المدفوعات بقت متفلترة على المجموعة المختارة زي باقي التابات (كان قرار سابق
           // إنها تستثنى وتتعرض كل المجموعات مع بعض، اتطلب دلوقتي عكسه) — الجدول والإحصائيات
@@ -1309,7 +1312,6 @@
       if (!info) return;
       currentReceiptContext = info;
       document.getElementById('receiptModalTitle').textContent = `${info.title} — المطلوب: ${info.remaining} ج.م`;
-      document.getElementById('receiptAmountInput').value = info.remaining;
       document.getElementById('receiptFileInput').value = '';
       document.getElementById('receiptPreviewImg').style.display = 'none';
       document.getElementById('receiptModalError').style.display = 'none';
@@ -1343,14 +1345,9 @@
       const errorEl = document.getElementById('receiptModalError');
       errorEl.style.display = 'none';
 
-      const amount = Number(document.getElementById('receiptAmountInput').value);
       const fileInput = document.getElementById('receiptFileInput');
       const file = fileInput.files[0];
 
-      if (!amount || amount <= 0 || amount > currentReceiptContext.remaining) {
-        showReceiptError('⚠️ أدخل مبلغاً صحيحاً لا يتجاوز المطلوب');
-        return;
-      }
       if (!file) {
         showReceiptError('⚠️ اختر صورة الإيصال أولاً');
         return;
@@ -1377,8 +1374,6 @@
             action: 'submit',
             studentUid: currentReceiptContext.studentUid,
             title: currentReceiptContext.title,
-            totalAmount: currentReceiptContext.totalAmount,
-            claimedAmount: amount,
             groupName: currentReceiptContext.groupName,
             fileBase64: fileBase64,
             fileName: file.name,

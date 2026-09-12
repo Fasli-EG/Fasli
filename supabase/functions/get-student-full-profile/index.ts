@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: student, error: studentError } = await supabase
-      .from("students").select("*, teachers!inner(name, conversations_enabled)").eq("uid", studentUid).maybeSingle();
+      .from("students").select("*, teachers!inner(name, conversations_enabled, electronic_payment_enabled)").eq("uid", studentUid).maybeSingle();
     if (studentError || !student) {
       return new Response(JSON.stringify({ success: false, message: "الطالب غير موجود" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       data: {
-        info: { uid: student.uid, name: student.name, phone: student.phone, group_name: student.group_name, groups: allGroups, teacher_name: student.teachers?.name || "غير محدد", conversations_enabled: student.teachers?.conversations_enabled !== false },
+        info: { uid: student.uid, name: student.name, phone: student.phone, group_name: student.group_name, groups: allGroups, teacher_name: student.teachers?.name || "غير محدد", conversations_enabled: student.teachers?.conversations_enabled !== false, electronic_payment_enabled: student.teachers?.electronic_payment_enabled === true },
         grades: gradesRes.data || [],
         payments: paymentsRes.data || [],
         attendance: attendanceRes.data || [],

@@ -114,7 +114,7 @@ serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { contactWhatsapp, contactPhone, absenceThresholdMinutes, brandLogoUrl, brandColor, conversationsEnabled, whatsappVisible, phoneVisible } = body;
+    const { contactWhatsapp, contactPhone, absenceThresholdMinutes, brandLogoUrl, brandColor, conversationsEnabled, whatsappVisible, phoneVisible, electronicPaymentEnabled } = body;
 
     const updates: any = {};
     if (contactWhatsapp !== undefined) updates.contact_whatsapp = contactWhatsapp || null;
@@ -129,6 +129,8 @@ serve(async (req) => {
     if (whatsappVisible !== undefined) updates.whatsapp_visible = !!whatsappVisible;
     // ✅ (طلب) إظهار/إخفاء رقم الهاتف للمدرس لأولياء الأمور — رقم مستقل تمامًا عن الواتساب
     if (phoneVisible !== undefined) updates.phone_visible = !!phoneVisible;
+    // ✅ (طلب) رفع إيصال الدفع الإلكتروني (الحل المجاني) — اختياري بقرار المدرس، معطّل افتراضيًا
+    if (electronicPaymentEnabled !== undefined) updates.electronic_payment_enabled = !!electronicPaymentEnabled;
 
     const { error } = await supabase
       .from("teachers")

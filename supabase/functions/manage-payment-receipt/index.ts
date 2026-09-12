@@ -77,13 +77,10 @@ function jsonResponse(body: any, status = 200) {
 // ============================================
 async function handleSubmit(supabase: any, payload: TokenPayload, body: any) {
   const parentPhone = requireParentPhone(payload);
-  const { studentUid, title, totalAmount, groupName, claimedAmount, fileBase64, fileName } = body;
+  const { studentUid, title, groupName, fileBase64, fileName } = body;
 
-  if (!studentUid || !title || totalAmount === undefined || claimedAmount === undefined || !fileBase64 || !fileName) {
+  if (!studentUid || !title || !fileBase64 || !fileName) {
     return jsonResponse({ success: false, message: "⚠️ جميع الحقول مطلوبة" }, 400);
-  }
-  if (Number(claimedAmount) <= 0 || Number(claimedAmount) > Number(totalAmount)) {
-    return jsonResponse({ success: false, message: "⚠️ المبلغ المدخل غير صحيح" }, 400);
   }
 
   // ✅ لازم نتأكد إن الطالب ده فعلاً ابن ولي الأمر صاحب التوكن — من غير الفحص ده أي حد
@@ -93,12 +90,40 @@ async function handleSubmit(supabase: any, payload: TokenPayload, body: any) {
     return jsonResponse({ success: false, message: "⛔ غير مصرح لك بهذا الطالب" }, 403);
   }
 
+  // ✅ (طلب) المدرس لازم يكون فعّل الميزة دي بنفسه من إعدادات الحساب — معطّلة افتراضيًا
+  const { data: teacher } = await supabase.from("teachers").select("electronic_payment_enabled").eq("client_id", student.teacher_id).maybeSingle();
+  if (!teacher || teacher.electronic_payment_enabled !== true) {
+    return jsonResponse({ success: false, message: "⛔ المدرس لسه ما فعّلش استقبال إيصالات الدفع الإلكتروني" }, 403);
+  }
+
   // ✅ منع تكرار: لو فيه إيصال معلّق بالفعل لنفس البند، نرجّعه بدل ما نسمح بإيصال تاني فوقه
   const { data: existingPending } = await supabase.from("payment_receipts")
     .select("*").eq("student_uid", studentUid).eq("title", title).eq("status", "pending").maybeSingle();
   if (existingPending) {
     return jsonResponse({ success: true, message: "⏳ فيه إيصال بانتظار المراجعة بالفعل لنفس البند", data: existingPending });
   }
+
+  // ✅ (طلب) الإيصال لازم يغطي المبلغ المتبقي بالكامل — مفيش دفعات جزئية عن طريق الإيصال.
+  // بنحسب المبلغ الكامل والمتبقي من عندنا (مش من كلام ولي الأمر) عشان محدش يقدر يلاعب في الرقم:
+  // لو فيه دفعة مسجّلة بالفعل لنفس البند نستخدم سعرها المسجّل، وإلا نرجع لسعر البند الافتراضي
+  const { data: existingPayment } = await supabase.from("payments")
+    .select("amount, total_amount").eq("student_uid", studentUid).eq("teacher_id", student.teacher_id).eq("title", title).maybeSingle();
+
+  let totalAmount: number;
+  let remaining: number;
+  if (existingPayment) {
+    totalAmount = Number(existingPayment.total_amount);
+    remaining = totalAmount - Number(existingPayment.amount);
+  } else {
+    const { data: titleRow } = await supabase.from("payment_titles").select("default_amount").eq("teacher_id", student.teacher_id).eq("title", title).maybeSingle();
+    if (!titleRow) return jsonResponse({ success: false, message: "⚠️ بند السداد ده مش موجود" }, 400);
+    totalAmount = Number(titleRow.default_amount);
+    remaining = totalAmount;
+  }
+  if (remaining <= 0) {
+    return jsonResponse({ success: false, message: "⚠️ البند ده متسدد بالكامل بالفعل" }, 400);
+  }
+  const claimedAmount = remaining;
 
   const ext = ("." + (fileName.split(".").pop() || "")).toLowerCase();
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
