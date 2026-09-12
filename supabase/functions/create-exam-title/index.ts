@@ -1,32 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/djwt@v3.0.1/mod.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeaders, verifyToken, authErrorResponse } from "../_shared/auth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const jwtSecret = Deno.env.get("JWT_SECRET")!;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرّح" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const key = await crypto.subtle.importKey(
-      "raw", new TextEncoder().encode(jwtSecret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]
-    );
-    const payload: any = await verify(token, key);
+    const payload = await verifyToken(req);
 
     const tokenClientId = payload.clientId || payload.teacherId;
     if (!tokenClientId || (payload.role !== "teacher" && payload.role !== "assistant")) {
@@ -75,7 +58,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error("❌ خطأ:", error);
-    return new Response(JSON.stringify({ success: false, message: "❌ حدث خطأ غير متوقع" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return authErrorResponse(error);
   }
 });
