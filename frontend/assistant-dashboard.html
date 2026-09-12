@@ -1409,19 +1409,29 @@
           return;
         }
 
-        const gradesRes = await fetch(PROJECT_URL + '/functions/v1/get-grades', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify({ clientId: clientId, groupName: null })
-        });
+        // ✅ (تصليح باج، نفس الباج في dashboard.html) get-grades من غير groupName بيرجّع مجموعة
+        // واحدة بس في كل نداء (ترقيم صفحات على مستوى المجموعة، نفس أسلوب get-payments) — بنلف
+        // على كل الصفحات ونجمعها، وإلا مخطط "متوسط المجموعات" بيعرض مجموعة واحدة بس
+        let grades = [];
+        let gradesPage = 1;
+        while (true) {
+          const gradesRes = await fetch(PROJECT_URL + '/functions/v1/get-grades', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ clientId: clientId, groupName: null, page: gradesPage })
+          });
 
-        if (gradesRes.status === 401) {
-          handleUnauthorized('انتهت صلاحية الجلسة');
-          return;
+          if (gradesRes.status === 401) {
+            handleUnauthorized('انتهت صلاحية الجلسة');
+            return;
+          }
+
+          const gradesResult = await gradesRes.json();
+          if (!gradesResult.success) break;
+          grades = grades.concat(gradesResult.data || []);
+          if (!gradesResult.pagination || !gradesResult.pagination.hasMore) break;
+          gradesPage++;
         }
-
-        const gradesResult = await gradesRes.json();
-        let grades = gradesResult.success ? gradesResult.data : [];
 
         // ✅ Batch 21 (بند 3): تقييد الدرجات على نفس الطلاب المفلترين (المجموعة المختارة) قبل رسم
         // مخطط نمو المستوى — نفس المنطق المستخدم في dashboard.html بالظبط
