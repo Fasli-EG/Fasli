@@ -1,7 +1,7 @@
 // supabase/functions/manage-exam/index.ts
 // ✅ إدارة الاختبارات الإلكترونية (جانب المدرس) — action: create | addQuestion | updateQuestion | deleteQuestion | publish | delete | list | listWithStats | setTargets | getOne
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, TokenPayload, verifyToken } from "../_shared/auth.ts";
+import { corsHeaders, TokenPayload, verifyToken, AuthError, authErrorResponse } from "../_shared/auth.ts";
 
 // ✅ (طلب) نص السؤال ممكن يبقى صورة بدل الكتابة (أو بالإضافة لها) — لمعادلات رياضية/رسومات
 // مينفعش تتكتب كنص عادي. نفس أسلوب upload-book-file بالظبط (رفع base64 لـ Supabase Storage).
@@ -531,6 +531,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: false, message: "⚠️ action غير معروفة" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
+    if (error instanceof AuthError) return authErrorResponse(error);
     const message = error instanceof Error ? error.message : "حدث خطأ داخلي";
     return new Response(JSON.stringify({ success: false, message }),
       { status: message.includes("⛔") ? 403 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

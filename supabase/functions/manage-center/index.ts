@@ -10,7 +10,7 @@
 // وinstructor_names، شغال ومتحقق منه). اتشالت هنا نهائيًا بدل ما تفضل كود ميت.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { corsHeaders, TokenPayload, verifyToken } from "../_shared/auth.ts";
+import { corsHeaders, TokenPayload, verifyToken, authErrorResponse } from "../_shared/auth.ts";
 
 const ITERATIONS = 100_000;
 function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
@@ -178,8 +178,6 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: false, message: "⚠️ action غير معروفة" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "حدث خطأ داخلي";
-    return new Response(JSON.stringify({ success: false, message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return authErrorResponse(error);
   }
 });

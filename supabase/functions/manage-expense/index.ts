@@ -1,7 +1,7 @@
 // supabase/functions/manage-expense/index.ts
 // ✅ إدارة المصروفات — action: add | delete | list
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, verifyToken } from "../_shared/auth.ts";
+import { corsHeaders, verifyToken, authErrorResponse } from "../_shared/auth.ts";
 
 const VALID_CATEGORIES = ["rent", "salaries", "utilities", "supplies", "marketing", "other"];
 
@@ -70,8 +70,6 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: false, message: "⚠️ action غير معروفة" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "حدث خطأ داخلي";
-    return new Response(JSON.stringify({ success: false, message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return authErrorResponse(error);
   }
 });

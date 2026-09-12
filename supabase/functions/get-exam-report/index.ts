@@ -1,7 +1,7 @@
 // supabase/functions/get-exam-report/index.ts
 // ✅ تقرير المدرس الكامل عن اختبار معيّن: مين امتحن، مين لا، مين انتهى وقته، ودرجة كل واحد
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, verifyToken } from "../_shared/auth.ts";
+import { corsHeaders, verifyToken, authErrorResponse } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -49,8 +49,6 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true, data: { exam, report, summary } }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "حدث خطأ داخلي";
-    return new Response(JSON.stringify({ success: false, message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return authErrorResponse(error);
   }
 });

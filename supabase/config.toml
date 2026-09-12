@@ -245,4 +245,23 @@ verify_jwt = false
 [functions.manage-levels]
 verify_jwt = false
 
+# ✅ (تصليح 2026-09-12) الفانكشنز الخمسة دي كانت من غير stanza هنا خالص، ونتيجة كده
+# فيها 4 منهم فعلياً "verify_jwt = true" على الـcloud (كشف اختبارات auth-gating الآلية) —
+# يعني بوابة Supabase نفسها كانت بترفض أي طلب حقيقي بتوكن التطبيق المخصص قبل ما يوصل
+# لكود الفانكشن خالص. الإصلاح: إضافة الـstanza هنا + إعادة نشر كل واحدة صراحةً بـ --no-verify-jwt.
+[functions.get-exams]
+verify_jwt = false
+
+[functions.get-payment-titles]
+verify_jwt = false
+
+[functions.teacher-list-my-cards]
+verify_jwt = false
+
+[functions.admin-regenerate-device-secret]
+verify_jwt = false
+
+[functions.manage-instructor-names]
+verify_jwt = false
+
 

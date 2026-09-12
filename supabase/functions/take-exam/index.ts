@@ -1,7 +1,7 @@
 // supabase/functions/take-exam/index.ts
 // ✅ دالة موحّدة لأداء الاختبار (جانب الطالب) — action: start | submit
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, verifyToken } from "../_shared/auth.ts";
+import { corsHeaders, verifyToken, AuthError, authErrorResponse } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -180,6 +180,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: false, message: "⚠️ action غير معروفة" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
+    if (error instanceof AuthError) return authErrorResponse(error);
     const message = error instanceof Error ? error.message : "حدث خطأ داخلي";
     return new Response(JSON.stringify({ success: false, message }),
       { status: message.includes("⛔") ? 403 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
