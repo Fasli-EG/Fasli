@@ -255,6 +255,7 @@
       <div class="modal-body">
         <p style="margin:0 0 6px;font-size:14px;color:var(--gray-700);"><strong id="receiptModalTitle"></strong></p>
         <p style="margin:0 0 14px;font-size:12.5px;color:var(--gray-500);"><i class="fas fa-circle-info"></i> الإيصال لازم يغطي المبلغ المتبقي بالكامل — مفيش دفعات جزئية عن طريق الإيصال.</p>
+        <div id="paymentInstructionsBox" style="display:none;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--gray-800);"></div>
         <div style="margin-bottom:6px;">
           <label style="display:block;font-weight:600;font-size:13px;margin-bottom:6px;">صورة الإيصال</label>
           <input type="file" id="receiptFileInput" accept="image/png,image/jpeg" capture="environment" style="width:100%;font-size:13px;">
@@ -800,6 +801,8 @@
     let receiptRowSeq = 0;
     // ✅ (طلب) رفع الإيصال اختياري بقرار المدرس — معطّل افتراضيًا لحد ما يفعّله من إعداداته
     let electronicPaymentEnabled = false;
+    // ✅ (طلب) بيانات استلام التحويلات — بتتعرض في مودال رفع الإيصال عشان ولي الأمر يعرف يحوّل على مين
+    let teacherPaymentInfo = { instapay: '', wallet: '', bankDetails: '' };
 
     async function loadMyReceipts(uid) {
       receiptsByTitle = {};
@@ -922,6 +925,11 @@
         if (result.success) {
           lastLoadedPayments = (result.data?.payments || []);
           electronicPaymentEnabled = result.data?.info?.electronic_payment_enabled === true;
+          teacherPaymentInfo = {
+            instapay: result.data?.info?.payment_instapay || '',
+            wallet: result.data?.info?.payment_wallet || '',
+            bankDetails: result.data?.info?.payment_bank_details || '',
+          };
           setupParentGroupFilter(result.data?.info);
           // ✅ (طلب) المدفوعات بقت متفلترة على المجموعة المختارة زي باقي التابات (كان قرار سابق
           // إنها تستثنى وتتعرض كل المجموعات مع بعض، اتطلب دلوقتي عكسه) — الجدول والإحصائيات
@@ -1292,6 +1300,19 @@
       if (!info) return;
       currentReceiptContext = info;
       document.getElementById('receiptModalTitle').textContent = `${info.title} — المطلوب: ${info.remaining} ج.م`;
+
+      const instructionsBox = document.getElementById('paymentInstructionsBox');
+      const rows = [];
+      if (teacherPaymentInfo.instapay) rows.push(`<div style="margin-bottom:6px;"><strong>📲 إنستاباي:</strong> ${escapeHtml(teacherPaymentInfo.instapay)}</div>`);
+      if (teacherPaymentInfo.wallet) rows.push(`<div style="margin-bottom:6px;"><strong>💰 المحفظة:</strong> ${escapeHtml(teacherPaymentInfo.wallet)}</div>`);
+      if (teacherPaymentInfo.bankDetails) rows.push(`<div><strong>🏦 الحساب البنكي:</strong> ${escapeHtml(teacherPaymentInfo.bankDetails)}</div>`);
+      if (rows.length > 0) {
+        instructionsBox.innerHTML = `<div style="font-weight:600;margin-bottom:8px;">حوّل المبلغ على:</div>${rows.join('')}`;
+        instructionsBox.style.display = 'block';
+      } else {
+        instructionsBox.style.display = 'none';
+      }
+
       document.getElementById('receiptFileInput').value = '';
       document.getElementById('receiptPreviewImg').style.display = 'none';
       document.getElementById('receiptModalError').style.display = 'none';
