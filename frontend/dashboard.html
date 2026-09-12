@@ -1056,8 +1056,13 @@
 
         studentAverages.sort((a, b) => b.avg - a.avg);
 
+        // ✅ (تصليح باج) الطلاب اللي لسه معندهمش أي درجة مسجّلة (examCount === 0) كانوا بيتحسبوا
+        // بمتوسط 0% في متوسط المجموعة، فيسحبوا متوسط المجموعة لتحت غلط — مجموعة فيها طالبين
+        // امتحنوا وحصلوا 90% بس باقي الطلاب لسه معندهمش درجات كانت بتظهر بمتوسط أقل بكتير من 90%
+        // بدل ما تعكس أداء اللي فعلاً امتحنوا. بنستبعدهم من حساب متوسط المجموعة بس (مش من ترتيب
+        // الطلاب الفردي تحت، ده لسه محتاج يعرض كل الطلاب حتى اللي معندهمش درجات لسه)
         const groupMap = {};
-        studentAverages.forEach(s => {
+        studentAverages.filter(s => s.examCount > 0).forEach(s => {
           if (!groupMap[s.group]) groupMap[s.group] = { total: 0, count: 0 };
           groupMap[s.group].total += s.avg;
           groupMap[s.group].count += 1;

@@ -1467,8 +1467,10 @@
 
         studentAverages.sort((a, b) => b.avg - a.avg);
 
+        // ✅ (تصليح باج، نفس الباج في dashboard.html) استبعاد الطلاب اللي معندهمش درجات لسه
+        // من حساب متوسط المجموعة — كانوا بيتحسبوا 0% ويسحبوا المتوسط لتحت غلط
         const groupMap = {};
-        studentAverages.forEach(s => {
+        studentAverages.filter(s => s.examCount > 0).forEach(s => {
           if (!groupMap[s.group]) groupMap[s.group] = { total: 0, count: 0 };
           groupMap[s.group].total += s.avg;
           groupMap[s.group].count += 1;

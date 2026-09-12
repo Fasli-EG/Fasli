@@ -69,10 +69,6 @@
     </div>
 
     <button class="logout" onclick="doLogout()">تسجيل الخروج</button>
-
-    <!-- ✅ صندوق تشخيصي مؤقت — يوريكي السبب الحقيقي بالظبط، وفيه زرار نسخ لترسليه -->
-    <div id="debugBox" style="margin-top:24px;padding:14px;background:#f6f6fb;border:1px solid #e7e6f2;border-radius:12px;text-align:right;font-size:12px;font-family:monospace;direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-all;color:#333;"></div>
-    <button onclick="copyDebugInfo()" style="margin-top:10px;padding:8px 16px;border-radius:8px;border:1px solid #e7e6f2;background:#fff;cursor:pointer;font-size:13px;">📋 نسخ المعلومات دي</button>
   </div>
 
   <script>
@@ -101,7 +97,6 @@
 
 
     const lockReason = sessionStorage.getItem('lockReason');
-    const lockSourceFunction = sessionStorage.getItem('lockSourceFunction');
     const lockWhatsapp = sessionStorage.getItem('lockWhatsapp');
     const lockPhone = sessionStorage.getItem('lockPhone');
     const lockAudience = sessionStorage.getItem('lockAudience') || 'admin';
@@ -110,32 +105,6 @@
 
     if (lockAudience === 'teacher') {
       document.querySelector('.lede').textContent = 'تم إيقاف الوصول لحسابك مؤقتاً. تواصل مع المدرس الخاص بك لحل المشكلة.';
-    }
-
-    // ✅ نجمع كل المعلومات المتاحة فعلياً للتشخيص — أهمها نص السبب بالظبط ووقت المتصفح (يوضّح لو المشكلة توقيت)
-    function buildDebugInfo() {
-      const lines = [];
-      lines.push('=== سبب القفل بالظبط (زي ما وصل من السيرفر) ===');
-      lines.push('lockReason: ' + (lockReason || '(فاضي)'));
-      lines.push('lockSourceFunction: ' + (lockSourceFunction || '(فاضي — يبقى الدخول جاي من صفحة تسجيل الدخول مباشرة، مش من معترض API)'));
-      lines.push('lockAudience: ' + lockAudience);
-      lines.push('');
-      lines.push('=== وقت المتصفح الحالي ===');
-      const now = new Date();
-      lines.push('التاريخ/الوقت المحلي: ' + now.toString());
-      lines.push('ISO (UTC): ' + now.toISOString());
-      lines.push('فرق التوقيت عن UTC (دقيقة): ' + (-now.getTimezoneOffset()));
-      document.getElementById('debugBox').textContent = lines.join('\n');
-    }
-    buildDebugInfo();
-
-    function copyDebugInfo() {
-      const text = document.getElementById('debugBox').textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        alert('✅ اتنسخت! الصقيها في المحادثة');
-      }).catch(() => {
-        alert('⚠️ متعرفتش أنسخ تلقائياً — اختر النص وانسخه يدوياً');
-      });
     }
 
     function doLogout() {
