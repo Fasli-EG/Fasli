@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
           exam_id: examId, student_uid: studentUid, status: "in_progress", mode: "practice",
         }).select().single();
         if (error) throw new Error(error.message);
-        const { data: questions } = await supabase.from("exam_questions").select("id, question_text, question_type, options, points").eq("exam_id", examId).order("order_index");
+        const { data: questions } = await supabase.from("exam_questions").select("id, question_text, question_image_url, question_type, options, points").eq("exam_id", examId).order("order_index");
         return new Response(JSON.stringify({
           success: true, attemptId: attempt.id, startedAt: attempt.started_at, mode: "practice",
           durationMinutes: null, title: exam.title, questions: questions || [],
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
           return new Response(JSON.stringify({ success: false, message: "⚠️ انتهى وقت الاختبار ده بالفعل، هيتقفل تلقائياً" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-        const { data: questions } = await supabase.from("exam_questions").select("id, question_text, question_type, options, points").eq("exam_id", examId).order("order_index");
+        const { data: questions } = await supabase.from("exam_questions").select("id, question_text, question_image_url, question_type, options, points").eq("exam_id", examId).order("order_index");
         return new Response(JSON.stringify({
           success: true, attemptId: existing.id, startedAt: existing.started_at, mode: "official",
           durationMinutes: exam.duration_minutes, closesAt: exam.closes_at, title: exam.title, questions: questions || [],
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       if (error) throw new Error(error.message);
 
       // ✅ الأسئلة بترجع من غير الإجابة الصحيحة خالص، عشان الطالب مايشوفهاش في كود الصفحة
-      const { data: questions } = await supabase.from("exam_questions").select("id, question_text, question_type, options, points").eq("exam_id", examId).order("order_index");
+      const { data: questions } = await supabase.from("exam_questions").select("id, question_text, question_image_url, question_type, options, points").eq("exam_id", examId).order("order_index");
 
       return new Response(JSON.stringify({
         success: true, attemptId: attempt.id, startedAt: attempt.started_at, mode: "official",

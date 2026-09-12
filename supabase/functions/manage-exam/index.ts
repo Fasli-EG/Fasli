@@ -3,6 +3,31 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, verifyToken } from "../_shared/auth.ts";
 
+// ✅ (طلب) نص السؤال ممكن يبقى صورة بدل الكتابة (أو بالإضافة لها) — لمعادلات رياضية/رسومات
+// مينفعش تتكتب كنص عادي. نفس أسلوب upload-book-file بالظبط (رفع base64 لـ Supabase Storage).
+const MAX_QUESTION_IMAGE_BYTES = 4 * 1024 * 1024; // 4 ميجا كفاية لصورة سؤال، وأقل من حد حجم الطلب
+
+async function uploadQuestionImage(supabase: any, teacherId: string, examId: number, fileBase64: string): Promise<string> {
+  const base64Data = fileBase64.includes(",") ? fileBase64.split(",")[1] : fileBase64;
+  const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+  if (binaryData.length > MAX_QUESTION_IMAGE_BYTES) {
+    throw new Error("⚠️ حجم صورة السؤال أكبر من الحد المسموح (4 ميجا)");
+  }
+  const storagePath = `${teacherId}/${examId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+  const { error: uploadError } = await supabase.storage.from("exam-question-images").upload(storagePath, binaryData, {
+    contentType: "image/png", upsert: true,
+  });
+  if (uploadError) throw new Error(uploadError.message);
+  const { data: publicUrlData } = supabase.storage.from("exam-question-images").getPublicUrl(storagePath);
+  return publicUrlData.publicUrl;
+}
+
+async function deleteQuestionImageIfAny(supabase: any, imageUrl: string | null | undefined): Promise<void> {
+  if (!imageUrl) return;
+  const oldPath = imageUrl.split("/exam-question-images/")[1];
+  if (oldPath) await supabase.storage.from("exam-question-images").remove([oldPath]);
+}
+
 // ✅ تتأكد إن المدرس أصلاً مسموحله يستخدم ميزة الاختبارات الإلكترونية (صلاحية زي باقي الصلاحيات)
 async function requireExamPermission(supabase: any, teacherId: string) {
   const { data: teacher } = await supabase.from("teachers").select("permissions").eq("client_id", teacherId).maybeSingle();
@@ -173,9 +198,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "addQuestion") {
-      const { examId, questionText, questionType, options, correctAnswer, points } = body;
-      if (!examId || !questionText || !questionType || correctAnswer === undefined || !points) {
-        return new Response(JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة" }),
+      const { examId, questionText, questionImageBase64, questionType, options, correctAnswer, points } = body;
+      const cleanQuestionText = (questionText || "").trim();
+      // ✅ لازم نص أو صورة (أو الاتنين) — مش لازم الاتنين مع بعض
+      if (!examId || (!cleanQuestionText && !questionImageBase64) || !questionType || correctAnswer === undefined || !points) {
+        return new Response(JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة (نص السؤال أو صورة له على الأقل)" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (!["mcq", "true_false"].includes(questionType)) {
@@ -200,9 +227,13 @@ Deno.serve(async (req) => {
 
       const { count } = await supabase.from("exam_questions").select("id", { count: "exact", head: true }).eq("exam_id", examId);
 
+      const questionImageUrl = questionImageBase64
+        ? await uploadQuestionImage(supabase, tokenClientId!, examId, questionImageBase64)
+        : null;
+
       const { data, error } = await supabase.from("exam_questions").insert({
-        exam_id: examId, question_text: questionText, question_type: questionType,
-        options: questionType === "mcq" ? options : null,
+        exam_id: examId, question_text: cleanQuestionText || null, question_image_url: questionImageUrl,
+        question_type: questionType, options: questionType === "mcq" ? options : null,
         correct_answer: String(correctAnswer), points: Number(points), order_index: count || 0,
       }).select().single();
       if (error) throw new Error(error.message);
@@ -213,9 +244,10 @@ Deno.serve(async (req) => {
     // ✅ Aug 2026: تعديل سؤال موجود (نص/نوع/اختيارات/إجابة صحيحة/درجة) — نفس قيد النشر بتاع
     // addQuestion/deleteQuestion، مينفعش تتعدّل أسئلة اختبار منشور بالفعل
     if (action === "updateQuestion") {
-      const { questionId, questionText, questionType, options, correctAnswer, points } = body;
-      if (!questionId || !questionText || !questionType || correctAnswer === undefined || !points) {
-        return new Response(JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة" }),
+      const { questionId, questionText, questionImageBase64, removeImage, questionType, options, correctAnswer, points } = body;
+      const cleanQuestionText = (questionText || "").trim();
+      if (!questionId || (!cleanQuestionText && !questionImageBase64 && !removeImage) || !questionType || correctAnswer === undefined || !points) {
+        return new Response(JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة (نص السؤال أو صورة له على الأقل)" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (!["mcq", "true_false"].includes(questionType)) {
@@ -227,7 +259,7 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      const { data: q } = await supabase.from("exam_questions").select("exam_id, online_exams(teacher_id, is_published)").eq("id", questionId).maybeSingle();
+      const { data: q } = await supabase.from("exam_questions").select("exam_id, question_image_url, online_exams(teacher_id, is_published)").eq("id", questionId).maybeSingle();
       if (!q || (q as any).online_exams?.teacher_id !== tokenClientId) {
         return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح لك" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -237,8 +269,20 @@ Deno.serve(async (req) => {
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
+      // ✅ لو فيه صورة جديدة متبعوتة أو طلب صريح لحذف الصورة، نشيل القديمة (لو موجودة) من التخزين
+      let questionImageUrl: string | null | undefined = undefined; // undefined = سيب العمود زي ما هو
+      if (questionImageBase64) {
+        await deleteQuestionImageIfAny(supabase, (q as any).question_image_url);
+        questionImageUrl = await uploadQuestionImage(supabase, tokenClientId!, (q as any).exam_id, questionImageBase64);
+      } else if (removeImage) {
+        await deleteQuestionImageIfAny(supabase, (q as any).question_image_url);
+        questionImageUrl = null;
+      }
+
       const { data, error } = await supabase.from("exam_questions").update({
-        question_text: questionText, question_type: questionType,
+        question_text: cleanQuestionText || null,
+        ...(questionImageUrl !== undefined ? { question_image_url: questionImageUrl } : {}),
+        question_type: questionType,
         options: questionType === "mcq" ? options : null,
         correct_answer: String(correctAnswer), points: Number(points),
       }).eq("id", questionId).select().single();
@@ -249,7 +293,7 @@ Deno.serve(async (req) => {
 
     if (action === "deleteQuestion") {
       const { questionId } = body;
-      const { data: q } = await supabase.from("exam_questions").select("exam_id, online_exams(teacher_id, is_published)").eq("id", questionId).maybeSingle();
+      const { data: q } = await supabase.from("exam_questions").select("exam_id, question_image_url, online_exams(teacher_id, is_published)").eq("id", questionId).maybeSingle();
       if (!q || (q as any).online_exams?.teacher_id !== tokenClientId) {
         return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح لك" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -261,6 +305,7 @@ Deno.serve(async (req) => {
       }
       const { error } = await supabase.from("exam_questions").delete().eq("id", questionId);
       if (error) throw new Error(error.message);
+      await deleteQuestionImageIfAny(supabase, (q as any).question_image_url);
       return new Response(JSON.stringify({ success: true, message: "✅ تم حذف السؤال" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
