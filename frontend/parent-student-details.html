@@ -1102,8 +1102,8 @@
           const isParent = m.sender_role === 'parent';
           const time = new Date(m.created_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
           return `
-            <div style="align-self:${isParent ? 'flex-end' : 'flex-start'};max-width:80%;background:${isParent ? '#FDF1CC' : 'var(--gray-100)'};border-radius:12px;padding:8px 12px;">
-              <div style="font-size:13px;color:${isParent ? '#3B2E0A' : 'var(--gray-900)'};">${escapeHtml(m.message)}</div>
+            <div style="align-self:${isParent ? 'flex-end' : 'flex-start'};max-width:80%;background:${isParent ? 'rgba(var(--primary-rgb),0.18)' : 'var(--gray-100)'};border-radius:12px;padding:8px 12px;">
+              <div style="font-size:13px;color:var(--gray-900);">${escapeHtml(m.message)}</div>
               <div style="font-size:10.5px;color:var(--gray-500);margin-top:3px;">${escapeHtml(m.sender_name)} — ${time}</div>
             </div>
           `;

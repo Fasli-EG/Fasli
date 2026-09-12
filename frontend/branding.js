@@ -22,6 +22,37 @@
     }
   }
 
+  // ✅ يحوّل hex لنص "r, g, b" (من غير "rgb()" حواليه) — عشان يتحط جوه متغيّر CSS ويتستخدم
+  // بعدين في rgba(var(--primary-rgb), شفافية) لأي ظل/توهج، مش بس خلفيات صلبة
+  function hexToRgbTriplet(hex) {
+    try {
+      var h = hex.replace('#', '');
+      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      var r = parseInt(h.substring(0, 2), 16);
+      var g = parseInt(h.substring(2, 4), 16);
+      var b = parseInt(h.substring(4, 6), 16);
+      return r + ', ' + g + ', ' + b;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ✅ بيحدد لون نص واضح (أبيض أو غامق) فوق خلفية بلون العلامة التجارية، حسب سطوعه (صيغة YIQ القياسية)
+  // — عشان لو المدرس اختار لون غامق (كحلي، بنفسجي غامق..) النص فوق أزراره يفضل مقروء بدل غامق-على-غامق
+  function getContrastColor(hex) {
+    try {
+      var h = hex.replace('#', '');
+      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      var r = parseInt(h.substring(0, 2), 16);
+      var g = parseInt(h.substring(2, 4), 16);
+      var b = parseInt(h.substring(4, 6), 16);
+      var yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      return yiq >= 150 ? '#0B1C33' : '#FFFFFF';
+    } catch (e) {
+      return '#0B1C33';
+    }
+  }
+
   // ✅ يطبّق لون أساسي مخصص + الدرجات المشتقة منه (فاتحة/غامقة) على كل الصفحة فوراً
   // ✅ (طلب) التخصيص بقى أشمل: بيغطي كمان خلفية القائمة الجانبية وإطار الكروت في كل الصفحة،
   // مش بس زرار "الإجراء الأساسي" زي ما كان قبل كده — كله مشتق من نفس اللون الواحد اللي بيختاره المدرس
@@ -29,8 +60,11 @@
     if (!color) return;
     try {
       document.documentElement.style.setProperty('--primary', color);
+      var rgbTriplet = hexToRgbTriplet(color);
+      if (rgbTriplet) document.documentElement.style.setProperty('--primary-rgb', rgbTriplet);
       document.documentElement.style.setProperty('--primary-light', shadeColor(color, 0.75));
       document.documentElement.style.setProperty('--primary-dark', shadeColor(color, -0.28));
+      document.documentElement.style.setProperty('--primary-contrast', getContrastColor(color));
       // ✅ اللون الثانوي (accent) بياخد نفس اللون الأساسي افتراضياً لو مفيش لون ثانوي مخصص منفصل
       var accent = sessionStorage.getItem('brandAccentColor') || color;
       document.documentElement.style.setProperty('--accent', accent);

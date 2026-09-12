@@ -39,7 +39,7 @@
     inputEl.style.display = isPrompt ? 'block' : 'none';
     inputEl.value = defaultValue || '';
     confirmBtn.style.background = danger ? '#e53e3e' : 'var(--primary, #F2B705)';
-    confirmBtn.style.color = danger ? '#fff' : '#0B1C33';
+    confirmBtn.style.color = danger ? '#fff' : 'var(--primary-contrast, #0B1C33)';
     confirmBtn.textContent = isPrompt ? 'حفظ' : 'تأكيد';
 
     overlay.classList.add('open');
