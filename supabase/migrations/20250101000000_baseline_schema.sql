@@ -344,7 +344,7 @@ create table if not exists attendance (
   instructor_name_id bigint references instructor_names (id) on delete set null,
   instructor_name text,
   date date not null default current_date,
-  time time,
+  time text,
   status text,
   is_absent boolean not null default false,
   is_manual boolean not null default false,
