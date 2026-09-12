@@ -20,6 +20,7 @@ export default {
     rollupOptions: {
       input: {
         "activity-log": resolve(__dirname, "frontend/activity-log.html"),
+        "financial": resolve(__dirname, "frontend/financial.html"),
       },
     },
   },
