@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>إدارة المجموعات - فَصلي</title>
   <meta name="description" content="إدارة مجموعات الطلاب في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
-  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/Fasli/assets/logo-icon-DMEeWQpm.svg">
+  <link rel="manifest" href="/Fasli/assets/manifest-XTV9Elqy.json">
   <meta name="theme-color" content="#0B1C33">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="/Fasli/assets/apple-touch-icon-BalDJVJg.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- ✅ (طلب) لتبويب "تسجيل الطلاب" الجديد — نفس مكتبة توليد QR المستخدمة سابقاً في teacher-settings.html -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=53">
+  <link rel="stylesheet" crossorigin href="/Fasli/assets/style-DrKTg6OU.css">
 </head>
 <body>
   <div class="app-shell">
@@ -1804,32 +1804,7 @@ async function markAllRead() {
       }
     };
   </script>
-  <style>
-    /* ✅ Aug 2026: سجل حضور الحصة بيتعرض جوه الصفحة نفسها (مودال) بدل فتح نافذة جديدة — زر
-       الطباعة بيظهر بعد العرض عشان المستخدم اللي عاوز يشوف بس مايضطرش يطبع */
-    #rosterModalOverlay .roster-modal-box { max-width: 640px; text-align: right; }
-    #rosterModalOverlay .roster-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-    #rosterModalOverlay .roster-header img { height: 46px; width: 46px; object-fit: contain; border-radius: 8px; }
-    #rosterModalOverlay .roster-header .roster-titles h3 { margin: 0; font-size: 19px; }
-    #rosterModalOverlay .roster-header .roster-titles span { font-size: 13px; color: var(--gray-600); }
-    #rosterModalOverlay table { border-collapse: collapse; width: 100%; margin-top: 14px; font-size: 13px; }
-    #rosterModalOverlay th, #rosterModalOverlay td { border: 1px solid var(--gray-200); padding: 6px 10px; text-align: right; }
-    #rosterModalOverlay th { background: var(--gray-50); }
-    #rosterModalOverlay td.center, #rosterModalOverlay th.center { text-align: center; }
-    #rosterModalOverlay .roster-table-wrap { max-height: 50vh; overflow-y: auto; }
-    @media print {
-      body.roster-printing > *:not(#rosterModalOverlay) { display: none !important; }
-      body.roster-printing #rosterModalOverlay {
-        position: static !important; background: none !important; backdrop-filter: none !important;
-        padding: 0 !important; display: block !important;
-      }
-      body.roster-printing #rosterModalOverlay .roster-modal-box {
-        box-shadow: none !important; max-width: 100% !important; margin: 0 !important; animation: none !important;
-      }
-      body.roster-printing #rosterModalOverlay .roster-no-print { display: none !important; }
-      #rosterModalOverlay .roster-table-wrap { max-height: none !important; overflow: visible !important; }
-    }
-  </style>
+  <style>#rosterModalOverlay .roster-modal-box{text-align:right;max-width:640px}#rosterModalOverlay .roster-header{align-items:center;gap:12px;margin-bottom:10px;display:flex}#rosterModalOverlay .roster-header img{object-fit:contain;border-radius:8px;width:46px;height:46px}#rosterModalOverlay .roster-header .roster-titles h3{margin:0;font-size:19px}#rosterModalOverlay .roster-header .roster-titles span{color:var(--gray-600);font-size:13px}#rosterModalOverlay table{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}#rosterModalOverlay th,#rosterModalOverlay td{border:1px solid var(--gray-200);text-align:right;padding:6px 10px}#rosterModalOverlay th{background:var(--gray-50)}#rosterModalOverlay td.center,#rosterModalOverlay th.center{text-align:center}#rosterModalOverlay .roster-table-wrap{max-height:50vh;overflow-y:auto}@media print{body.roster-printing>:not(#rosterModalOverlay){display:none!important}body.roster-printing #rosterModalOverlay{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:0 0!important;padding:0!important;display:block!important;position:static!important}body.roster-printing #rosterModalOverlay .roster-modal-box{box-shadow:none!important;max-width:100%!important;margin:0!important;animation:none!important}body.roster-printing #rosterModalOverlay .roster-no-print{display:none!important}#rosterModalOverlay .roster-table-wrap{max-height:none!important;overflow:visible!important}}</style>
   <script>
     // ============================================
     // ✅ Aug 2026 (Phase I follow-up 10): سجل الحصص (قراءة/طباعة فقط — الإنشاء بقى بيحصل تلقائياً

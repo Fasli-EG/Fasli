@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>الاختبارات - فَصلي</title>
   <meta name="description" content="إدارة الاختبارات اليدوية والإلكترونية ودرجات الطلاب في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
-  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/Fasli/assets/logo-icon-DMEeWQpm.svg">
+  <link rel="manifest" href="/Fasli/assets/manifest-XTV9Elqy.json">
   <meta name="theme-color" content="#0B1C33">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="/Fasli/assets/apple-touch-icon-BalDJVJg.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=52">
+  <link rel="stylesheet" crossorigin href="/Fasli/assets/style-DrKTg6OU.css">
 </head>
 <body>
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
-    <script src="layout.js?v=1"></script>
+    <script src="layout.js?v=3"></script>
     <script>renderShell({active:'grades'});</script>
 
     <div class="main-area">
@@ -481,43 +481,7 @@
 
   <!-- ✅ Aug 2026: طباعة أي مودال مفتوح جوه الصفحة (تقرير النتائج أو ورقة الأسئلة) — بدون فتح
        نافذة/تاب جديد، بنفس المبدأ اللي اتطبق في groups.html لطباعة سجل الحصة -->
-  <style id="printModalStyles">
-    .print-only { display: none; }
-    /* ✅ Aug 2026: هيدر شعار المركز اللي بيظهر في أعلى ورق الطباعة (تقرير النتائج/ورقة الأسئلة) —
-       نفس تصميم .roster-header في groups.html */
-    .exam-print-header { align-items: center; gap: 12px; margin-bottom: 14px; }
-    .exam-print-header img { height: 46px; width: 46px; object-fit: contain; border-radius: 8px; }
-    .exam-print-header .exam-print-titles h3 { margin: 0; font-size: 19px; }
-    .exam-print-header .exam-print-titles span { font-size: 13px; color: var(--gray-600); }
-    @media print {
-      /* ✅ Aug 2026 (فيكس): المودالات في الصفحة دي متعشّشة جوه .app-shell/.main-area مش
-         أبناء مباشرين لـ body زي ما كان مفروض — يعني "إخفاء كل حاجة عدا المودال المفتوح"
-         باستخدام display:none على العناصر المباشرة لـ body كان بيخفي .app-shell كله
-         (اللي المودال نفسه متعشّش جواه)، وdisplay:none على عنصر أب بيلغي أي display
-         تاني على أي عنصر جواه مهما كان — فالمودال كان بيتخفي برضه رغم كل الـ override بتاعته.
-         الحل الصح: استخدام visibility (مش display) عشان نخفي كل حاجة، وبعدين نرجّع
-         visibility:visible بس على المودال المفتوح ومحتوياته، ونطلّعه فوق كل حاجة بـ
-         position:fixed يغطي الصفحة بالكامل بدل ما يعتمد على ترتيبه في تدفق المستند. */
-      body.grades-printing * { visibility: hidden !important; }
-      body.grades-printing .modal-overlay.open,
-      body.grades-printing .modal-overlay.open * { visibility: visible !important; }
-      body.grades-printing .modal-overlay.open {
-        position: fixed !important; inset: 0 !important; z-index: 999999 !important;
-        background: none !important; backdrop-filter: none !important;
-        padding: 0 !important; display: block !important;
-      }
-      body.grades-printing .modal-overlay.open .modal-box {
-        box-shadow: none !important; max-width: 100% !important; margin: 0 !important; animation: none !important;
-        max-height: none !important; overflow: visible !important; position: static !important;
-      }
-      body.grades-printing .modal-overlay.open .table-wrapper {
-        max-height: none !important; overflow: visible !important;
-      }
-      body.grades-printing .no-print { display: none !important; }
-      body.grades-printing .print-only { display: block !important; }
-      body.grades-printing .print-only.exam-print-header { display: flex !important; }
-    }
-  </style>
+  <style id="printModalStyles">.print-only{display:none}.exam-print-header{align-items:center;gap:12px;margin-bottom:14px}.exam-print-header img{object-fit:contain;border-radius:8px;width:46px;height:46px}.exam-print-header .exam-print-titles h3{margin:0;font-size:19px}.exam-print-header .exam-print-titles span{color:var(--gray-600);font-size:13px}@media print{body.grades-printing *{visibility:hidden!important}body.grades-printing .modal-overlay.open,body.grades-printing .modal-overlay.open *{visibility:visible!important}body.grades-printing .modal-overlay.open{z-index:999999!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:0 0!important;padding:0!important;display:block!important;position:fixed!important;inset:0!important}body.grades-printing .modal-overlay.open .modal-box{box-shadow:none!important;max-width:100%!important;max-height:none!important;margin:0!important;animation:none!important;position:static!important;overflow:visible!important}body.grades-printing .modal-overlay.open .table-wrapper{max-height:none!important;overflow:visible!important}body.grades-printing .no-print{display:none!important}body.grades-printing .print-only{display:block!important}body.grades-printing .print-only.exam-print-header{display:flex!important}}</style>
 
       </div>
   </div>
