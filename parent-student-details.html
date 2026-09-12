@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="/Fasli/assets/apple-touch-icon-BalDJVJg.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" crossorigin href="/Fasli/assets/style-DrKTg6OU.css">
+  <link rel="stylesheet" crossorigin href="/Fasli/assets/style-DciS0jXs.css">
 </head>
 <style>[data-theme=dark] .student-card{background:var(--gray-100);border-color:var(--gray-200)}[data-theme=dark] .student-card .student-name{color:var(--gray-800)}[data-theme=dark] .student-card .student-name .uid{color:var(--gray-500)}[data-theme=dark] .student-card .student-details .detail{color:var(--gray-600)}[data-theme=dark] .student-card .student-stats{border-color:var(--gray-200)}[data-theme=dark] .student-card .student-stats .stat-item .num{color:var(--gray-800)}[data-theme=dark] .student-card .student-stats .stat-item .label{color:var(--gray-500)}[data-theme=dark] .student-card .view-link{color:var(--primary-light)}[data-theme=dark] .student-card .view-link:hover{color:var(--primary)}[data-theme=dark] .stat-card{background:var(--gray-100);border-color:var(--gray-200)}[data-theme=dark] .stat-card .stat-label,[data-theme=dark] .stat-card .stat-value{color:var(--gray-400)}[data-theme=dark] .card{background:var(--gray-100);border-color:var(--gray-200)}[data-theme=dark] .card .card-header h2{color:var(--gray-800)}[data-theme=dark] .card .card-header .badge-count{background:var(--gray-200);color:var(--gray-600)}[data-theme=dark] .actions .btn-secondary{background:var(--gray-200);color:var(--gray-800);border-color:var(--gray-300)}[data-theme=dark] .actions .btn-secondary:hover{background:var(--gray-300)}[data-theme=dark] .actions .btn-outline{color:var(--gray-600);border-color:var(--gray-300)}[data-theme=dark] .actions .btn-outline:hover{background:var(--gray-200)}</style>
 <body>
@@ -1082,8 +1082,8 @@
           const isParent = m.sender_role === 'parent';
           const time = new Date(m.created_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
           return `
-            <div style="align-self:${isParent ? 'flex-end' : 'flex-start'};max-width:80%;background:${isParent ? '#FDF1CC' : 'var(--gray-100)'};border-radius:12px;padding:8px 12px;">
-              <div style="font-size:13px;color:${isParent ? '#3B2E0A' : 'var(--gray-900)'};">${escapeHtml(m.message)}</div>
+            <div style="align-self:${isParent ? 'flex-end' : 'flex-start'};max-width:80%;background:${isParent ? 'rgba(var(--primary-rgb),0.18)' : 'var(--gray-100)'};border-radius:12px;padding:8px 12px;">
+              <div style="font-size:13px;color:var(--gray-900);">${escapeHtml(m.message)}</div>
               <div style="font-size:10.5px;color:var(--gray-500);margin-top:3px;">${escapeHtml(m.sender_name)} — ${time}</div>
             </div>
           `;
