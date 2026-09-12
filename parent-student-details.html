@@ -205,10 +205,11 @@
                   <th>المبلغ</th>
                   <th>الحالة</th>
                   <th>التاريخ</th>
+                  <th>إجراء</th>
                 </tr>
               </thead>
               <tbody id="paymentsBody">
-                <tr><td colspan="4" class="loading">⏳ جاري التحميل...</td></tr>
+                <tr><td colspan="5" class="loading">⏳ جاري التحميل...</td></tr>
               </tbody>
             </table>
           </div>
@@ -246,6 +247,30 @@
   <!-- ====== Toast Container ====== -->
 
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ====== مودال رفع إيصال الدفع ====== -->
+  <div class="modal-overlay" id="receiptModalOverlay">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-header"><h3><i class="fas fa-paperclip"></i> إرفاق إيصال الدفع</h3></div>
+      <div class="modal-body">
+        <p style="margin:0 0 14px;font-size:14px;color:var(--gray-700);"><strong id="receiptModalTitle"></strong></p>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-weight:600;font-size:13px;margin-bottom:6px;">المبلغ المدفوع (ج.م)</label>
+          <input type="number" id="receiptAmountInput" min="1" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:14px;font-family:inherit;">
+        </div>
+        <div style="margin-bottom:6px;">
+          <label style="display:block;font-weight:600;font-size:13px;margin-bottom:6px;">صورة الإيصال</label>
+          <input type="file" id="receiptFileInput" accept="image/png,image/jpeg" capture="environment" style="width:100%;font-size:13px;">
+        </div>
+        <img id="receiptPreviewImg" style="display:none;max-width:100%;border-radius:10px;margin-top:10px;border:1px solid var(--gray-200);">
+        <p id="receiptModalError" style="display:none;color:var(--danger);font-size:13px;margin-top:10px;"></p>
+      </div>
+      <div class="modal-footer" style="display:flex;gap:10px;padding:16px 24px;">
+        <button class="btn" style="flex:1;background:var(--gray-100);color:var(--gray-700);" onclick="closeReceiptModal()">إلغاء</button>
+        <button class="btn btn-primary" id="receiptSubmitBtn" style="flex:1;" onclick="submitReceipt()">رفع الإيصال</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     function escapeHtml(str) {
@@ -771,10 +796,52 @@
     // ============================================
     // LOAD PAYMENTS
     // ============================================
+    // ✅ إيصالات ولي الأمر (معلّقة/مرفوضة) للطالب الحالي، مفهرسة بالبند — عشان نعرف نعرض
+    // "قيد المراجعة" أو سبب الرفض بدل زرار الرفع العادي
+    let receiptsByTitle = {};
+    window.__receiptRowData = {};
+    let receiptRowSeq = 0;
+
+    async function loadMyReceipts(uid) {
+      receiptsByTitle = {};
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment-receipt', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({ action: 'listMine', studentUid: uid })
+        });
+        const result = await response.json();
+        if (result.success) {
+          (result.data || []).forEach(r => {
+            // آخر إيصال لكل بند بس (الأحدث، والقائمة راجعة مرتبة تنازلي بالفعل)
+            if (!receiptsByTitle[r.title]) receiptsByTitle[r.title] = r;
+          });
+        }
+      } catch (e) { /* تجاهل — مش حرج لو فشل، هيفضل زرار الرفع العادي شغال */ }
+    }
+
+    function buildPaymentActionCell(payment, remaining) {
+      const receipt = receiptsByTitle[payment.title];
+      if (receipt && receipt.status === 'pending') {
+        return '<span class="status-badge status-partial">⏳ قيد المراجعة</span>';
+      }
+      const key = 'r' + (receiptRowSeq++);
+      window.__receiptRowData[key] = {
+        studentUid: currentReceiptStudentUid, title: payment.title,
+        totalAmount: payment.total_amount, remaining, groupName: payment.group_name,
+      };
+      let rejectedNote = '';
+      if (receipt && receipt.status === 'rejected') {
+        rejectedNote = `<div style="font-size:11px;color:var(--danger);margin-top:4px;">رُفض: ${escapeHtml(receipt.rejection_reason || '')}</div>`;
+      }
+      return `<button class="btn btn-sm btn-outline" onclick="openReceiptModal('${key}')"><i class="fas fa-paperclip"></i> إرفاق إيصال</button>${rejectedNote}`;
+    }
+
     function renderPaymentsRows(data) {
       const tbody = document.getElementById('paymentsBody');
       if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><i class="fas fa-coins" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد مدفوعات شهرية</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-coins" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد مدفوعات شهرية</td></tr>';
         return;
       }
       const rowTpl = payment => {
@@ -785,6 +852,7 @@
               <td>0 / ${payment.total_amount} ج.م</td>
               <td><span class="status-badge status-unpaid">❌ غير مدفوع</span></td>
               <td>—</td>
+              <td>${buildPaymentActionCell(payment, payment.total_amount)}</td>
             </tr>
           `;
         }
@@ -793,32 +861,39 @@
         const isFull = payment.amount >= payment.total_amount;
         const statusClass = isFull ? 'status-paid' : (payment.amount > 0 ? 'status-partial' : 'status-unpaid');
         const statusText = isFull ? '✅ مدفوع بالكامل' : (payment.amount > 0 ? '🟡 دفعة جزئية' : '❌ غير مدفوع');
+        const actionCell = isFull ? '—' : buildPaymentActionCell(payment, payment.total_amount - payment.amount);
         return `
           <tr>
             <td>${escapeHtml(payment.title)}</td>
             <td><strong>${payment.amount}</strong> / ${payment.total_amount} ج.م</td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>${dateStr}</td>
+            <td>${actionCell}</td>
           </tr>
         `;
       };
       const paymentGroups = groupRowsByGroupName(data);
       let html = '';
       if (paymentGroups.length > 1) {
-        paymentGroups.forEach(g => { html += renderGroupSectionHeader(g.name, g.rows.length, 4) + g.rows.map(rowTpl).join(''); });
+        paymentGroups.forEach(g => { html += renderGroupSectionHeader(g.name, g.rows.length, 5) + g.rows.map(rowTpl).join(''); });
       } else {
         data.forEach(r => { html += rowTpl(r); });
       }
       tbody.innerHTML = html;
     }
 
+    let currentReceiptStudentUid = null;
+
     async function loadPayments(uid) {
       const tbody = document.getElementById('paymentsBody');
-      tbody.innerHTML = '<tr><td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="loading"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</td></tr>';
+      currentReceiptStudentUid = uid;
 
       try {
         const headers = getAuthHeaders();
         if (!headers) return;
+
+        await loadMyReceipts(uid);
 
         const response = await fetch(PROJECT_URL + '/functions/v1/get-student-full-profile', {
           method: 'POST',
@@ -853,7 +928,7 @@
           totalPaid = data.filter(p => !p.missed).reduce((s, p) => s + Number(p.amount || 0), 0);
           renderPaymentsRows(data);
         } else {
-          tbody.innerHTML = `<tr><td colspan="4" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadPayments('${uid}')">إعادة المحاولة</button></td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5" class="error-state">❌ ${result.message}<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadPayments('${uid}')">إعادة المحاولة</button></td></tr>`;
         }
 
         // جلب مدفوعات المذكرات وإضافتها للإجمالي
@@ -883,7 +958,7 @@
 
       } catch (error) {
         console.error('❌ خطأ في تحميل المدفوعات:', error);
-        tbody.innerHTML = `<tr><td colspan="4" class="error-state">❌ تعذر تحميل المدفوعات<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadPayments('${uid}')">إعادة المحاولة</button></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="error-state">❌ تعذر تحميل المدفوعات<br><button class="btn btn-sm btn-outline retry-btn" onclick="loadPayments('${uid}')">إعادة المحاولة</button></td></tr>`;
       }
     }
 
@@ -1203,6 +1278,109 @@
       loadConversation();
       activateTabFromUrl();
     };
+
+    // ============================================
+    // ✅ رفع إيصال الدفع (الحل المجاني: حوالة يدوية + مراجعة من المدرس)
+    // ============================================
+    let currentReceiptContext = null;
+
+    function openReceiptModal(key) {
+      const info = window.__receiptRowData[key];
+      if (!info) return;
+      currentReceiptContext = info;
+      document.getElementById('receiptModalTitle').textContent = `${info.title} — المطلوب: ${info.remaining} ج.م`;
+      document.getElementById('receiptAmountInput').value = info.remaining;
+      document.getElementById('receiptFileInput').value = '';
+      document.getElementById('receiptPreviewImg').style.display = 'none';
+      document.getElementById('receiptModalError').style.display = 'none';
+      document.getElementById('receiptSubmitBtn').disabled = false;
+      document.getElementById('receiptSubmitBtn').textContent = 'رفع الإيصال';
+      document.getElementById('receiptModalOverlay').classList.add('open');
+    }
+
+    function closeReceiptModal() {
+      document.getElementById('receiptModalOverlay').classList.remove('open');
+      currentReceiptContext = null;
+    }
+
+    document.getElementById('receiptFileInput').addEventListener('change', function() {
+      const file = this.files[0];
+      const preview = document.getElementById('receiptPreviewImg');
+      if (!file) { preview.style.display = 'none'; return; }
+      const reader = new FileReader();
+      reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+      reader.readAsDataURL(file);
+    });
+
+    function showReceiptError(msg) {
+      const el = document.getElementById('receiptModalError');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    async function submitReceipt() {
+      if (!currentReceiptContext) return;
+      const errorEl = document.getElementById('receiptModalError');
+      errorEl.style.display = 'none';
+
+      const amount = Number(document.getElementById('receiptAmountInput').value);
+      const fileInput = document.getElementById('receiptFileInput');
+      const file = fileInput.files[0];
+
+      if (!amount || amount <= 0 || amount > currentReceiptContext.remaining) {
+        showReceiptError('⚠️ أدخل مبلغاً صحيحاً لا يتجاوز المطلوب');
+        return;
+      }
+      if (!file) {
+        showReceiptError('⚠️ اختر صورة الإيصال أولاً');
+        return;
+      }
+
+      const submitBtn = document.getElementById('receiptSubmitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ جاري الرفع...';
+
+      try {
+        const fileBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-payment-receipt', {
+          method: 'POST', headers: headers,
+          body: JSON.stringify({
+            action: 'submit',
+            studentUid: currentReceiptContext.studentUid,
+            title: currentReceiptContext.title,
+            totalAmount: currentReceiptContext.totalAmount,
+            claimedAmount: amount,
+            groupName: currentReceiptContext.groupName,
+            fileBase64: fileBase64,
+            fileName: file.name,
+          })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          closeReceiptModal();
+          loadPayments(currentReceiptStudentUid);
+        } else {
+          showReceiptError(result.message || 'فشل رفع الإيصال');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'رفع الإيصال';
+        }
+      } catch (e) {
+        showReceiptError('⚠️ تعذر الاتصال بالسيرفر، حاول مرة أخرى');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'رفع الإيصال';
+      }
+    }
   </script>
   <script>
     if ('serviceWorker' in navigator) {
