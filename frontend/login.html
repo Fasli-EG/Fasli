@@ -808,6 +808,8 @@
       await saveAuth('parentPhone', username);
       await saveAuth('parentName', data?.name || 'ولي أمر');
       await saveAuth('userRole', 'parent');
+      await saveAuth('brandLogoUrl', data?.brandLogoUrl || '');
+      await saveAuth('brandColor', data?.brandColor || '');
       window.location.href = 'parent-dashboard.html';
       return;
     }
@@ -817,6 +819,8 @@
       await saveAuth('studentGroup', data?.groupName || '');
       await saveAuth('studentTeacherId', data?.teacherId || '');
       await saveAuth('userRole', 'student');
+      await saveAuth('brandLogoUrl', data?.brandLogoUrl || '');
+      await saveAuth('brandColor', data?.brandColor || '');
       window.location.href = 'student-portal.html';
       return;
     }
