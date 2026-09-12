@@ -98,9 +98,6 @@ verify_jwt = false
 [functions.manage-center]
 verify_jwt = false
 
-[functions.get-center-dashboard]
-verify_jwt = false
-
 [functions.get-at-risk-students]
 verify_jwt = false
 
