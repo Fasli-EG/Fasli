@@ -721,7 +721,7 @@
         بدون الإعدادات دي، الإشعارات بتظهر جوه جرس التطبيق بس (لازم يكون التطبيق مفتوح عشان تظهر).
         عشان توصل كإشعار حقيقي على الموبايل/المتصفح حتى لو التطبيق مقفول، محتاج:
         <br>1) تعمل مشروع مجاني على <span dir="ltr" style="font-family:monospace">console.firebase.google.com</span> (لو مالكش واحد).
-        <br>2) من إعدادات المشروع ⚙️ → General → "Your apps" → أضف تطبيق Web (</> ) وهتلاقي بيانات الإعدادات (Web config) تحت — انسخها في الحقول اللي تحت.
+        <br>2) من إعدادات المشروع ⚙️ → General → "Your apps" → أضف تطبيق Web (&lt;/&gt;) وهتلاقي بيانات الإعدادات (Web config) تحت — انسخها في الحقول اللي تحت.
         <br>3) من نفس الإعدادات → تبويب Cloud Messaging → "Web configuration" → "Generate key pair" وده هيديك "مفتاح VAPID" — انسخه في الحقل الأخير تحت.
         <br>4) من ⚙️ → Service Accounts → "Generate new private key" (هينزل ملف JSON) — الملف ده متحطش هنا، لازم تضيفه كمتغير بيئة اسمه <span dir="ltr" style="font-family:monospace">FIREBASE_SERVICE_ACCOUNT</span> في إعدادات Supabase Edge Functions (Settings → Edge Functions → Secrets)، وتحط محتوى الملف كامل كنص جوّاه.
       </p>
