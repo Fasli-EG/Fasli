@@ -23,7 +23,7 @@ serve(async (req) => {
     // التسجيل العام الآمن (register.html?token=...) بدل كود المدرس القابل للتخمين
     const { data, error } = await supabase
       .from("teachers")
-      .select("contact_whatsapp, contact_phone, brand_logo_url, brand_color, registration_token, conversations_enabled, whatsapp_visible, phone_visible, electronic_payment_enabled")
+      .select("contact_whatsapp, contact_phone, brand_logo_url, brand_color, registration_token, conversations_enabled, whatsapp_visible, phone_visible, electronic_payment_enabled, payment_instapay, payment_wallet, payment_bank_details")
       .eq("client_id", tokenClientId)
       .maybeSingle();
 

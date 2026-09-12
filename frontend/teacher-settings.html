@@ -35,9 +35,9 @@
     .wifi-form .field { margin-bottom: 16px; }
     .wifi-form .field label { display: block; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; font-size: 13px; }
     .wifi-form .field label .required { color: var(--danger); }
-    .wifi-form .field input { width: 100%; padding: 10px 14px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 14px; font-family: inherit; transition: var(--transition); background: white; color: var(--gray-800); }
-    .wifi-form .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),0.1); }
-    .wifi-form .field input::placeholder { color: var(--gray-400); }
+    .wifi-form .field input, .wifi-form .field textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 14px; font-family: inherit; transition: var(--transition); background: white; color: var(--gray-800); resize: vertical; }
+    .wifi-form .field input:focus, .wifi-form .field textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),0.1); }
+    .wifi-form .field input::placeholder, .wifi-form .field textarea::placeholder { color: var(--gray-400); }
     .wifi-form .field input:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-group { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
     .btn-group .btn { flex: 1; min-width: 120px; justify-content: center; }
@@ -57,9 +57,9 @@
     [data-theme="dark"] .config-display .row .label { color: var(--gray-500); }
     [data-theme="dark"] .config-display .row .value { color: var(--gray-800); }
     [data-theme="dark"] .config-display .row .value.empty { color: var(--gray-400); }
-    [data-theme="dark"] .wifi-form .field input { background: var(--gray-200); color: var(--gray-800); border-color: var(--gray-300); }
-    [data-theme="dark"] .wifi-form .field input::placeholder { color: var(--gray-400); }
-    [data-theme="dark"] .wifi-form .field input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),0.2); }
+    [data-theme="dark"] .wifi-form .field input, [data-theme="dark"] .wifi-form .field textarea { background: var(--gray-200); color: var(--gray-800); border-color: var(--gray-300); }
+    [data-theme="dark"] .wifi-form .field input::placeholder, [data-theme="dark"] .wifi-form .field textarea::placeholder { color: var(--gray-400); }
+    [data-theme="dark"] .wifi-form .field input:focus, [data-theme="dark"] .wifi-form .field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),0.2); }
     [data-theme="dark"] .message.success { background: rgba(34,197,94,0.15); color: #86efac; border-color: rgba(34,197,94,0.2); }
     [data-theme="dark"] .message.error { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
     [data-theme="dark"] .message.info { background: rgba(59,130,246,0.15); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
@@ -206,6 +206,34 @@
         </label>
       </div>
       <div id="electronicPaymentToggleMessage" class="message"></div>
+    </div>
+
+    <!-- ✅ (طلب) بيانات الدفع اللي بتظهر لولي الأمر قبل ما يرفع الإيصال — يعرف يحوّل فلوسه على مين -->
+    <div class="wifi-card" style="margin-top:24px;">
+      <div class="page-header" style="margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:18px;">💳 بيانات استلام التحويلات</h2>
+          <span class="sub">دي البيانات اللي هتظهر لولي الأمر وهو بيحوّل الفلوس يدويًا، قبل ما يرفع صورة الإيصال — املأ بس اللي بتستخدمه فعليًا وسيب الباقي فاضي.</span>
+        </div>
+      </div>
+      <div class="wifi-form">
+        <div class="field">
+          <label>📲 رقم إنستاباي (أو رابط الدفع)</label>
+          <input type="text" id="paymentInstapayInput" placeholder="مثال: 01012345678@instapay أو رابط الدفع" dir="ltr">
+        </div>
+        <div class="field">
+          <label>💰 رقم المحفظة (فودافون كاش وغيرها)</label>
+          <input type="text" id="paymentWalletInput" placeholder="مثال: 01012345678" dir="ltr">
+        </div>
+        <div class="field">
+          <label>🏦 تفاصيل الحساب البنكي</label>
+          <textarea id="paymentBankDetailsInput" rows="3" placeholder="مثال: بنك مصر — اسم الحساب: أحمد محمد — رقم الحساب: 1234567890"></textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="savePaymentInstructions()">
+          <i class="fas fa-save"></i> حفظ بيانات الدفع
+        </button>
+      </div>
+      <div id="paymentInstructionsMessage" class="message"></div>
     </div>
 
     <div class="wifi-card" style="margin-top:24px;">
@@ -1153,6 +1181,9 @@ async function confirmReset() {
           document.getElementById('whatsappVisibleToggle').checked = result.data.whatsapp_visible !== false;
           document.getElementById('phoneVisibleToggle').checked = result.data.phone_visible !== false;
           document.getElementById('electronicPaymentEnabledToggle').checked = result.data.electronic_payment_enabled === true;
+          document.getElementById('paymentInstapayInput').value = result.data.payment_instapay || '';
+          document.getElementById('paymentWalletInput').value = result.data.payment_wallet || '';
+          document.getElementById('paymentBankDetailsInput').value = result.data.payment_bank_details || '';
         }
       } catch (error) {
         console.error('❌ خطأ في تحميل بيانات التواصل:', error);
@@ -1393,6 +1424,41 @@ async function confirmReset() {
       } catch (error) {
         console.error('❌ خطأ في حفظ بيانات التواصل:', error);
         showContactMessage('❌ فشل حفظ بيانات التواصل: ' + error.message, 'error');
+      }
+    }
+
+    // ✅ (طلب) بيانات استلام التحويلات — بتظهر لولي الأمر قبل ما يرفع إيصال دفع
+    function showPaymentInstructionsMessage(text, type) {
+      const el = document.getElementById('paymentInstructionsMessage');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      el.style.display = 'block';
+    }
+
+    async function savePaymentInstructions() {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const paymentInstapay = document.getElementById('paymentInstapayInput').value.trim();
+      const paymentWallet = document.getElementById('paymentWalletInput').value.trim();
+      const paymentBankDetails = document.getElementById('paymentBankDetailsInput').value.trim();
+
+      try {
+        const response = await fetch(PROJECT_URL + '/functions/v1/update-teacher-contact', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ paymentInstapay, paymentWallet, paymentBankDetails })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showPaymentInstructionsMessage('✅ تم حفظ بيانات استلام التحويلات', 'success');
+        } else {
+          showPaymentInstructionsMessage('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حفظ بيانات الدفع:', error);
+        showPaymentInstructionsMessage('❌ فشل حفظ بيانات الدفع: ' + error.message, 'error');
       }
     }
 

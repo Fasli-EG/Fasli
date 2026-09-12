@@ -114,7 +114,7 @@ serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { contactWhatsapp, contactPhone, absenceThresholdMinutes, brandLogoUrl, brandColor, conversationsEnabled, whatsappVisible, phoneVisible, electronicPaymentEnabled } = body;
+    const { contactWhatsapp, contactPhone, absenceThresholdMinutes, brandLogoUrl, brandColor, conversationsEnabled, whatsappVisible, phoneVisible, electronicPaymentEnabled, paymentInstapay, paymentWallet, paymentBankDetails } = body;
 
     const updates: any = {};
     if (contactWhatsapp !== undefined) updates.contact_whatsapp = contactWhatsapp || null;
@@ -131,6 +131,10 @@ serve(async (req) => {
     if (phoneVisible !== undefined) updates.phone_visible = !!phoneVisible;
     // ✅ (طلب) رفع إيصال الدفع الإلكتروني (الحل المجاني) — اختياري بقرار المدرس، معطّل افتراضيًا
     if (electronicPaymentEnabled !== undefined) updates.electronic_payment_enabled = !!electronicPaymentEnabled;
+    // ✅ (طلب) بيانات الدفع اللي بتظهر لولي الأمر قبل ما يرفع الإيصال — يعرف يحوّل على مين
+    if (paymentInstapay !== undefined) updates.payment_instapay = paymentInstapay || null;
+    if (paymentWallet !== undefined) updates.payment_wallet = paymentWallet || null;
+    if (paymentBankDetails !== undefined) updates.payment_bank_details = paymentBankDetails || null;
 
     const { error } = await supabase
       .from("teachers")
