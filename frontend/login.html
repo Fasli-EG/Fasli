@@ -848,9 +848,10 @@
 
     setLoading(true);
 
-    // ✅ (هجرة Supabase Auth) المرحلة الأولى: حسابات بإيميل حقيقي (الماستر أدمن حاليًا) بتدخل
-    // مباشرة عن طريق Supabase Auth، بدل فانكشن /login القديمة. بقية الأدوار (كود مدرس/اسم
-    // مستخدم مساعد/رقم هاتف ولي أمر) لسه بتستخدم المسار القديم لحد ما يترحّلوا هما كمان.
+    // ✅ (هجرة Supabase Auth) حسابات بإيميل حقيقي (الماستر أدمن حاليًا) بتدخل مباشرة عن طريق
+    // Supabase Auth من غير المرور بفانكشن /login. باقي الأدوار (كود مدرس/اسم مستخدم مساعد/رقم
+    // هاتف ولي أمر) بتفضل تنادي /login زي ما هي — الفانكشن نفسها بقت بتتحقق عن طريق Supabase
+    // Auth من جوّه (login/index.ts)، فمفيش داعي الفرونت إند يتغيّر خالص لباقي الأدوار.
     if (selectedGroup === 'staff' && username.includes('@')) {
       try {
         const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email: username, password });
@@ -860,6 +861,7 @@
         }
         const meta = authData.user?.app_metadata || {};
         await saveAuth('jwtToken', authData.session.access_token);
+        await saveAuth('refreshToken', authData.session.refresh_token);
         showMessage('تم تسجيل الدخول بنجاح', 'success');
         setTimeout(() => redirectUser(meta.role || 'teacher', meta.clientId || username, { name: meta.name }, false, false, '', '', '', ''), 900);
       } catch (error) {
@@ -881,6 +883,7 @@
 
       if (data.success) {
         if (data.token) saveAuth('jwtToken', data.token);
+        if (data.refreshToken) saveAuth('refreshToken', data.refreshToken);
         showMessage(data.message, 'success');
         setTimeout(() => redirectUser(data.role, username, data.data, data.forceChange, data.licenseExpired, data.licenseReason, data.contactWhatsapp, data.contactPhone, data.contactAudience), 900);
       } else {
