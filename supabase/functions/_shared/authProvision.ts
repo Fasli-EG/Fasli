@@ -11,6 +11,18 @@ function adminClient() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
+/** Supabase Auth بيتطلب صيغة E.164 (+رمز الدولة) لحقل phone، لكن رقم الموبايل في كل جدول/مقارنة
+ * في النظام كله بالصيغة المحلية المصرية (01xxxxxxxxx). بدل ما نحوّل يدويًا في كل مكان بيستدعي
+ * الهيلبرز دي (وننسى مكان وسط الـ10+ استدعاء)، التحويل بيحصل هنا مركزيًا مرة واحدة بس — أي حد
+ * بيستدعي provisionAuthUser/updateAuthUserContact/signInAuthUser بـphone يمرّر الصيغة المحلية
+ * زي كل مكان تاني في النظام، والدالة دي بتحوّلها لـE.164 قبل ما توصل لـSupabase فعليًا بس */
+function toE164Egypt(localPhone: string): string {
+  const digits = localPhone.replace(/\D/g, "");
+  if (digits.startsWith("20")) return `+${digits}`;
+  if (digits.startsWith("0")) return `+20${digits.slice(1)}`;
+  return `+20${digits}`;
+}
+
 export interface ProvisionAuthUserParams {
   email?: string;
   phone?: string;
@@ -23,7 +35,7 @@ export async function provisionAuthUser(params: ProvisionAuthUserParams): Promis
   const supabase = adminClient();
   const { data, error } = await supabase.auth.admin.createUser({
     email: params.email,
-    phone: params.phone,
+    phone: params.phone ? toE164Egypt(params.phone) : undefined,
     password: params.password,
     email_confirm: params.email ? true : undefined,
     phone_confirm: params.phone ? true : undefined,
@@ -57,7 +69,7 @@ export async function updateAuthUserContact(
   const supabase = adminClient();
   const { error } = await supabase.auth.admin.updateUserById(authUserId, {
     email: updates.email,
-    phone: updates.phone,
+    phone: updates.phone ? toE164Egypt(updates.phone) : undefined,
     app_metadata: updates.appMetadata,
   });
   if (error) throw new Error(`⚠️ فشل تحديث بيانات الحساب: ${error.message}`);
@@ -75,7 +87,7 @@ export async function signInAuthUser(params: { email?: string; phone?: string; p
   const supabase = adminClient();
   const credentials = params.email
     ? { email: params.email, password: params.password }
-    : { phone: params.phone as string, password: params.password };
+    : { phone: toE164Egypt(params.phone as string), password: params.password };
   return await supabase.auth.signInWithPassword(credentials);
 }
 
