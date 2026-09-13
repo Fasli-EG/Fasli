@@ -5,20 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>تفاصيل الطالب - فَصلي</title>
   <meta name="description" content="تفاصيل بيانات الطالب لولي الأمر في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="/Fasli/assets/logo-icon-DMEeWQpm.svg">
-  <link rel="manifest" href="/Fasli/assets/manifest-XTV9Elqy.json">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0B1C33">
-  <link rel="apple-touch-icon" href="/Fasli/assets/apple-touch-icon-BalDJVJg.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" crossorigin href="/Fasli/assets/style-DOs6gUEG.css">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
-<style>[data-theme=dark] .student-card{background:var(--gray-100);border-color:var(--gray-200)}[data-theme=dark] .student-card .student-name{color:var(--gray-800)}[data-theme=dark] .student-card .student-name .uid{color:var(--gray-500)}[data-theme=dark] .student-card .student-details .detail{color:var(--gray-600)}[data-theme=dark] .student-card .student-stats{border-color:var(--gray-200)}[data-theme=dark] .student-card .student-stats .stat-item .num{color:var(--gray-800)}[data-theme=dark] .student-card .student-stats .stat-item .label{color:var(--gray-500)}[data-theme=dark] .student-card .view-link{color:var(--primary-light)}[data-theme=dark] .student-card .view-link:hover{color:var(--primary)}[data-theme=dark] .stat-card{background:var(--gray-100);border-color:var(--gray-200)}[data-theme=dark] .stat-card .stat-label,[data-theme=dark] .stat-card .stat-value{color:var(--gray-400)}[data-theme=dark] .card{background:var(--gray-100);border-color:var(--gray-200)}[data-theme=dark] .card .card-header h2{color:var(--gray-800)}[data-theme=dark] .card .card-header .badge-count{background:var(--gray-200);color:var(--gray-600)}[data-theme=dark] .actions .btn-secondary{background:var(--gray-200);color:var(--gray-800);border-color:var(--gray-300)}[data-theme=dark] .actions .btn-secondary:hover{background:var(--gray-300)}[data-theme=dark] .actions .btn-outline{color:var(--gray-600);border-color:var(--gray-300)}[data-theme=dark] .actions .btn-outline:hover{background:var(--gray-200)}</style>
+<style>
+  [data-theme="dark"] .student-card { background: var(--gray-100); border-color: var(--gray-200); }
+  [data-theme="dark"] .student-card .student-name { color: var(--gray-800); }
+  [data-theme="dark"] .student-card .student-name .uid { color: var(--gray-500); }
+  [data-theme="dark"] .student-card .student-details .detail { color: var(--gray-600); }
+  [data-theme="dark"] .student-card .student-stats { border-color: var(--gray-200); }
+  [data-theme="dark"] .student-card .student-stats .stat-item .num { color: var(--gray-800); }
+  [data-theme="dark"] .student-card .student-stats .stat-item .label { color: var(--gray-500); }
+  [data-theme="dark"] .student-card .view-link { color: var(--primary-light); }
+  [data-theme="dark"] .student-card .view-link:hover { color: var(--primary); }
+  [data-theme="dark"] .stat-card { background: var(--gray-100); border-color: var(--gray-200); }
+  [data-theme="dark"] .stat-card .stat-label { color: var(--gray-400); }
+  [data-theme="dark"] .stat-card .stat-value { color: var(--gray-400); }
+  [data-theme="dark"] .card { background: var(--gray-100); border-color: var(--gray-200); }
+  [data-theme="dark"] .card .card-header h2 { color: var(--gray-800); }
+  [data-theme="dark"] .card .card-header .badge-count { background: var(--gray-200); color: var(--gray-600); }
+  [data-theme="dark"] .actions .btn-secondary { background: var(--gray-200); color: var(--gray-800); border-color: var(--gray-300); }
+  [data-theme="dark"] .actions .btn-secondary:hover { background: var(--gray-300); }
+  [data-theme="dark"] .actions .btn-outline { color: var(--gray-600); border-color: var(--gray-300); }
+  [data-theme="dark"] .actions .btn-outline:hover { background: var(--gray-200); }
+</style>
 <body>
 
   <header class="header">
     <div class="brand">
-      <div class="logo-icon"><img src="/Fasli/assets/logo-icon-DMEeWQpm.svg" alt="شعار فَصلي"></div>
+      <div class="logo-icon"><img src="assets/logo-icon.svg" alt="شعار فَصلي"></div>
       <h1>فَصلي</h1>
     </div>
     <div class="user-info">
@@ -1405,6 +1425,8 @@
       });
     }
   </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="google-link.js?v=1"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=3"></script>
 </body>

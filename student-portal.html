@@ -5,14 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>صفحتي - فَصلي</title>
   <meta name="description" content="صفحة الطالب الشخصية لمتابعة مستواه ومدفوعاته وحضوره في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="/Fasli/assets/logo-icon-DMEeWQpm.svg">
-  <link rel="manifest" href="/Fasli/assets/manifest-XTV9Elqy.json">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0B1C33">
-  <link rel="apple-touch-icon" href="/Fasli/assets/apple-touch-icon-BalDJVJg.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>.portal-header{border-bottom:1px solid var(--gray-200);z-index:100;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);background:#f7f8faeb;justify-content:space-between;align-items:center;padding:16px 24px;display:flex;position:sticky;top:0}.portal-header .brand{color:var(--gray-900);align-items:center;gap:10px;font-size:18px;font-weight:700;display:flex}.portal-header .actions{align-items:center;gap:10px;display:flex}.portal-container{max-width:900px;margin:0 auto;padding:24px 16px}#studentNameHeader{color:var(--gray-900)}[data-theme=dark] .portal-header{border-bottom-color:var(--gray-200);background:#1d222beb}</style>
-  <link rel="stylesheet" crossorigin href="/Fasli/assets/style-DOs6gUEG.css">
+  <link rel="stylesheet" href="style.css?v=52">
+  <style>
+    /* ✅ Batch 22 (بند 4): الشريط العلوي كان بيمشي مع السكرول عادي زي أي عنصر تاني في الصفحة،
+       فلما الصفحة تطول (تبويبات + جداول) الطالب يفقد الوصول السريع للإشعارات/الوضع الليلي/الخروج
+       غير لو رجع لفوق. تثبيته بنفس نمط .header الموحّد في style.css (sticky + خلفية شبه شفافة
+       مع blur) بيخليه ظاهر طول الوقت زي باقي صفحات النظام */
+    .portal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px; border-bottom: 1px solid var(--gray-200);
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(247,248,250,0.92);
+    }
+    /* ✅ Batch 22 (بند 4): مكانش فيه لون نص صريح هنا — في الوضع الليلي ده بيسيب النص أسود
+       افتراضي (لون المتصفح) فوق خلفية غامقة فيبقى غير مقروء. نفس الملاحظة كانت منطبقة على
+       عنوان اسم الطالب (studentNameHeader) تحت لأنه <h2> عادي من غير كلاس بيدّيله لون */
+    .portal-header .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--gray-900); }
+    .portal-header .actions { display: flex; align-items: center; gap: 10px; }
+    .portal-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    #studentNameHeader { color: var(--gray-900); }
+    [data-theme="dark"] .portal-header { background: rgba(29,34,43,0.92); border-bottom-color: var(--gray-200); }
+  </style>
 </head>
 <body>
 
@@ -1073,6 +1093,8 @@
       </div>
     </div>
   </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="google-link.js?v=1"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=3"></script>
 </body>

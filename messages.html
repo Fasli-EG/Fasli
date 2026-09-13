@@ -30,14 +30,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>رسائل جماعية - فَصلي</title>
   <meta name="description" content="إرسال رسائل جماعية لأولياء الأمور والمساعدين في نظام فَصلي">
-  <link rel="icon" type="image/svg+xml" href="/Fasli/assets/logo-icon-DMEeWQpm.svg">
-  <link rel="manifest" href="/Fasli/assets/manifest-XTV9Elqy.json">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0B1C33">
-  <link rel="apple-touch-icon" href="/Fasli/assets/apple-touch-icon-BalDJVJg.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>.target-options{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;display:grid}.target-card{border:1.5px solid var(--gray-200);cursor:pointer;background:var(--gray-50);border-radius:14px;align-items:flex-start;gap:12px;padding:16px 18px;transition:border-color .18s,background .18s,box-shadow .18s,transform .12s;display:flex;position:relative}.target-card:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(var(--primary-rgb),.12);transform:translateY(-1px)}.target-card.active{border-color:var(--primary);background:rgba(var(--primary-rgb),.16);box-shadow:0 4px 14px rgba(var(--primary-rgb),.22)}[data-theme=dark] .target-card.active{background:rgba(var(--primary-rgb),.22);box-shadow:0 4px 14px rgba(var(--primary-rgb),.15)}[data-theme=dark] .target-card.active .t-title{color:var(--primary)}.target-card input{accent-color:var(--primary);flex-shrink:0;width:16px;height:16px;margin-top:3px}.target-card .t-title{color:var(--gray-800);font-size:14px;font-weight:700}.target-card.active .t-title{color:#8a6300}.target-card .t-desc{color:var(--gray-500);margin-top:3px;font-size:12px;line-height:1.5}.students-picker{border:1px solid var(--gray-200);background:var(--gray-50);border-radius:10px;max-height:220px;margin-bottom:20px;padding:10px;display:none;overflow-y:auto}.students-picker.open{display:block}.student-check{align-items:center;gap:8px;padding:6px 4px;font-size:13.5px;display:flex}.recipients-note{color:var(--gray-500);margin-top:-10px;margin-bottom:16px;font-size:12.5px}textarea#messageText{border:1.5px solid var(--gray-200);resize:vertical;border-radius:10px;width:100%;min-height:120px;padding:12px 14px;font-family:inherit;font-size:14px}textarea#messageText:focus{border-color:var(--primary);outline:none}</style>
-  <link rel="stylesheet" crossorigin href="/Fasli/assets/style-DOs6gUEG.css">
+  <link rel="stylesheet" href="style.css?v=52">
+  <style>
+    .target-options{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:20px; }
+    .target-card{
+      position:relative; border:1.5px solid var(--gray-200); border-radius:14px; padding:16px 18px; cursor:pointer;
+      transition:border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .12s ease;
+      display:flex; align-items:flex-start; gap:12px; background:var(--gray-50);
+    }
+    .target-card:hover{ border-color:var(--primary); transform:translateY(-1px); box-shadow:0 4px 12px rgba(var(--primary-rgb),0.12); }
+    .target-card.active{
+      border-color:var(--primary); background:rgba(var(--primary-rgb),0.16); box-shadow:0 4px 14px rgba(var(--primary-rgb),0.22);
+    }
+    [data-theme="dark"] .target-card.active{ background:rgba(var(--primary-rgb),0.22); box-shadow:0 4px 14px rgba(var(--primary-rgb),0.15); }
+    [data-theme="dark"] .target-card.active .t-title{ color:var(--primary); }
+    .target-card input{ margin-top:3px; accent-color:var(--primary); width:16px; height:16px; flex-shrink:0; }
+    .target-card .t-title{ font-weight:700; font-size:14px; color:var(--gray-800); }
+    .target-card.active .t-title{ color:#8A6300; }
+    .target-card .t-desc{ font-size:12px; color:var(--gray-500); margin-top:3px; line-height:1.5; }
+    .students-picker{
+      display:none; max-height:220px; overflow-y:auto; border:1px solid var(--gray-200);
+      border-radius:10px; padding:10px; margin-bottom:20px; background:var(--gray-50);
+    }
+    .students-picker.open{ display:block; }
+    .student-check{ display:flex; align-items:center; gap:8px; padding:6px 4px; font-size:13.5px; }
+    .recipients-note{ font-size:12.5px; color:var(--gray-500); margin-top:-10px; margin-bottom:16px; }
+    textarea#messageText{
+      width:100%; min-height:120px; border:1.5px solid var(--gray-200); border-radius:10px;
+      padding:12px 14px; font-family:inherit; font-size:14px; resize:vertical;
+    }
+    textarea#messageText:focus{ outline:none; border-color:var(--primary); }
+  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -1581,6 +1610,8 @@ async function markAllRead() {
       });
     }
   </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="google-link.js?v=1"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=3"></script>
 </body>
