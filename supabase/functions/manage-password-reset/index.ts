@@ -3,6 +3,7 @@
 // action: assistant | parent | teacher
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
+import { updateAuthUserPassword, deleteAuthUser } from "../_shared/authProvision.ts";
 
 function requireAdmin(payload: TokenPayload) {
   if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
@@ -18,6 +19,10 @@ function authErrorResponse(error: unknown) {
     { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
+const NOT_MIGRATED_MESSAGE = "⚠️ الحساب ده من النظام القديم ولسه معملوش حساب دخول جديد — لازم يتعمل من جديد بالنظام الحالي";
+
+// ✅ مستخدمة فقط في handleCenter تحت — جدول centers نفسه ملغي من الواجهة (Aug 2026) ومش جزء
+// من هجرة Supabase Auth، فسايبينه شغال بمنطقه القديم زي ما هو بالظبط
 const ITERATIONS = 100_000;
 function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
 async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
@@ -45,7 +50,7 @@ async function handleAssistant(supabase: any, payload: TokenPayload, body: any) 
     return new Response(JSON.stringify({ success: false, message: "⚠️ assistantId مطلوب" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  const { data: assistant, error: fetchError } = await supabase.from("assistants").select("username, name, teacher_id").eq("id", assistantId).maybeSingle();
+  const { data: assistant, error: fetchError } = await supabase.from("assistants").select("username, name, teacher_id, auth_user_id").eq("id", assistantId).maybeSingle();
   if (fetchError || !assistant) {
     return new Response(JSON.stringify({ success: false, message: "❌ المساعد غير موجود" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -54,13 +59,22 @@ async function handleAssistant(supabase: any, payload: TokenPayload, body: any) 
     return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح لك بهذا الإجراء" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  if (!assistant.auth_user_id) {
+    return new Response(JSON.stringify({ success: false, message: NOT_MIGRATED_MESSAGE }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let tempPassword = "";
   for (let i = 0; i < 8; i++) tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
-  const hashedPassword = await hashPassword(tempPassword);
 
-  const { error } = await supabase.from("assistants").update({ password_hash: hashedPassword, must_change_password: true }).eq("id", assistantId);
+  try {
+    await updateAuthUserPassword(assistant.auth_user_id, tempPassword);
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, message: e instanceof Error ? e.message : "⚠️ حدث خطأ غير متوقع، حاول مرة أخرى" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  const { error } = await supabase.from("assistants").update({ must_change_password: true }).eq("id", assistantId);
   if (error) {
     return new Response(JSON.stringify({ success: false, message: "⚠️ حدث خطأ غير متوقع، حاول مرة أخرى" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -114,8 +128,18 @@ async function handleParent(supabase: any, payload: TokenPayload, body: any) {
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const newHash = await hashPassword(student.parent_phone);
-  const { error: updateError } = await supabase.from("parents").update({ password_hash: newHash, must_change_password: true }).eq("phone", student.parent_phone);
+  const { data: parentRow } = await supabase.from("parents").select("auth_user_id").eq("phone", student.parent_phone).maybeSingle();
+  if (!parentRow?.auth_user_id) {
+    return new Response(JSON.stringify({ success: false, message: NOT_MIGRATED_MESSAGE }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  try {
+    await updateAuthUserPassword(parentRow.auth_user_id, student.parent_phone);
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, message: e instanceof Error ? e.message : "⚠️ حدث خطأ غير متوقع" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  const { error: updateError } = await supabase.from("parents").update({ must_change_password: true }).eq("phone", student.parent_phone);
   if (updateError) {
     return new Response(JSON.stringify({ success: false, message: updateError.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -158,7 +182,7 @@ async function handleStudent(supabase: any, payload: TokenPayload, body: any) {
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const { data: student, error: studentError } = await supabase.from("students").select("name, teacher_id").eq("uid", studentUid).maybeSingle();
+  const { data: student, error: studentError } = await supabase.from("students").select("name, teacher_id, auth_user_id").eq("uid", studentUid).maybeSingle();
   if (studentError || !student) {
     return new Response(JSON.stringify({ success: false, message: "الطالب غير موجود" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -168,7 +192,10 @@ async function handleStudent(supabase: any, payload: TokenPayload, body: any) {
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const { error: updateError } = await supabase.from("students").update({ password_hash: null, must_change_password: true }).eq("uid", studentUid);
+  // ✅ (هجرة Supabase Auth) بنمسح حساب الدخول الحالي بتاعه بدل ما نصفّر هاش قديم — لما يدخل تاني
+  // login/index.ts هيلاقي auth_user_id فاضي فيرجعله نفس تجربة "أول دخول" (UID كباسورد) تلقائياً
+  await deleteAuthUser(student.auth_user_id);
+  const { error: updateError } = await supabase.from("students").update({ auth_user_id: null, must_change_password: true }).eq("uid", studentUid);
   if (updateError) {
     return new Response(JSON.stringify({ success: false, message: updateError.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -200,8 +227,18 @@ async function handleTeacher(supabase: any, payload: TokenPayload, body: any) {
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const hashedPassword = await hashPassword(newPassword);
-  const { error: updateError } = await supabase.from("teachers").update({ password_hash: hashedPassword, must_change_password: true }).eq("client_id", clientId);
+  const { data: teacherRow } = await supabase.from("teachers").select("auth_user_id").eq("client_id", clientId).maybeSingle();
+  if (!teacherRow?.auth_user_id) {
+    return new Response(JSON.stringify({ success: false, message: NOT_MIGRATED_MESSAGE }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  try {
+    await updateAuthUserPassword(teacherRow.auth_user_id, newPassword);
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, message: e instanceof Error ? e.message : "⚠️ حدث خطأ غير متوقع" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  const { error: updateError } = await supabase.from("teachers").update({ must_change_password: true }).eq("client_id", clientId);
   if (updateError) {
     return new Response(JSON.stringify({ success: false, message: updateError.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

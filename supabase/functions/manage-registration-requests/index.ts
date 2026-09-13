@@ -2,6 +2,7 @@
 // ✅ إدارة طلبات الانضمام (جانب المدرس) — action: list | approve | reject
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
+import { provisionAuthUser, deleteAuthUser } from "../_shared/authProvision.ts";
 
 function authErrorResponse(error: unknown) {
   const status = error instanceof AuthError ? error.status : 500;
@@ -48,19 +49,6 @@ function generateTempUid(): string {
   let uid = "";
   for (let i = 0; i < 8; i++) uid += chars.charAt(Math.floor(Math.random() * chars.length));
   return uid;
-}
-
-const ITERATIONS = 100_000;
-function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, keyMaterial, 256);
-  return new Uint8Array(bits);
-}
-async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hashBytes = await pbkdf2(password, salt, ITERATIONS);
-  return `pbkdf2$${ITERATIONS}$${toHex(salt)}$${toHex(hashBytes)}`;
 }
 
 Deno.serve(async (req) => {
@@ -149,12 +137,23 @@ Deno.serve(async (req) => {
 
       // ✅ نتأكد إن ولي الأمر عنده حساب بالفعل، وإلا ننشئ واحد جديد (نفس منطق إضافة طالب عادي)
       const { data: existingParent } = await supabase.from("parents").select("phone").eq("phone", reqRow.parent_phone).maybeSingle();
+      let newParentAuthUserId: string | null = null;
       if (!existingParent) {
-        const hashedPassword = await hashPassword(reqRow.parent_phone);
-        await supabase.from("parents").insert({
-          phone: reqRow.parent_phone, name: reqRow.parent_name || `ولي أمر ${reqRow.student_name}`,
-          password_hash: hashedPassword, must_change_password: true, is_active: true,
+        const parentName = reqRow.parent_name || `ولي أمر ${reqRow.student_name}`;
+        newParentAuthUserId = await provisionAuthUser({
+          phone: reqRow.parent_phone,
+          password: reqRow.parent_phone,
+          appMetadata: { role: "parent", phone: reqRow.parent_phone, sub: reqRow.parent_phone, name: parentName },
         });
+        const { error: insertParentError } = await supabase.from("parents").insert({
+          phone: reqRow.parent_phone, name: parentName,
+          auth_user_id: newParentAuthUserId, must_change_password: true, is_active: true,
+        });
+        if (insertParentError) {
+          await deleteAuthUser(newParentAuthUserId);
+          return new Response(JSON.stringify({ success: false, message: `⚠️ فشل إنشاء ولي الأمر: ${insertParentError.message}` }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
       }
 
       const uid = generateTempUid();
@@ -162,6 +161,10 @@ Deno.serve(async (req) => {
         uid, name: reqRow.student_name, parent_phone: reqRow.parent_phone, group_name: groupName, teacher_id: tokenClientId,
       });
       if (insertError) {
+        if (newParentAuthUserId) {
+          await deleteAuthUser(newParentAuthUserId);
+          await supabase.from("parents").delete().eq("phone", reqRow.parent_phone);
+        }
         return new Response(JSON.stringify({ success: false, message: `⚠️ فشلت إضافة الطالب: ${insertError.message}` }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }

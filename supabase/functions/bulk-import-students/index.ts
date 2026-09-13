@@ -2,6 +2,7 @@
 // ✅ استيراد جماعي للطلاب من إكسل — الملف بيتقرا في المتصفح، وقائمة الطلاب بتتبعت هنا دفعة واحدة
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
+import { provisionAuthUser, deleteAuthUser } from "../_shared/authProvision.ts";
 
 function authErrorResponse(error: unknown) {
   const status = error instanceof AuthError ? error.status : 500;
@@ -9,19 +10,6 @@ function authErrorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "⚠️ خطأ غير معروف";
   return new Response(JSON.stringify({ success: false, message, ...(code ? { code } : {}) }),
     { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
-
-const ITERATIONS = 100_000;
-function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, keyMaterial, 256);
-  return new Uint8Array(bits);
-}
-async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hashBytes = await pbkdf2(password, salt, ITERATIONS);
-  return `pbkdf2$${ITERATIONS}$${toHex(salt)}$${toHex(hashBytes)}`;
 }
 
 function generateUid(): string {
@@ -150,12 +138,26 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      let newParentAuthUserId: string | null = null;
       if (!existingParentSet.has(parentPhone) && !newParentPhonesInBatch.has(parentPhone)) {
-        newParentPhonesInBatch.add(parentPhone);
-        const hashedPassword = await hashPassword(parentPhone);
-        await supabase.from("parents").insert({
-          phone: parentPhone, name: `ولي أمر ${name}`, password_hash: hashedPassword, must_change_password: true, is_active: true,
-        });
+        try {
+          newParentAuthUserId = await provisionAuthUser({
+            phone: parentPhone,
+            password: parentPhone,
+            appMetadata: { role: "parent", phone: parentPhone, sub: parentPhone, name: `ولي أمر ${name}` },
+          });
+          const { error: parentInsertError } = await supabase.from("parents").insert({
+            phone: parentPhone, name: `ولي أمر ${name}`, auth_user_id: newParentAuthUserId, must_change_password: true, is_active: true,
+          });
+          if (parentInsertError) throw new Error(parentInsertError.message);
+          newParentPhonesInBatch.add(parentPhone);
+          existingParentSet.add(parentPhone);
+        } catch (parentError) {
+          if (newParentAuthUserId) await deleteAuthUser(newParentAuthUserId);
+          const msg = parentError instanceof Error ? parentError.message : "فشل إنشاء ولي الأمر";
+          results.push({ row: rowNum, name, status: "failed", reason: msg });
+          continue;
+        }
       }
 
       let uid = generateUid();

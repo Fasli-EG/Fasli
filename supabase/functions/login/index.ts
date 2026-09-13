@@ -1,104 +1,16 @@
 // supabase/functions/login/index.ts
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+// ============================================
+// ✅ (هجرة Supabase Auth) دخول موحّد لكل الأدوار (مدرس/مساعد/ولي أمر/طالب) عن طريق Supabase
+// Auth الحقيقي بدل التوكن المخصص القديم — نفس شكل الاستجابة (role/data/token/...) بالظبط
+// عشان الفرونت إند (21 صفحة) ميحتاجش أي تعديل، بس التوكن دلوقتي توكن Supabase Auth حقيقي.
+// ============================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { create, getNumericDate } from "https://deno.land/x/djwt@v2.8/mod.ts";
-
-import { corsHeaders, TokenPayload, AuthError, verifyToken, ownerClientId, requireOwnClientId, requireAdmin, requireParentPhone, requireTeacherPlanPermission, requireAssistantPermission, verifyDeviceSecret, authErrorResponse } from "../_shared/auth.ts";
-
-// ============================================
-// (من _shared/password.ts — مدموج مباشرة لأن Dashboard لا يدعم الاستيراد بين الدوال)
-// ============================================
-// ============================================
-// هاش كلمات المرور: PBKDF2-SHA256 (native Web Crypto API)
-// اخترنا PBKDF2 بدل bcrypt لأنه مدعوم أصلاً في Deno/Supabase Edge Functions
-// بدون أي مكتبة WASM خارجية قد تفشل في بيئة الإنتاج.
-// ============================================
-
-const ITERATIONS = 100_000;
-
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function fromHex(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
-
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
-    keyMaterial,
-    256
-  );
-  return new Uint8Array(bits);
-}
-
-/** مقارنة بزمن ثابت لمنع timing attacks */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
-/** هاش SHA-256 بسيط (النظام القديم) — لأغراض التوافق الخلفي فقط */
-async function legacySha256(text: string): Promise<string> {
-  const data = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return toHex(new Uint8Array(hashBuffer));
-}
-
-/** ينشئ هاش جديد بصيغة pbkdf2$<iterations>$<salt>$<hash> */
-export async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hashBytes = await pbkdf2(password, salt, ITERATIONS);
-  return `pbkdf2$${ITERATIONS}$${toHex(salt)}$${toHex(hashBytes)}`;
-}
-
-/**
- * يتحقق من كلمة المرور مقابل الهاش المخزّن (يدعم الصيغة الجديدة pbkdf2 والقديمة sha256 hex).
- * needsRehash=true تعني إن كلمة المرور صحيحة لكن مخزّنة بالصيغة القديمة الأضعف،
- * فيُستحسن استبدالها بهاش pbkdf2 جديد فوراً (ترقية شفافة تلقائية عند أول تسجيل دخول ناجح).
- */
-export async function verifyPassword(
-  password: string,
-  storedHash: string
-): Promise<{ valid: boolean; needsRehash: boolean }> {
-  if (storedHash.startsWith("pbkdf2$")) {
-    const parts = storedHash.split("$");
-    if (parts.length !== 4) return { valid: false, needsRehash: false };
-    const [, iterStr, saltHex, hashHex] = parts;
-    const iterations = parseInt(iterStr, 10);
-    const salt = fromHex(saltHex);
-    const computed = await pbkdf2(password, salt, iterations);
-    const valid = timingSafeEqual(toHex(computed), hashHex);
-    return { valid, needsRehash: false };
-  }
-
-  // صيغة قديمة: SHA-256 hex بدون salt
-  const legacy = await legacySha256(password);
-  const valid = timingSafeEqual(legacy, storedHash);
-  return { valid, needsRehash: valid }; // لو صحّت، نرقّيها فوراً بعد الاستخدام
-}
+import { corsHeaders } from "../_shared/auth.ts";
+import { provisionAuthUser, signInAuthUser, syntheticEmailFor } from "../_shared/authProvision.ts";
 
 // ============================================
 // (من _shared/rateLimit.ts — مدموج مباشرة لأن Dashboard لا يدعم الاستيراد بين الدوال)
 // ============================================
-// ============================================
-// حماية عامة من الاستخدام المتكرر/التخمين (rate limiting)
-// يعتمد على جدول login_attempts (key, attempts, locked_until, last_attempt)
-// نفس الجدول يُستخدم لأي مفتاح (login أو change-password...) بادئة مختلفة فقط
-// ============================================
-// اسم مستعار فريد عمداً لتفادي أي تعارض مع "createClient" في الملفات اللي بتدمج هذا الموديول
-import { createClient as _createRateLimitClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-
 export interface RateLimitOptions {
   maxAttempts?: number;   // الحد الأقصى للمحاولات قبل الحظر (افتراضي 5)
   lockMinutes?: number;   // مدة الحظر بالدقائق (افتراضي 15)
@@ -107,7 +19,7 @@ export interface RateLimitOptions {
 function adminClient() {
   const url = Deno.env.get("SUPABASE_URL") || Deno.env.get("DATABASE_URL") || "";
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE") || "";
-  return _createRateLimitClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
 /** يتحقق هل المفتاح محظور حالياً. يرجّع رسالة عربية جاهزة لو محظور. */
@@ -158,46 +70,12 @@ export async function clearAttempts(key: string) {
   await supabase.from("login_attempts").delete().eq("username", key);
 }
 
-const JWT_SECRET = Deno.env.get("JWT_SECRET");
-if (!JWT_SECRET) {
-  throw new Error("⚠️ JWT_SECRET غير مضبوط في متغيرات البيئة");
-}
-
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || Deno.env.get("DATABASE_URL") || "";
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE") || "";
 if (!supabaseKey) {
   throw new Error("⚠️ SUPABASE_SERVICE_ROLE_KEY غير مضبوط في متغيرات البيئة");
 }
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function generateToken(payload: {
-  clientId?: string;
-  teacherId?: string;
-  username?: string;
-  phone?: string;
-  role: string;
-  userId: string;
-  name: string;
-}) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(JWT_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"]
-  );
-  const jwtPayload = {
-    sub: payload.userId,
-    clientId: payload.clientId || null,
-    teacherId: payload.teacherId || null,
-    username: payload.username || null,
-    phone: payload.phone || null,
-    role: payload.role,
-    name: payload.name,
-    exp: getNumericDate(60 * 60 * 24 * 7),
-  };
-  return await create({ alg: "HS256", typ: "JWT" }, jwtPayload, key);
-}
 
 // ✅ اكتشاف نوع الحساب تلقائياً، بدل ما المستخدم يحدد الدور بنفسه — يقلل عدد الاختيارات في صفحة الدخول
 // "staff": نجرب سنتر، ثم مدرس، ثم مساعد (بالترتيب). "family": نجرب ولي أمر، ثم طالب.
@@ -221,7 +99,7 @@ async function detectRole(group: string, username: string): Promise<string | nul
   return null;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -286,43 +164,62 @@ serve(async (req) => {
 
     // ✅ رسالة موحّدة سواء المستخدم مش موجود أو كلمة المرور غلط، عشان محدش يقدر يكتشف
     // أكواد مدرسين/مساعدين حقيقية بمجرد تجربة تسجيل الدخول (Account Enumeration)
+    const genericFailResponse = async () => {
+      await registerFailedAttempt(`${role}:${username}`);
+      return new Response(
+        JSON.stringify({ success: false, message: "⚠️ بيانات الدخول غير صحيحة" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    };
+
     if (userError || !user) {
-      await registerFailedAttempt(`${role}:${username}`);
-      return new Response(
-        JSON.stringify({ success: false, message: "⚠️ بيانات الدخول غير صحيحة" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return await genericFailResponse();
     }
 
-    // ✅ دخول الطالب أول مرة: مفيش كلمة مرور متسجّلة لسه (password_hash فاضية) — بيدخل بكود الكارت
-    // (UID) كاسم مستخدم وكلمة مرور مع بعض. لو مطابقين، نعتبره دخول ناجح ونسجّل الهاش دلوقتي.
-    if (role === "student" && !user.password_hash) {
+    // ============================================
+    // ✅ (هجرة Supabase Auth) التحقق من الهوية وإصدار الجلسة — بديل التحقق اليدوي من password_hash
+    // ============================================
+    let accessToken: string;
+    let refreshToken: string;
+
+    if (role === "student" && !user.auth_user_id) {
+      // ✅ دخول الطالب أول مرة: مفيش حساب Supabase Auth متعمل لسه — بيدخل بكود الكارت (UID)
+      // كاسم مستخدم وكلمة مرور مع بعض. لو مطابقين، ننشئ حساب Supabase Auth دلوقتي.
       if (password !== username) {
-        await registerFailedAttempt(`${role}:${username}`);
-        return new Response(
-          JSON.stringify({ success: false, message: "⚠️ بيانات الدخول غير صحيحة" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return await genericFailResponse();
       }
-      const firstHash = await hashPassword(password);
-      await supabase.from("students").update({ password_hash: firstHash, must_change_password: true }).eq("uid", username);
-      user.password_hash = firstHash;
+      const email = syntheticEmailFor("student", username);
+      let authUserId: string;
+      try {
+        authUserId = await provisionAuthUser({
+          email,
+          password: username,
+          appMetadata: { role: "student", clientId: user.teacher_id, sub: username, name: user.name },
+        });
+      } catch (provisionErr) {
+        const msg = provisionErr instanceof Error ? provisionErr.message : "⚠️ فشل إنشاء حساب الدخول";
+        return new Response(JSON.stringify({ success: false, message: msg }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      await supabase.from("students").update({ auth_user_id: authUserId, must_change_password: true }).eq("uid", username);
+      user.auth_user_id = authUserId;
       user.must_change_password = true;
-    }
 
-    const { valid, needsRehash } = await verifyPassword(password, user.password_hash);
-    if (!valid) {
-      await registerFailedAttempt(`${role}:${username}`);
-      return new Response(
-        JSON.stringify({ success: false, message: "⚠️ بيانات الدخول غير صحيحة" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ✅ ترقية شفافة: لو الهاش لسه بالصيغة القديمة الأضعف (SHA-256 بدون salt)، نستبدله بهاش pbkdf2 جديد فوراً
-    if (needsRehash) {
-      const newHash = await hashPassword(password);
-      await supabase.from(table).update({ password_hash: newHash }).eq(idField, username);
+      const { data: signInData, error: signInError } = await signInAuthUser({ email, password: username });
+      if (signInError || !signInData.session) return await genericFailResponse();
+      accessToken = signInData.session.access_token;
+      refreshToken = signInData.session.refresh_token;
+    } else if (!user.auth_user_id) {
+      // ✅ حساب من النظام القديم (اختباري) لسه متعملوش حساب Supabase Auth — بيتعامل زي حساب
+      // غير موجود، لازم يتعاد إنشاؤه بالنظام الجديد
+      return await genericFailResponse();
+    } else {
+      const email = role === "parent" ? undefined : syntheticEmailFor(role as "teacher" | "assistant" | "student", username);
+      const phone = role === "parent" ? user.phone : undefined;
+      const { data: signInData, error: signInError } = await signInAuthUser({ email, phone, password });
+      if (signInError || !signInData.session) return await genericFailResponse();
+      accessToken = signInData.session.access_token;
+      refreshToken = signInData.session.refresh_token;
     }
 
     // التحقق من حالة الترخيص للمدرس — بدل رفض الدخول، نسمح بيه ونعلّم الاستجابة
@@ -503,17 +400,6 @@ serve(async (req) => {
       }
     }
 
-    const tokenPayload = {
-      userId: role === "student" ? user.uid : user.id,
-      clientId: role === "teacher" ? user.client_id : (role === "student" ? user.teacher_id : undefined),
-      teacherId: role === "assistant" ? user.teacher_id : undefined,
-      username: role === "assistant" ? user.username : undefined,
-      phone: role === "parent" ? user.phone : undefined,
-      role: role,
-      name: user.name,
-    };
-    const token = await generateToken(tokenPayload);
-
     // ✅ تسجيل نشاط الدخول — كان مفقود بالكامل رغم إن الفلتر بيسمح باختياره
     if (role === "teacher" || role === "assistant") {
       const logTeacherId = role === "teacher" ? user.client_id : user.teacher_id;
@@ -541,7 +427,8 @@ serve(async (req) => {
         contactWhatsapp,
         contactPhone,
         contactAudience,
-        token,
+        token: accessToken,
+        refreshToken,
         data: responseData,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

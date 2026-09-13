@@ -3,6 +3,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { corsHeaders, TokenPayload, AuthError, verifyToken, ownerClientId, requireOwnClientId, requireTeacherPlanPermission, requireAssistantPermission, authErrorResponse, licenseCheckClient } from "../_shared/auth.ts";
+import { provisionAuthUser, deleteAuthUser, syntheticEmailFor } from "../_shared/authProvision.ts";
 
 /**
  * ✅ Batch 21: يتأكد إن المساعد عنده صلاحية محددة منحها له المدرس. لا تأثير على المدرس نفسه
@@ -28,19 +29,6 @@ async function assertNoPermissionEscalation(payload: TokenPayload, requestedPerm
   if (escalated.length > 0) {
     throw new AuthError(`⛔ لا يمكنك منح صلاحية لا تملكها أنت نفسك (${escalated.join("، ")})`, 403);
   }
-}
-
-const ITERATIONS = 100_000;
-function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, keyMaterial, 256);
-  return new Uint8Array(bits);
-}
-async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hashBytes = await pbkdf2(password, salt, ITERATIONS);
-  return `pbkdf2$${ITERATIONS}$${toHex(salt)}$${toHex(hashBytes)}`;
 }
 
 async function handleAdd(supabase: any, payload: TokenPayload, body: any) {
@@ -80,10 +68,12 @@ async function handleAdd(supabase: any, payload: TokenPayload, body: any) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let tempPassword = "";
   for (let i = 0; i < 8; i++) tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
-  const hashedPassword = await hashPassword(tempPassword);
 
+  // ✅ (هجرة Supabase Auth) بنسجّل الصف الأول عشان ناخد الـid (المعرّف الحقيقي المستخدم في كل
+  // مكان تاني زي assistants.id)، وبعدين ننشئ حساب Supabase Auth بـsub = نفس الـid ده، وأخيراً
+  // نحدّث الصف بالـauth_user_id الراجع
   const { data, error } = await supabase.from("assistants").insert({
-    teacher_id: finalTeacherId, username, name, password_hash: hashedPassword, must_change_password: true, is_active: true,
+    teacher_id: finalTeacherId, username, name, must_change_password: true, is_active: true,
     permissions: permissions || {
       view_students: true, add_students: false, edit_students: false, delete_students: false,
       record_grades: false, record_payments: false, view_reports: false,
@@ -96,6 +86,23 @@ async function handleAdd(supabase: any, payload: TokenPayload, body: any) {
 
   if (error) {
     return new Response(JSON.stringify({ success: false, message: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  const newAssistantId = data[0]?.id;
+  try {
+    const authUserId = await provisionAuthUser({
+      email: syntheticEmailFor("assistant", username),
+      password: tempPassword,
+      appMetadata: { role: "assistant", teacherId: finalTeacherId, username, sub: String(newAssistantId), name },
+    });
+    await supabase.from("assistants").update({ auth_user_id: authUserId }).eq("id", newAssistantId);
+    data[0].auth_user_id = authUserId;
+  } catch (provisionError) {
+    // ✅ تراجع: لو فشل إنشاء حساب الدخول، نمسح الصف اللي اتسجّل عشان ميفضلش مساعد من غير حساب دخول خالص
+    await supabase.from("assistants").delete().eq("id", newAssistantId);
+    const msg = provisionError instanceof Error ? provisionError.message : "⚠️ فشل إنشاء حساب الدخول";
+    return new Response(JSON.stringify({ success: false, message: msg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
@@ -187,7 +194,7 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const { data: assistant, error: fetchError } = await supabase.from("assistants").select("username, name, teacher_id").eq("id", assistantId).maybeSingle();
+  const { data: assistant, error: fetchError } = await supabase.from("assistants").select("username, name, teacher_id, auth_user_id").eq("id", assistantId).maybeSingle();
   if (fetchError || !assistant) {
     return new Response(JSON.stringify({ success: false, message: "❌ المساعد غير موجود" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -207,6 +214,7 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
     return new Response(JSON.stringify({ success: false, message: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  await deleteAuthUser(assistant.auth_user_id);
 
   // ✅ Batch 21: تسجيل المنفّذ الفعلي (مساعد أو مدرس) بدل ما يتسجّل زي ما لو المدرس دايماً هو المنفّذ
   const isAssistantActor3 = payload.role === "assistant";

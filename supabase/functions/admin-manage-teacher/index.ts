@@ -3,19 +3,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { corsHeaders, TokenPayload, AuthError, verifyToken, requireAdmin, authErrorResponse } from "../_shared/auth.ts";
-
-const ITERATIONS = 100_000;
-function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, keyMaterial, 256);
-  return new Uint8Array(bits);
-}
-async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hashBytes = await pbkdf2(password, salt, ITERATIONS);
-  return `pbkdf2$${ITERATIONS}$${toHex(salt)}$${toHex(hashBytes)}`;
-}
+import { provisionAuthUser, deleteAuthUser, syntheticEmailFor } from "../_shared/authProvision.ts";
 
 // ============================================
 // ⭐ العملية 1: إضافة مدرس (منطق admin-add-teacher الأصلي كامل)
@@ -38,12 +26,19 @@ async function handleAdd(supabase: any, body: any) {
   }
 
   const finalExpiryDate = expiryDate || null;
-  const defaultHash = await hashPassword(clientId);
   const deviceSecretBytes = crypto.getRandomValues(new Uint8Array(16));
   const deviceSecret = Array.from(deviceSecretBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 
+  // ✅ (هجرة Supabase Auth) الباسورد الافتراضي لسه نفس الكود نفسه زي ما كان دايماً —
+  // بس دلوقتي بيتخزّن كحساب Supabase Auth حقيقي بدل هاش يدوي، وmust_change_password بيفرض تغييره فوراً
+  const authUserId = await provisionAuthUser({
+    email: syntheticEmailFor("teacher", clientId),
+    password: clientId,
+    appMetadata: { role: "teacher", clientId, sub: clientId, name, isAdmin: false },
+  });
+
   const { data, error } = await supabase.from("teachers").insert({
-    client_id: clientId, name, password_hash: defaultHash, must_change_password: true, is_active: true,
+    client_id: clientId, name, auth_user_id: authUserId, must_change_password: true, is_active: true,
     expiry_date: finalExpiryDate, max_students: maxStudents || 0,
     // ✅ عدد المساعدين غير محدود من Aug 2026 — max_assistants لم يعد يُكتب هنا
     student_count: 0, device_secret: deviceSecret,
@@ -65,6 +60,8 @@ async function handleAdd(supabase: any, body: any) {
   }).select();
 
   if (error) {
+    // ✅ تراجع: لو فشل إدخال صف المدرس بعد ما اتعمل له حساب Supabase Auth، لازم نمسح الحساب اليتيم ده
+    await deleteAuthUser(authUserId);
     return new Response(JSON.stringify({ success: false, message: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
@@ -152,7 +149,7 @@ async function handleDelete(supabase: any, body: any) {
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const { data: teacher } = await supabase.from("teachers").select("client_id").eq("client_id", clientId).maybeSingle();
+  const { data: teacher } = await supabase.from("teachers").select("client_id, auth_user_id").eq("client_id", clientId).maybeSingle();
   if (!teacher) {
     return new Response(JSON.stringify({ success: false, message: "⚠️ المدرس غير موجود" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -166,16 +163,24 @@ async function handleDelete(supabase: any, body: any) {
   await supabase.from("system_cards").delete().eq("teacher_id", clientId);
   await supabase.from("pending_card_registrations").delete().eq("teacher_id", clientId);
 
-  const { data: students } = await supabase.from("students").select("uid, parent_phone").eq("teacher_id", clientId);
+  const { data: students } = await supabase.from("students").select("uid, parent_phone, auth_user_id").eq("teacher_id", clientId);
   await supabase.from("students").delete().eq("teacher_id", clientId);
+  for (const s of students || []) await deleteAuthUser(s.auth_user_id);
 
   const parentPhones = [...new Set((students || []).map((s: any) => s.parent_phone).filter(Boolean))];
   for (const phone of parentPhones) {
     const { count } = await supabase.from("students").select("id", { count: "exact", head: true }).eq("parent_phone", phone);
-    if (!count || count === 0) await supabase.from("parents").delete().eq("phone", phone);
+    if (!count || count === 0) {
+      const { data: parent } = await supabase.from("parents").select("auth_user_id").eq("phone", phone).maybeSingle();
+      await supabase.from("parents").delete().eq("phone", phone);
+      await deleteAuthUser(parent?.auth_user_id);
+    }
   }
 
+  const { data: assistants } = await supabase.from("assistants").select("auth_user_id").eq("teacher_id", clientId);
   await supabase.from("assistants").delete().eq("teacher_id", clientId);
+  for (const a of assistants || []) await deleteAuthUser(a.auth_user_id);
+
   await supabase.from("groups").delete().eq("teacher_id", clientId);
   await supabase.from("books").delete().eq("teacher_id", clientId);
   await supabase.from("payment_titles").delete().eq("teacher_id", clientId);
@@ -190,6 +195,7 @@ async function handleDelete(supabase: any, body: any) {
     return new Response(JSON.stringify({ success: false, message: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  await deleteAuthUser(teacher.auth_user_id);
 
   return new Response(JSON.stringify({ success: true, message: "✅ تم حذف المدرس وجميع بياناته المرتبطة بنجاح" }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });

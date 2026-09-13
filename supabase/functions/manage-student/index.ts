@@ -6,128 +6,11 @@
 // ============================================
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
-  "Access-Control-Max-Age": "86400",
-};
-
-export interface TokenPayload {
-  sub: string;
-  clientId?: string;
-  teacherId?: string;
-  username?: string;
-  phone?: string;
-  role: "teacher" | "assistant" | "parent";
-  name: string;
-  exp: number;
-}
-
-export class AuthError extends Error {
-  status: number;
-  code?: string;
-  constructor(message: string, status = 401, code?: string) {
-    super(message);
-    this.status = status;
-    this.code = code;
-  }
-}
-
-async function getKey() {
-  const JWT_SECRET = Deno.env.get("JWT_SECRET");
-  if (!JWT_SECRET) throw new Error("⚠️ JWT_SECRET غير مضبوط في متغيرات البيئة");
-  return await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(JWT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]
-  );
-}
-
-async function licenseCheckClient() {
-  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.4");
-  const url = Deno.env.get("SUPABASE_URL") || Deno.env.get("DATABASE_URL") || "";
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE") || "";
-  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-}
-
-async function checkLicenseActive(teacherClientId: string): Promise<{ active: boolean; reason?: string }> {
-  if (teacherClientId === "master_admin") return { active: true };
-  const supabase = await licenseCheckClient();
-  const { data: teacher, error } = await supabase
-    .from("teachers").select("is_active, expiry_date").eq("client_id", teacherClientId).maybeSingle();
-  if (error || !teacher) return { active: false, reason: "الحساب غير موجود" };
-  if (teacher.is_active === false) return { active: false, reason: "الحساب معطّل" };
-  if (teacher.expiry_date) {
-    const todayCLA = new Date().toISOString().split("T")[0];
-    if (teacher.expiry_date < todayCLA) return { active: false, reason: "انتهت صلاحية الترخيص" };
-  }
-  return { active: true };
-}
-
-export async function verifyToken(req: Request, opts?: { skipLicenseCheck?: boolean }): Promise<TokenPayload> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) throw new AuthError("⚠️ التوكن مطلوب", 401);
-  const token = authHeader.substring(7);
-  const key = await getKey();
-  let payload: TokenPayload;
-  try {
-    payload = (await verify(token, key, "HS256")) as unknown as TokenPayload;
-  } catch (_e) {
-    throw new AuthError("⚠️ التوكن غير صالح أو منتهي الصلاحية", 401);
-  }
-  if (!opts?.skipLicenseCheck && (payload.role === "teacher" || payload.role === "assistant")) {
-    const ownerId = payload.clientId || payload.teacherId;
-    if (ownerId) {
-      const license = await checkLicenseActive(ownerId);
-      if (!license.active) {
-        throw new AuthError(`⛔ ${license.reason || "انتهت صلاحية الترخيص"} — يرجى التواصل مع الإدارة`, 402, "LICENSE_EXPIRED");
-      }
-    }
-  }
-  return payload;
-}
-
-export function authErrorResponse(error: unknown) {
-  const status = error instanceof AuthError ? error.status : 500;
-  const code = error instanceof AuthError ? error.code : undefined;
-  const message = error instanceof Error ? error.message : "⚠️ خطأ غير معروف";
-  return new Response(JSON.stringify({ success: false, message, ...(code ? { code } : {}) }),
-    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
-
-export async function requireTeacherPlanPermission(clientId: string, permKey: string): Promise<void> {
-  if (clientId === "master_admin") return;
-  const supabase = await licenseCheckClient();
-  const { data: teacher } = await supabase.from("teachers").select("permissions").eq("client_id", clientId).maybeSingle();
-  const perms = teacher?.permissions || {};
-  if (perms[permKey] === false) {
-    throw new AuthError("⛔ هذه الميزة غير متاحة في باقتك الحالية، تواصل مع الإدارة لتفعيلها", 403, "PLAN_RESTRICTED");
-  }
-}
-
-export async function requireAssistantPermission(payload: TokenPayload, permKey: string): Promise<void> {
-  if (payload.role !== "assistant") return;
-  const supabase = await licenseCheckClient();
-  const { data: assistant } = await supabase.from("assistants").select("permissions").eq("id", payload.sub).maybeSingle();
-  const perms = assistant?.permissions || {};
-  if (perms[permKey] !== true) {
-    throw new AuthError("⛔ ليس لديك صلاحية لهذا الإجراء، تواصل مع المدرس", 403);
-  }
-}
-
-const ITERATIONS = 100_000;
-function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, keyMaterial, 256);
-  return new Uint8Array(bits);
-}
-export async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hashBytes = await pbkdf2(password, salt, ITERATIONS);
-  return `pbkdf2$${ITERATIONS}$${toHex(salt)}$${toHex(hashBytes)}`;
-}
+// ✅ (هجرة Supabase Auth، تصحيح 1.4) الملف ده كان بيعمل تحقق JWT مكرر بمنطقه الخاص بدل ما
+// يستورد من _shared/auth.ts زي كل الفانكشنز التانية — بقى موحّد دلوقتي زي الباقي
+import { corsHeaders, TokenPayload, AuthError, verifyToken, authErrorResponse, requireTeacherPlanPermission, requireAssistantPermission } from "../_shared/auth.ts";
+import { provisionAuthUser, deleteAuthUser, updateAuthUserContact } from "../_shared/authProvision.ts";
 
 // ✅ (طلب) لو المجموعة وصلت للحد الأقصى لعدد الطلاب (max_students)، لازم نرفض أي عملية إضافة
 // جديدة ليها. العدد الحالي = الطلاب اللي المجموعة دي مجموعتهم الأساسية (students.group_name)
@@ -219,14 +102,22 @@ async function handleAdd(req: Request, supabase: any, payload: TokenPayload, bod
 
   const { data: existingParent } = await supabase.from("parents").select("phone").eq("phone", parentPhone).maybeSingle();
   let tempPassword = "";
+  let newParentAuthUserId: string | null = null;
 
   if (!existingParent) {
     tempPassword = parentPhone;
-    const hashedPassword = await hashPassword(tempPassword);
     const parentName = `ولي أمر ${name}`;
+    // ✅ (هجرة Supabase Auth) رقم التليفون الحقيقي بيتسجّل كحقل phone الأصلي في Supabase Auth
+    // مع الرقم نفسه كباسورد افتراضي (نفس السلوك القديم بالظبط) — من غير أي SMS
+    newParentAuthUserId = await provisionAuthUser({
+      phone: parentPhone,
+      password: tempPassword,
+      appMetadata: { role: "parent", phone: parentPhone, sub: parentPhone, name: parentName },
+    });
     const { error: insertParentError } = await supabase
-      .from("parents").insert({ phone: parentPhone, name: parentName, password_hash: hashedPassword, must_change_password: true, is_active: true });
+      .from("parents").insert({ phone: parentPhone, name: parentName, auth_user_id: newParentAuthUserId, must_change_password: true, is_active: true });
     if (insertParentError) {
+      await deleteAuthUser(newParentAuthUserId);
       return new Response(JSON.stringify({ success: false, message: `فشل إنشاء ولي الأمر: ${insertParentError.message}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -234,7 +125,14 @@ async function handleAdd(req: Request, supabase: any, payload: TokenPayload, bod
 
   const { data: student, error: insertError } = await supabase
     .from("students").insert({ uid, name, phone: phone || null, parent_phone: parentPhone, group_name: groupName, teacher_id: clientId }).select().single();
-  if (insertError) throw new Error(`فشل إضافة الطالب: ${insertError.message}`);
+  if (insertError) {
+    // ✅ تراجع: لو فشل إدخال الطالب بعد ما اتعمل حساب ولي أمر جديد له، نمسح الحساب اليتيم ده
+    if (newParentAuthUserId) {
+      await deleteAuthUser(newParentAuthUserId);
+      await supabase.from("parents").delete().eq("phone", parentPhone);
+    }
+    throw new Error(`فشل إضافة الطالب: ${insertError.message}`);
+  }
 
   const { data: matchingCard } = await supabase
     .from("system_cards").select("id").eq("card_uid", uid).eq("teacher_id", clientId).eq("status", "assigned").eq("is_active", true).is("student_uid", null).maybeSingle();
@@ -296,6 +194,7 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
 
   let oldPhone: string | null = null;
   let oldPhoneStillUsedBySiblings = false;
+  let reusedOldParentAuthUserId: string | null = null;
 
   if (parentPhoneChanged) {
     oldPhone = oldStudent.parent_phone;
@@ -305,18 +204,41 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
     }
     const { data: existingNewParent } = await supabase.from("parents").select("phone").eq("phone", parentPhone).maybeSingle();
     if (!existingNewParent) {
-      let sourcePassword: string | null = null;
       let sourceMustChange = true;
       let sourceName = `ولي أمر ${oldStudent.name}`;
+      let reuseAuthUserId: string | null = null;
       if (oldPhone) {
-        const { data: oldParent } = await supabase.from("parents").select("password_hash, must_change_password, name").eq("phone", oldPhone).maybeSingle();
-        if (oldParent) { sourcePassword = oldParent.password_hash; sourceMustChange = oldParent.must_change_password; sourceName = oldParent.name || sourceName; }
+        const { data: oldParent } = await supabase.from("parents").select("auth_user_id, must_change_password, name").eq("phone", oldPhone).maybeSingle();
+        if (oldParent) {
+          sourceMustChange = oldParent.must_change_password;
+          sourceName = oldParent.name || sourceName;
+          // ✅ (هجرة Supabase Auth) لو الرقم القديم مش مستخدَم من إخوة تانيين، فده نفس ولي الأمر
+          // وبس غيّر رقمه — نعيد استخدام نفس حساب Supabase Auth بعد تحديث رقمه بدل إنشاء حساب مكرر
+          if (oldParent.auth_user_id && !oldPhoneStillUsedBySiblings) reuseAuthUserId = oldParent.auth_user_id;
+        }
       }
-      const finalPasswordHash = sourcePassword || (await hashPassword(parentPhone));
+
+      let newParentAuthUserId: string;
+      if (reuseAuthUserId) {
+        await updateAuthUserContact(reuseAuthUserId, {
+          phone: parentPhone,
+          appMetadata: { role: "parent", phone: parentPhone, sub: parentPhone, name: sourceName },
+        });
+        newParentAuthUserId = reuseAuthUserId;
+        reusedOldParentAuthUserId = reuseAuthUserId;
+      } else {
+        newParentAuthUserId = await provisionAuthUser({
+          phone: parentPhone,
+          password: parentPhone,
+          appMetadata: { role: "parent", phone: parentPhone, sub: parentPhone, name: sourceName },
+        });
+      }
+
       const { error: insertParentError } = await supabase
-        .from("parents").insert({ phone: parentPhone, name: sourceName, password_hash: finalPasswordHash, is_active: true, must_change_password: sourceMustChange });
+        .from("parents").insert({ phone: parentPhone, name: sourceName, auth_user_id: newParentAuthUserId, is_active: true, must_change_password: sourceMustChange });
       if (insertParentError) {
         console.error("❌ فشل إنشاء/تجهيز حساب ولي الأمر الجديد:", insertParentError);
+        if (!reuseAuthUserId) await deleteAuthUser(newParentAuthUserId);
         return new Response(JSON.stringify({ success: false, message: `فشل تحديث رقم ولي الأمر: ${insertParentError.message}` }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
@@ -331,7 +253,13 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
   }
 
   if (parentPhoneChanged && oldPhone && oldPhone !== parentPhone && !oldPhoneStillUsedBySiblings) {
+    // ✅ لو حسابه اتنقل (renamed) للرقم الجديد بالفعل فوق، محدش يتمسح — غير كده نمسح حساب
+    // Supabase Auth اليتيم بتاع الرقم القديم مع صف ولي الأمر نفسه
+    const { data: oldParentRow } = await supabase.from("parents").select("auth_user_id").eq("phone", oldPhone).maybeSingle();
     await supabase.from("parents").delete().eq("phone", oldPhone);
+    if (oldParentRow?.auth_user_id && oldParentRow.auth_user_id !== reusedOldParentAuthUserId) {
+      await deleteAuthUser(oldParentRow.auth_user_id);
+    }
   }
 
   let teacherName = "مدرس";
@@ -369,7 +297,7 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const { data: student, error: getError } = await supabase.from("students").select("name, uid, teacher_id, parent_phone").eq("id", studentId).single();
+  const { data: student, error: getError } = await supabase.from("students").select("name, uid, teacher_id, parent_phone, auth_user_id").eq("id", studentId).single();
   if (getError || !student) {
     return new Response(JSON.stringify({ success: false, message: "الطالب غير موجود" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -389,6 +317,7 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
 
   const { error: deleteError } = await supabase.from("students").delete().eq("id", studentId);
   if (deleteError) throw new Error(`فشل حذف الطالب: ${deleteError.message}`);
+  await deleteAuthUser(student.auth_user_id);
 
   // ✅ إعادة عدّ فعلية بدل زيادة/نقصان تراكمي — بتفضل صحيحة حتى لو الطالب كان مؤرشف بالفعل
   // (يعني مستبعد من العدّاد أصلاً) وقت الحذف النهائي
@@ -398,7 +327,9 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
   if (student.parent_phone) {
     const { data: remainingSiblings } = await supabase.from("students").select("id").eq("parent_phone", student.parent_phone).limit(1);
     if (!remainingSiblings || remainingSiblings.length === 0) {
+      const { data: parentRow } = await supabase.from("parents").select("auth_user_id").eq("phone", student.parent_phone).maybeSingle();
       await supabase.from("parents").delete().eq("phone", student.parent_phone);
+      await deleteAuthUser(parentRow?.auth_user_id);
     }
   }
 
