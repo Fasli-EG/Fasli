@@ -1,7 +1,9 @@
 // frontend/webauthn.js
 // ============================================
-// شريط "فعّل الدخول بالبصمة/الوجه" الموحّد لكل الأدوار — نفس تصميم وسلوك بانر ربط جوجل بالظبط،
-// بيظهر مرة كل جلسة لو الحساب لسه مالوش أي بصمة مسجّلة، وبيسجّل بصمة جديدة (WebAuthn) لو المستخدم وافق.
+// الدخول بالبصمة/الوجه (WebAuthn) — موحّد لكل الأدوار. الملف ده بيعمل حاجتين:
+// 1) بانر تلقائي بعد الدخول يقترح تفعيل البصمة لو الحساب لسه مالوش أي بصمة مسجّلة.
+// 2) واجهة إدارة (window.FasliWebauthn) تقدر أي صفحة إعدادات تستخدمها لعرض/حذف/إضافة بصمات
+//    من غير حدود — "لاحقاً" في البانر بيأجّل الاقتراح بس، مش بديل عن صفحة الإعدادات.
 // ============================================
 (function () {
   const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
@@ -25,7 +27,54 @@
     return 'جهاز غير معروف';
   }
 
-  async function init() {
+  async function listCredentials(token) {
+    const res = await fetch(PROJECT_URL + '/functions/v1/webauthn-list-credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: '{}',
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'فشل تحميل البصمات المسجّلة');
+    return data.credentials || [];
+  }
+
+  /** يبدأ تسجيل بصمة جديدة كاملة (options -> startRegistration -> verify). يرمي خطأ لو فشل أو اتلغى. */
+  async function registerNewCredential(token) {
+    const optRes = await fetch(PROJECT_URL + '/functions/v1/webauthn-register-options', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: '{}',
+    });
+    const optData = await optRes.json();
+    if (!optData.success) throw new Error(optData.message || 'فشل بدء التسجيل');
+
+    const attResp = await window.SimpleWebAuthnBrowser.startRegistration({ optionsJSON: optData.options });
+
+    const verifyRes = await fetch(PROJECT_URL + '/functions/v1/webauthn-register-verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ ...attResp, challengeId: optData.challengeId, deviceName: guessDeviceName() }),
+    });
+    const verifyData = await verifyRes.json();
+    if (!verifyData.success) throw new Error(verifyData.message || 'فشل التفعيل');
+    return verifyData;
+  }
+
+  async function deleteCredential(token, credentialId) {
+    const res = await fetch(PROJECT_URL + '/functions/v1/webauthn-delete-credential', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ credentialId }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'فشل الحذف');
+    return data;
+  }
+
+  // ============================================
+  // البانر التلقائي بعد الدخول
+  // ============================================
+  async function initBanner() {
     if (document.body?.dataset?.suppressAccountBanners === 'true') return;
     if (sessionStorage.getItem(DISMISS_KEY)) return;
     if (!supportsWebAuthn()) return;
@@ -34,15 +83,8 @@
     if (!token) return;
 
     try {
-      const res = await fetch(PROJECT_URL + '/functions/v1/webauthn-list-credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: '{}',
-      });
-      const data = await res.json();
-      if (!data.success) return;
-      if ((data.credentials || []).length > 0) return; // البصمة مفعّلة بالفعل
-
+      const creds = await listCredentials(token);
+      if (creds.length > 0) return; // البصمة مفعّلة بالفعل
       showBanner(token);
     } catch (e) {
       // ✅ أي فشل هنا لازم يتجاهل بصمت — ميزة إضافية اختيارية، مش لازم تعطّل الصفحة الأساسية
@@ -85,24 +127,7 @@
       acceptBtn.disabled = true;
       acceptBtn.textContent = 'جارٍ التسجيل...';
       try {
-        const optRes = await fetch(PROJECT_URL + '/functions/v1/webauthn-register-options', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: '{}',
-        });
-        const optData = await optRes.json();
-        if (!optData.success) throw new Error(optData.message || 'فشل بدء التسجيل');
-
-        const attResp = await window.SimpleWebAuthnBrowser.startRegistration({ optionsJSON: optData.options });
-
-        const verifyRes = await fetch(PROJECT_URL + '/functions/v1/webauthn-register-verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({ ...attResp, challengeId: optData.challengeId, deviceName: guessDeviceName() }),
-        });
-        const verifyData = await verifyRes.json();
-        if (!verifyData.success) throw new Error(verifyData.message || 'فشل التفعيل');
-
+        const verifyData = await registerNewCredential(token);
         alert('✅ ' + verifyData.message);
         bar.remove();
       } catch (e) {
@@ -124,9 +149,146 @@
     document.body.appendChild(bar);
   }
 
+  // ============================================
+  // واجهة الإدارة — تُستخدم في صفحات الإعدادات لعرض/حذف/إضافة بصمات بلا حدود
+  // ============================================
+  async function renderManager(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const token = getStored('jwtToken');
+    if (!token) { container.innerHTML = ''; return; }
+
+    if (!supportsWebAuthn()) {
+      container.innerHTML = '<p style="color:#6B7280;font-size:13px;">المتصفح ده مش بيدعم الدخول بالبصمة/الوجه.</p>';
+      return;
+    }
+
+    container.innerHTML = '<p style="color:#6B7280;font-size:13px;">جارٍ التحميل...</p>';
+    try {
+      const creds = await listCredentials(token);
+      renderManagerList(container, token, creds);
+    } catch (e) {
+      container.innerHTML = `<p style="color:#E5484D;font-size:13px;">⚠️ ${e && e.message ? e.message : 'فشل التحميل'}</p>`;
+    }
+  }
+
+  function renderManagerList(container, token, creds) {
+    container.innerHTML = '';
+
+    if (creds.length === 0) {
+      const p = document.createElement('p');
+      p.textContent = 'مفيش أي بصمة مسجّلة لحسابك دلوقتي.';
+      p.style.cssText = 'color:#6B7280;font-size:13px;margin:0 0 12px;';
+      container.appendChild(p);
+    } else {
+      const list = document.createElement('div');
+      list.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:12px;';
+      creds.forEach((c) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border:1px solid #E1E4E9;border-radius:10px;flex-wrap:wrap;';
+
+        const info = document.createElement('span');
+        const addedDate = new Date(c.created_at).toLocaleDateString('ar-EG');
+        const lastUsed = c.last_used_at ? `، آخر استخدام: ${new Date(c.last_used_at).toLocaleDateString('ar-EG')}` : '';
+        info.textContent = `🔒 ${c.device_name || 'جهاز'} — أُضيف في ${addedDate}${lastUsed}`;
+        info.style.cssText = 'font-size:13.5px;color:#0B1C33;';
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'حذف';
+        delBtn.style.cssText = 'background:#FDEEEE;color:#E5484D;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;white-space:nowrap;';
+        delBtn.onclick = async () => {
+          if (!confirm('متأكد إنك عايز تحذف البصمة دي؟ هتحتاج تسجّلها تاني لو غيّرت رأيك.')) return;
+          delBtn.disabled = true;
+          delBtn.textContent = 'جارٍ الحذف...';
+          try {
+            await deleteCredential(token, c.id);
+            const remaining = await listCredentials(token);
+            renderManagerList(container, token, remaining);
+          } catch (e) {
+            alert('⚠️ ' + (e && e.message ? e.message : 'فشل الحذف'));
+            delBtn.disabled = false;
+            delBtn.textContent = 'حذف';
+          }
+        };
+
+        row.appendChild(info);
+        row.appendChild(delBtn);
+        list.appendChild(row);
+      });
+      container.appendChild(list);
+    }
+
+    const addBtn = document.createElement('button');
+    addBtn.textContent = '➕ إضافة بصمة جهاز جديد';
+    addBtn.style.cssText = 'background:#0E8074;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;font-family:inherit;';
+    addBtn.onclick = async () => {
+      addBtn.disabled = true;
+      addBtn.textContent = 'جارٍ التسجيل...';
+      try {
+        await registerNewCredential(token);
+        const remaining = await listCredentials(token);
+        renderManagerList(container, token, remaining);
+      } catch (e) {
+        if (e && e.name === 'InvalidStateError') {
+          alert('⚠️ الجهاز ده مسجّل بالفعل');
+        } else if (!(e && e.name === 'NotAllowedError')) {
+          alert('⚠️ تعذّر تفعيل البصمة: ' + (e && e.message ? e.message : e));
+        }
+      } finally {
+        addBtn.disabled = false;
+        addBtn.textContent = '➕ إضافة بصمة جهاز جديد';
+      }
+    };
+    container.appendChild(addBtn);
+  }
+
+  /** موديال جاهز بيعرض واجهة الإدارة — للصفحات اللي مفيهاش تبويب/بانل إعدادات جاهز أصلاً
+   * (المساعد، ولي الأمر، الطالب) بدل ما نعمل تعديل هيكلي في تصميم كل صفحة منهم */
+  function openManagerModal() {
+    if (document.getElementById('webauthnModalOverlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'webauthnModalOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,51,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:16px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.3);font-family:"IBM Plex Sans Arabic","Cairo",sans-serif;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;';
+    const title = document.createElement('h3');
+    title.textContent = '🔒 الدخول بالبصمة/الوجه';
+    title.style.cssText = 'font-size:16px;font-weight:800;color:#0B1C33;margin:0;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.setAttribute('aria-label', 'إغلاق');
+    closeBtn.style.cssText = 'background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:#6B7280;';
+    closeBtn.onclick = () => overlay.remove();
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    const hint = document.createElement('p');
+    hint.textContent = 'الأجهزة المسجّلة للدخول ببصمتك أو وجهك بدل كلمة المرور.';
+    hint.style.cssText = 'color:#6B7280;font-size:13px;margin:0 0 14px;';
+
+    const contentContainer = document.createElement('div');
+    contentContainer.id = 'webauthnModalContent';
+
+    card.appendChild(header);
+    card.appendChild(hint);
+    card.appendChild(contentContainer);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    renderManager('webauthnModalContent');
+  }
+
+  window.FasliWebauthn = { renderManager, openManagerModal };
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', initBanner);
   } else {
-    init();
+    initBanner();
   }
 })();

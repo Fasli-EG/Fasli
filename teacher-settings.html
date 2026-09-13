@@ -130,6 +130,16 @@
     <div class="wifi-card" style="margin-top:24px;">
       <div class="page-header" style="margin-bottom:16px;">
         <div>
+          <h2 style="font-size:18px;">🔒 الدخول بالبصمة/الوجه</h2>
+          <span class="sub">الأجهزة المسجّلة للدخول ببصمتك أو وجهك بدل كلمة المرور — تقدر تضيف أو تحذف أي جهاز</span>
+        </div>
+      </div>
+      <div id="teacherPasskeyManager"></div>
+    </div>
+
+    <div class="wifi-card" style="margin-top:24px;">
+      <div class="page-header" style="margin-bottom:16px;">
+        <div>
           <h2 style="font-size:18px;">📞 بيانات التواصل الخاصة بك</h2>
           <span class="sub">تظهر لمساعديك وأولياء أمور طلابك عند حدوث مشكلة في حساباتهم — بدل ما يتواصلوا مع إدارة النظام، يتواصلوا معاك مباشرة</span>
         </div>
@@ -1107,6 +1117,7 @@ async function confirmReset() {
     window.onload = async function() {
       loadContactInfo();
       loadCenterSharingStatus();
+      window.FasliWebauthn?.renderManager('teacherPasskeyManager');
     };
 
     // ============================================
