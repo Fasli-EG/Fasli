@@ -46,6 +46,12 @@ async function handleAdd(req: Request, supabase: any, payload: TokenPayload, bod
     return new Response(JSON.stringify({ success: false, message: "جميع الحقول مطلوبة: clientId, groupName, uid, name, parentPhone" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  // ✅ (هجرة Supabase Auth) رقم ولي الأمر بيتخزّن كحقل phone في Supabase Auth مع نفسه كباسورد
+  // افتراضي — لازم يكون 6 حروف على الأقل عشان Supabase يقبله (أرقام الموبايل المصرية دايماً 11 رقم، فده حماية دفاعية بس)
+  if (String(parentPhone).length < 6) {
+    return new Response(JSON.stringify({ success: false, message: "⚠️ رقم ولي الأمر قصير جداً" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   if (tokenRole === "teacher") {
     if (requestedClientId !== tokenClientId) {
@@ -185,7 +191,13 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
   if (name !== undefined && name !== oldStudent.name) { updates.name = name; changes.name = { old: oldStudent.name, new: name }; }
   if (phone !== undefined && phone !== oldStudent.phone) { updates.phone = phone || null; changes.phone = { old: oldStudent.phone || "غير محدد", new: phone || "غير محدد" }; }
   const parentPhoneChanged = parentPhone !== undefined && parentPhone !== oldStudent.parent_phone;
-  if (parentPhoneChanged) { updates.parent_phone = parentPhone; changes.parent_phone = { old: oldStudent.parent_phone, new: parentPhone }; }
+  if (parentPhoneChanged) {
+    if (String(parentPhone).length < 6) {
+      return new Response(JSON.stringify({ success: false, message: "⚠️ رقم ولي الأمر قصير جداً" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    updates.parent_phone = parentPhone; changes.parent_phone = { old: oldStudent.parent_phone, new: parentPhone };
+  }
 
   if (Object.keys(updates).length === 0) {
     return new Response(JSON.stringify({ success: true, message: "لا توجد تغييرات" }),

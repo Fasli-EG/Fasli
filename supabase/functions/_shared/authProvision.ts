@@ -79,6 +79,16 @@ export async function signInAuthUser(params: { email?: string; phone?: string; p
   return await supabase.auth.signInWithPassword(credentials);
 }
 
+/** Supabase Auth بيرفض أي باسورد أقل من 6 حروف. تُستخدم فقط لباسورد "داخلي" مشتق من قيمة
+ * (زي UID كارت الطالب) مش بيتقارن مباشرة مع Supabase من غير ما يعدّي على تحقق منفصل عندنا الأول
+ * (زي مقارنة password === username في أول دخول للطالب) — عشان كده الحشو هنا آمن تمامًا ومتسق
+ * (نفس القيمة الأصلية بترجع نفس النتيجة المحشوة دايماً). ميتستخدمش أبداً لباسورد بيكتبه المستخدم
+ * ويقارَن مباشرة مع Supabase (زي كود المدرس أو رقم تليفون ولي الأمر) لأن الحشو وقتها هيكسر تسجيل الدخول.
+ */
+export function ensureMinPasswordLength(raw: string, minLen = 6): string {
+  return raw.length >= minLen ? raw : raw.padEnd(minLen, "x");
+}
+
 /** اتفاقية الإيميل/التليفون الصناعي الموحّدة لكل الأدوار (المصدر الوحيد لهذا المنطق) */
 export function syntheticEmailFor(role: "teacher" | "assistant" | "student", identifier: string): string {
   const prefix = role === "teacher" ? "t" : role === "assistant" ? "a" : "s";

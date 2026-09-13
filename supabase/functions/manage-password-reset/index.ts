@@ -222,8 +222,8 @@ async function handleTeacher(supabase: any, payload: TokenPayload, body: any) {
     return new Response(JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  if (newPassword.length < 4) {
-    return new Response(JSON.stringify({ success: false, message: "⚠️ كلمة المرور قصيرة جداً" }),
+  if (newPassword.length < 6) {
+    return new Response(JSON.stringify({ success: false, message: "⚠️ كلمة المرور لازم تكون 6 حروف على الأقل" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 

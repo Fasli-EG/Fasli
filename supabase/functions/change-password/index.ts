@@ -120,9 +120,9 @@ serve(async (req) => {
     }
     await registerFailedAttempt(rateLimitKey);
 
-    if (newPassword.length < 4) {
+    if (newPassword.length < 6) {
       return new Response(
-        JSON.stringify({ success: false, message: "كلمة المرور يجب أن تكون 4 أحرف على الأقل" }),
+        JSON.stringify({ success: false, message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

@@ -6,7 +6,7 @@
 // ============================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { corsHeaders } from "../_shared/auth.ts";
-import { provisionAuthUser, signInAuthUser, syntheticEmailFor } from "../_shared/authProvision.ts";
+import { provisionAuthUser, signInAuthUser, syntheticEmailFor, ensureMinPasswordLength } from "../_shared/authProvision.ts";
 
 // ============================================
 // (من _shared/rateLimit.ts — مدموج مباشرة لأن Dashboard لا يدعم الاستيراد بين الدوال)
@@ -189,11 +189,15 @@ Deno.serve(async (req) => {
         return await genericFailResponse();
       }
       const email = syntheticEmailFor("student", username);
+      // ✅ Supabase Auth بيرفض أي باسورد أقل من 6 حروف — كود الكارت (UID) ممكن يكون أقصر (كروت
+      // فيزيائية قديمة مثلاً)، فبنحشوه لحد 6 حروف داخليًا بس. الطالب نفسه بيكتب الـUID الحقيقي
+      // زي ما هو دايماً (المقارنة password !== username فوق بتتم عليه هو، مش على النسخة المحشوة)
+      const internalPassword = ensureMinPasswordLength(username);
       let authUserId: string;
       try {
         authUserId = await provisionAuthUser({
           email,
-          password: username,
+          password: internalPassword,
           appMetadata: { role: "student", clientId: user.teacher_id, sub: username, name: user.name },
         });
       } catch (provisionErr) {
@@ -205,7 +209,7 @@ Deno.serve(async (req) => {
       user.auth_user_id = authUserId;
       user.must_change_password = true;
 
-      const { data: signInData, error: signInError } = await signInAuthUser({ email, password: username });
+      const { data: signInData, error: signInError } = await signInAuthUser({ email, password: internalPassword });
       if (signInError || !signInData.session) return await genericFailResponse();
       accessToken = signInData.session.access_token;
       refreshToken = signInData.session.refresh_token;

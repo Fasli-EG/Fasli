@@ -18,6 +18,12 @@ async function handleAdd(supabase: any, body: any) {
     return new Response(JSON.stringify({ success: false, message: "⛔ لا يمكن إضافة حساب المشرف الرئيسي" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  // ✅ (هجرة Supabase Auth) الكود بيتحط كباسورد افتراضي للمدرس، وSupabase Auth بيرفض أي باسورد
+  // أقل من 6 حروف — لازم نتحقق هنا بدل ما يوصل الرفض في شكل خطأ 500 غامض وقت الإنشاء
+  if (clientId.length < 6) {
+    return new Response(JSON.stringify({ success: false, message: "⚠️ الكود لازم يكون 6 حروف/أرقام على الأقل (بيُستخدم كباسورد مبدئي للمدرس)" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   const { data: existing } = await supabase.from("teachers").select("client_id").eq("client_id", clientId).maybeSingle();
   if (existing) {
