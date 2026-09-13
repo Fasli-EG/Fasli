@@ -63,6 +63,13 @@ jobs:
         working-directory: ./mobile
         run: npx cap sync android
 
+      - name: Use fixed debug keystore (بديل عن مفتاح عشوائي مختلف في كل تشغيل)
+        # ✅ لازم بصمة توقيع ثابتة للتطبيق عشان تسجيل الدخول بالبصمة (Digital Asset Links)
+        # يشتغل — لو المفتاح بيتغيّر كل مرة، أي إعداد assetlinks.json بيبقى غير صالح فورًا
+        run: |
+          mkdir -p ~/.android
+          cp mobile/keystore/debug.keystore ~/.android/debug.keystore
+
       - name: Rename APK for clarity
         working-directory: ./mobile/android
         run: |
