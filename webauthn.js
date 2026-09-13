@@ -13,8 +13,17 @@
     return sessionStorage.getItem(key) || localStorage.getItem(key) || null;
   }
 
+  /** بترجّع {ok, reason} بدل true/false بس — عشان لو مش مدعوم نعرف السبب بالظبط
+   * (مفيدة جداً في تشخيص مشاكل الدعم جوه تطبيق الموبايل، مش بس المتصفح العادي) */
+  function checkWebAuthnSupport() {
+    if (!window.PublicKeyCredential) return { ok: false, reason: 'المتصفح مفيهوش PublicKeyCredential (نسخة قديمة أو WebView مش بيدعم WebAuthn)' };
+    if (!navigator.credentials) return { ok: false, reason: 'المتصفح مفيهوش navigator.credentials' };
+    if (!window.SimpleWebAuthnBrowser) return { ok: false, reason: 'مكتبة SimpleWebAuthn مانفعتش تتحمّل (مشكلة اتصال بالإنترنت أو حظر تحميل سكريبت خارجي)' };
+    return { ok: true, reason: '' };
+  }
+
   function supportsWebAuthn() {
-    return !!(window.PublicKeyCredential && navigator.credentials && window.SimpleWebAuthnBrowser);
+    return checkWebAuthnSupport().ok;
   }
 
   /** بديل موحّد لـ alert() بهوية النظام (customAlert من custom-dialogs.js)، مع تراجع آمن
@@ -168,8 +177,9 @@
     const token = getStored('jwtToken');
     if (!token) { container.innerHTML = ''; return; }
 
-    if (!supportsWebAuthn()) {
-      container.innerHTML = '<p style="color:#6B7280;font-size:13px;">المتصفح ده مش بيدعم الدخول بالبصمة/الوجه.</p>';
+    const support = checkWebAuthnSupport();
+    if (!support.ok) {
+      container.innerHTML = `<p style="color:#6B7280;font-size:13px;">المتصفح ده مش بيدعم الدخول بالبصمة/الوجه.<br><span style="color:#9CA3AF;font-size:11.5px;">(${support.reason})</span></p>`;
       return;
     }
 
