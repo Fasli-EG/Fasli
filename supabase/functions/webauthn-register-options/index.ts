@@ -38,7 +38,13 @@ Deno.serve(async (req) => {
       })),
       authenticatorSelection: {
         residentKey: "required",
-        userVerification: "preferred",
+        // ✅ "required" بدل "preferred" — بيفرض تحقق حقيقي من هوية المستخدم (بصمة/وجه/PIN
+        // الجهاز) بدل ما يكتفي بمجرد "لمسة" بلا أي تحقق فعلي
+        userVerification: "required",
+        // ✅ "platform" يقصر الاختيار على المصادق المدمج في الجهاز نفسه (بصمة/وجه/Windows
+        // Hello) ويمنع خيارات زي "مفتاح أمان خارجي" أو "استخدم جهاز تاني عن طريق QR" اللي
+        // مالهاش علاقة بالبصمة أو الوجه خالص
+        authenticatorAttachment: "platform",
       },
     });
 

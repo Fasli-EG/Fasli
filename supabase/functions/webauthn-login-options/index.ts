@@ -21,7 +21,8 @@ Deno.serve(async (req) => {
 
     const options = await generateAuthenticationOptions({
       rpID: RP_ID,
-      userVerification: "preferred",
+      // ✅ "required" بدل "preferred" — بيفرض تحقق حقيقي (بصمة/وجه/PIN الجهاز) في كل دخول
+      userVerification: "required",
       // ✅ مفيش allowCredentials عمداً — ده اللي بيخلي تسجيل الدخول "بلا اسم مستخدم"،
       // المتصفح بيعرض أي بصمة/مفتاح متسجّل لهذا الموقع بس
     });
