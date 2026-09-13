@@ -2,7 +2,7 @@
 // ✅ استيراد جماعي للطلاب من إكسل — الملف بيتقرا في المتصفح، وقائمة الطلاب بتتبعت هنا دفعة واحدة
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
-import { provisionAuthUser, deleteAuthUser } from "../_shared/authProvision.ts";
+import { provisionAuthUser, deleteAuthUser, syntheticEmailFor } from "../_shared/authProvision.ts";
 
 function authErrorResponse(error: unknown) {
   const status = error instanceof AuthError ? error.status : 500;
@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
       if (!existingParentSet.has(parentPhone) && !newParentPhonesInBatch.has(parentPhone)) {
         try {
           newParentAuthUserId = await provisionAuthUser({
+            email: syntheticEmailFor("parent", parentPhone),
             phone: parentPhone,
             password: parentPhone,
             appMetadata: { role: "parent", phone: parentPhone, sub: parentPhone, name: `ولي أمر ${name}` },

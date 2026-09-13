@@ -10,7 +10,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // ✅ (هجرة Supabase Auth، تصحيح 1.4) الملف ده كان بيعمل تحقق JWT مكرر بمنطقه الخاص بدل ما
 // يستورد من _shared/auth.ts زي كل الفانكشنز التانية — بقى موحّد دلوقتي زي الباقي
 import { corsHeaders, TokenPayload, AuthError, verifyToken, authErrorResponse, requireTeacherPlanPermission, requireAssistantPermission } from "../_shared/auth.ts";
-import { provisionAuthUser, deleteAuthUser, updateAuthUserContact } from "../_shared/authProvision.ts";
+import { provisionAuthUser, deleteAuthUser, updateAuthUserContact, syntheticEmailFor } from "../_shared/authProvision.ts";
 
 // ✅ (طلب) لو المجموعة وصلت للحد الأقصى لعدد الطلاب (max_students)، لازم نرفض أي عملية إضافة
 // جديدة ليها. العدد الحالي = الطلاب اللي المجموعة دي مجموعتهم الأساسية (students.group_name)
@@ -116,6 +116,7 @@ async function handleAdd(req: Request, supabase: any, payload: TokenPayload, bod
     // ✅ (هجرة Supabase Auth) رقم التليفون الحقيقي بيتسجّل كحقل phone الأصلي في Supabase Auth
     // مع الرقم نفسه كباسورد افتراضي (نفس السلوك القديم بالظبط) — من غير أي SMS
     newParentAuthUserId = await provisionAuthUser({
+      email: syntheticEmailFor("parent", parentPhone),
       phone: parentPhone,
       password: tempPassword,
       appMetadata: { role: "parent", phone: parentPhone, sub: parentPhone, name: parentName },
@@ -233,6 +234,7 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
       let newParentAuthUserId: string;
       if (reuseAuthUserId) {
         await updateAuthUserContact(reuseAuthUserId, {
+          email: syntheticEmailFor("parent", parentPhone),
           phone: parentPhone,
           appMetadata: { role: "parent", phone: parentPhone, sub: parentPhone, name: sourceName },
         });
@@ -240,6 +242,7 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
         reusedOldParentAuthUserId = reuseAuthUserId;
       } else {
         newParentAuthUserId = await provisionAuthUser({
+          email: syntheticEmailFor("parent", parentPhone),
           phone: parentPhone,
           password: parentPhone,
           appMetadata: { role: "parent", phone: parentPhone, sub: parentPhone, name: sourceName },

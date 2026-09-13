@@ -267,4 +267,19 @@ verify_jwt = false
 [functions.manage-payment-receipt]
 verify_jwt = false
 
+[functions.webauthn-register-options]
+verify_jwt = false
+
+[functions.webauthn-register-verify]
+verify_jwt = false
+
+[functions.webauthn-login-options]
+verify_jwt = false
+
+[functions.webauthn-login-verify]
+verify_jwt = false
+
+[functions.webauthn-list-credentials]
+verify_jwt = false
+
 

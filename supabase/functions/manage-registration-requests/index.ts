@@ -2,7 +2,7 @@
 // ✅ إدارة طلبات الانضمام (جانب المدرس) — action: list | approve | reject
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
-import { provisionAuthUser, deleteAuthUser } from "../_shared/authProvision.ts";
+import { provisionAuthUser, deleteAuthUser, syntheticEmailFor } from "../_shared/authProvision.ts";
 
 function authErrorResponse(error: unknown) {
   const status = error instanceof AuthError ? error.status : 500;
@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
       if (!existingParent) {
         const parentName = reqRow.parent_name || `ولي أمر ${reqRow.student_name}`;
         newParentAuthUserId = await provisionAuthUser({
+          email: syntheticEmailFor("parent", reqRow.parent_phone),
           phone: reqRow.parent_phone,
           password: reqRow.parent_phone,
           appMetadata: { role: "parent", phone: reqRow.parent_phone, sub: reqRow.parent_phone, name: parentName },

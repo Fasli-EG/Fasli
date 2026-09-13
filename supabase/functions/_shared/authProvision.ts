@@ -102,7 +102,24 @@ export function ensureMinPasswordLength(raw: string, minLen = 6): string {
 }
 
 /** اتفاقية الإيميل/التليفون الصناعي الموحّدة لكل الأدوار (المصدر الوحيد لهذا المنطق) */
-export function syntheticEmailFor(role: "teacher" | "assistant" | "student", identifier: string): string {
-  const prefix = role === "teacher" ? "t" : role === "assistant" ? "a" : "s";
+export function syntheticEmailFor(role: "teacher" | "assistant" | "student" | "parent", identifier: string): string {
+  const prefix = role === "teacher" ? "t" : role === "assistant" ? "a" : role === "student" ? "s" : "p";
   return `${prefix}_${identifier}@fasli.internal`;
+}
+
+/** يرجّع الـUUID الحقيقي لمستخدم Supabase Auth بتاع التوكن الحالي (مش المعرّف التجاري زي
+ * clientId/username/phone/uid اللي verifyToken() بترجّعه في payload.sub) — مطلوب في أي مكان
+ * محتاج يربط بيانات بجدول فيه auth_user_id فعلي (زي webauthn_credentials) */
+export async function getRealAuthUserId(req: Request): Promise<string> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new Error("⚠️ التوكن مطلوب");
+  }
+  const token = authHeader.substring(7);
+  const supabase = adminClient();
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) {
+    throw new Error("⚠️ التوكن غير صالح أو منتهي الصلاحية");
+  }
+  return data.user.id;
 }
