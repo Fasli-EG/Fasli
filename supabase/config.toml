@@ -282,4 +282,7 @@ verify_jwt = false
 [functions.webauthn-list-credentials]
 verify_jwt = false
 
+[functions.webauthn-delete-credential]
+verify_jwt = false
+
 

@@ -806,7 +806,7 @@
       <div class="field-row">
         <div class="field">
           <label>كلمة المرور الجديدة</label>
-          <input type="password" id="profileNewPassword" placeholder="4 أحرف على الأقل">
+          <input type="password" id="profileNewPassword" placeholder="6 أحرف على الأقل">
         </div>
         <div class="field">
           <label>تأكيد كلمة المرور</label>
@@ -814,6 +814,12 @@
         </div>
       </div>
       <button class="btn btn-primary" onclick="saveAdminPassword()">💾 تغيير كلمة المرور</button>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <h2>🔒 الدخول بالبصمة/الوجه</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:14px;">الأجهزة المسجّلة للدخول ببصمتك أو وجهك بدل كلمة المرور — تقدر تضيف أو تحذف أي جهاز.</p>
+      <div id="adminPasskeyManager"></div>
     </div>
   </div>
 
@@ -1402,7 +1408,7 @@
       document.getElementById('tabBtnSettings').classList.toggle('active', tab === 'settings');
       document.getElementById('tabBtnProfile').classList.toggle('active', tab === 'profile');
       if (tab === 'settings') loadSystemSettings();
-      if (tab === 'profile') { loadAdminProfile(); loadSystemSettings(); }
+      if (tab === 'profile') { loadAdminProfile(); loadSystemSettings(); window.FasliWebauthn?.renderManager('adminPasskeyManager'); }
       if (tab === 'cards') initCardsTab();
     }
 
