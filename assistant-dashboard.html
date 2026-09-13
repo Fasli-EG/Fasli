@@ -2,6 +2,7 @@
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
+<script src="session-restore.js?v=1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>لوحة تحكم المساعد - فَصلي</title>
   <meta name="description" content="لوحة تحكم المساعد في نظام فَصلي لإدارة الدروس الخصوصية">
@@ -3057,6 +3058,66 @@ function openAttendanceModal() {
       } catch (error) { /* تجاهل بهدوء — ده فحص خلفي مش لازم يقاطع المستخدم */ }
     }
 
+    // ============================================
+    // ✅ لون واجهة خاص بالمساعد نفسه (مستقل عن لون المدرس) — الشعار يفضل شعار المدرس زي ما هو
+    // ============================================
+    function resetBrandColorVars() {
+      const props = ['--primary', '--primary-rgb', '--primary-light', '--primary-dark', '--primary-contrast', '--accent', '--card-border', '--sidebar-bg'];
+      props.forEach((p) => document.documentElement.style.removeProperty(p));
+    }
+
+    function openAssistantColorModal() {
+      if (document.getElementById('assistantColorOverlay')) return;
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="modal-overlay open" id="assistantColorOverlay">
+          <div class="modal-box" style="max-width:380px;">
+            <div class="modal-header"><h3>🎨 لون الواجهة الخاص بيك</h3></div>
+            <div class="modal-body">
+              <p style="font-size:13px;color:var(--gray-600,#4B5563);margin-bottom:14px;">اللون ده خاص بيك انت بس، ومش هيأثر على المدرس ولا أي مساعد تاني. الشعار هيفضل شعار المدرس زي ما هو.</p>
+              <input type="color" id="assistantColorInput" style="width:100%;height:44px;padding:4px;border:1.5px solid var(--gray-200,#e5e7eb);border-radius:10px;">
+            </div>
+            <div class="modal-footer" style="display:flex;gap:10px;padding:16px 24px;">
+              <button class="btn" id="assistantColorReset" style="flex:1;background:var(--gray-100,#f3f4f6);color:var(--gray-700,#374151);border:none;padding:11px;border-radius:10px;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px;">رجوع للون الافتراضي</button>
+              <button class="btn" id="assistantColorSave" style="flex:1;background:var(--primary,#F2B705);color:var(--primary-contrast,#0B1C33);border:none;padding:11px;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">حفظ</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap.firstElementChild);
+
+      const overlay = document.getElementById('assistantColorOverlay');
+      const input = document.getElementById('assistantColorInput');
+      input.value = sessionStorage.getItem('brandColor') || '#F2B705';
+      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+      async function saveColor(color) {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        try {
+          const res = await fetch(PROJECT_URL + '/functions/v1/manage-assistant', {
+            method: 'POST', headers,
+            body: JSON.stringify({ action: 'updateOwnColor', brandColor: color || '' })
+          });
+          const result = await res.json();
+          if (result.success) {
+            sessionStorage.setItem('brandColor', color || '');
+            if (localStorage.getItem('fasliRememberMe') === 'true') localStorage.setItem('brandColor', color || '');
+            if (color && window.applyBrandColor) window.applyBrandColor(color);
+            else resetBrandColorVars();
+            overlay.remove();
+          } else {
+            alert('⚠️ ' + result.message);
+          }
+        } catch (e) {
+          alert('⚠️ فشل حفظ اللون: ' + e.message);
+        }
+      }
+
+      document.getElementById('assistantColorSave').onclick = () => saveColor(input.value);
+      document.getElementById('assistantColorReset').onclick = () => saveColor('');
+    }
+    window.openAssistantColorModal = openAssistantColorModal;
+
     window.onload = function() {
       loadDashboard();
       loadTodayAttendance();
@@ -3065,6 +3126,8 @@ function openAttendanceModal() {
       refreshCardModeStatus();
       checkSessionAbsences();
       loadPortalAdBanner();
+      const navAssistantColor = document.getElementById('navAssistantColor');
+      if (navAssistantColor) navAssistantColor.style.display = 'flex';
       setInterval(loadDashboard, 30000);
       setInterval(loadTodayAttendance, 11000);
       setInterval(loadNotifications, 19000);
