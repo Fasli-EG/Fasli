@@ -287,22 +287,9 @@ Deno.serve(async (req) => {
     // ✅ نجح تسجيل الدخول: نصفّر محاولات الفشل
     await clearAttempts(`${role}:${username}`);
 
-    // ✅ (طلب) نفس منطق تتبّع شعار/لون المدرس (أو السنتر التابع له لو موجود) المستخدم لتسجيل
-    // دخول المدرس/المساعد — كان ناقص تمامًا لولي الأمر والطالب، فصفحاتهم كانت دايمًا بتعرض
-    // الشعار/اللون الافتراضي (الدهبي) بغض النظر عن تخصيص المدرس
-    async function resolveTeacherBrand(teacherId: string): Promise<{ logoUrl: string | null; color: string | null }> {
-      const { data: t } = await supabase.from("teachers").select("brand_logo_url, brand_color, center_id").eq("client_id", teacherId).maybeSingle();
-      let logoUrl = t?.brand_logo_url || null;
-      let color = t?.brand_color || null;
-      if ((!logoUrl || !color) && t?.center_id) {
-        const { data: centerBrand } = await supabase.from("centers").select("brand_logo_url, brand_color").eq("id", t.center_id).maybeSingle();
-        if (centerBrand) {
-          if (!logoUrl) logoUrl = centerBrand.brand_logo_url || null;
-          if (!color) color = centerBrand.brand_color || null;
-        }
-      }
-      return { logoUrl, color };
-    }
+    // ✅ (تصحيح) ولي الأمر والطالب مابقوش بياخدوا شعار/لون المدرس خالص من دلوقتي — بيفضلوا
+    // دايمًا على الهوية الافتراضية لفَصلي بغض النظر عن تخصيص المدرس. الشعار/اللون بتاع
+    // المدرس بيفضل يوصل بس للمدرس نفسه، وللمساعد (شعار المدرس + لون المساعد الخاص بيه تحت).
 
     let teacherName = "";
     let assistantBrandLogoUrl: string | null = null;
@@ -331,19 +318,19 @@ Deno.serve(async (req) => {
           contactPhone = teacher.contact_phone || null;
           contactAudience = "teacher";
         }
+        // ✅ (تصحيح) الشعار بس هو اللي بيتوارث من المدرس (أو السنتر لو مفيش شعار خاص بالمدرس) —
+        // اللون بقى مستقل تمامًا، كل مساعد بيحدد لونه الخاص بيه من إعداداته (user.brand_color
+        // تحت، من جدول assistants نفسه)
         assistantBrandLogoUrl = teacher.brand_logo_url || null;
-        assistantBrandColor = teacher.brand_color || null;
+        assistantBrandColor = user.brand_color || null;
         // ✅ Batch 22: كانت isCenter بترجع للمدرس بس (role === "teacher") — المساعد ماكانش بيوصله
         // العلَم ده خالص، فتبويب "مدرّسو السنتر" في staff.html كان بيفضل مختفي للمساعد حتى لو
         // معاه صلاحية "عرض/إضافة/تعديل فريق العمل" الكاملة، لأن isCenterAccount في الفرونت إند
         // كانت دايماً false للمساعد (sessionStorage.isCenter مكانش بيتحط أصلاً)
         assistantIsCenter = teacher.is_center === true;
-        if ((!assistantBrandLogoUrl || !assistantBrandColor) && teacher.center_id) {
-          const { data: centerBrand } = await supabase.from("centers").select("brand_logo_url, brand_color").eq("id", teacher.center_id).maybeSingle();
-          if (centerBrand) {
-            if (!assistantBrandLogoUrl) assistantBrandLogoUrl = centerBrand.brand_logo_url || null;
-            if (!assistantBrandColor) assistantBrandColor = centerBrand.brand_color || null;
-          }
+        if (!assistantBrandLogoUrl && teacher.center_id) {
+          const { data: centerBrand } = await supabase.from("centers").select("brand_logo_url").eq("id", teacher.center_id).maybeSingle();
+          if (centerBrand?.brand_logo_url) assistantBrandLogoUrl = centerBrand.brand_logo_url;
         }
       }
     }
@@ -385,23 +372,13 @@ Deno.serve(async (req) => {
       responseData.isCenter = assistantIsCenter;
     } else if (role === "parent") {
       responseData.phone = user.phone;
-      // ✅ ولي الأمر ممكن يكون عنده أكتر من ابن تحت مدرسين مختلفين — بناخد أول طالب مرتبط
-      // بالرقم ده كـ"مرجع" للتخصيص، أحسن بكتير من عرض الشعار الافتراضي دايمًا
-      const { data: firstChild } = await supabase.from("students").select("teacher_id").eq("parent_phone", user.phone).limit(1).maybeSingle();
-      if (firstChild?.teacher_id) {
-        const brand = await resolveTeacherBrand(firstChild.teacher_id);
-        responseData.brandLogoUrl = brand.logoUrl;
-        responseData.brandColor = brand.color;
-      }
+      // ✅ (تصحيح) ولي الأمر بيفضل على الهوية البصرية الافتراضية لفَصلي دايمًا — مبقاش بياخد
+      // شعار/لون المدرس خالص
     } else if (role === "student") {
       responseData.uid = user.uid;
       responseData.groupName = user.group_name;
       responseData.teacherId = user.teacher_id;
-      if (user.teacher_id) {
-        const brand = await resolveTeacherBrand(user.teacher_id);
-        responseData.brandLogoUrl = brand.logoUrl;
-        responseData.brandColor = brand.color;
-      }
+      // ✅ (تصحيح) نفس المنطق — الطالب بيفضل على الهوية الافتراضية دايمًا
     }
 
     // ✅ تسجيل نشاط الدخول — كان مفقود بالكامل رغم إن الفلتر بيسمح باختياره

@@ -231,6 +231,36 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
+/**
+ * ✅ (طلب) لون واجهة خاص بالمساعد نفسه، مستقل عن لون المدرس (الشعار يفضل شعار المدرس زي ما هو).
+ * كل مساعد بيقدر يغيّر لونه هو بس — مفيش داعي لصلاحية خاصة، ولا تأثير على أي مساعد تاني.
+ */
+async function handleUpdateOwnColor(supabase: any, payload: TokenPayload, body: any) {
+  if (payload.role !== "assistant") {
+    return new Response(JSON.stringify({ success: false, message: "⛔ هذه الميزة للمساعد فقط" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  const { brandColor } = body;
+  // ✅ تمرير قيمة فاضية بيرجّع المساعد للون الافتراضي (بدون تخصيص)
+  let finalColor: string | null = null;
+  if (brandColor) {
+    if (!/^#[0-9A-Fa-f]{6}$/.test(brandColor)) {
+      return new Response(JSON.stringify({ success: false, message: "⚠️ صيغة اللون غير صحيحة" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    finalColor = brandColor;
+  }
+
+  const { error } = await supabase.from("assistants").update({ brand_color: finalColor }).eq("id", payload.sub);
+  if (error) {
+    return new Response(JSON.stringify({ success: false, message: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  return new Response(JSON.stringify({ success: true, message: "✅ تم تحديث لون الواجهة بنجاح", brandColor: finalColor }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders, status: 200 });
   if (req.method !== "POST") {
@@ -255,6 +285,7 @@ Deno.serve(async (req) => {
     if (action === "add") return await handleAdd(supabase, payload, body);
     if (action === "update") return await handleUpdate(supabase, payload, body);
     if (action === "delete") return await handleDelete(supabase, payload, body);
+    if (action === "updateOwnColor") return await handleUpdateOwnColor(supabase, payload, body);
 
     return new Response(JSON.stringify({ success: false, message: "⚠️ action غير معروفة" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
