@@ -17,6 +17,16 @@
     return !!(window.PublicKeyCredential && navigator.credentials && window.SimpleWebAuthnBrowser);
   }
 
+  /** بديل موحّد لـ alert() بهوية النظام (customAlert من custom-dialogs.js)، مع تراجع آمن
+   * لـalert() العادية لو الملف ده اتحمّل لأي سبب من غير custom-dialogs.js */
+  function notify(message, opts) {
+    return window.customAlert ? window.customAlert(message, opts) : Promise.resolve(alert(message));
+  }
+
+  function confirmAction(message) {
+    return window.customConfirm ? window.customConfirm(message) : Promise.resolve(confirm(message));
+  }
+
   function guessDeviceName() {
     const ua = navigator.userAgent || '';
     if (/iphone/i.test(ua)) return 'iPhone';
@@ -128,15 +138,15 @@
       acceptBtn.textContent = 'جارٍ التسجيل...';
       try {
         const verifyData = await registerNewCredential(token);
-        alert('✅ ' + verifyData.message);
+        await notify(verifyData.message, { title: '✅ تم بنجاح' });
         bar.remove();
       } catch (e) {
         if (e && e.name === 'InvalidStateError') {
-          alert('⚠️ الجهاز ده مسجّل بالفعل');
+          await notify('⚠️ الجهاز ده مسجّل بالفعل', { title: '⚠️ تنبيه' });
         } else if (e && e.name === 'NotAllowedError') {
           // ✅ المستخدم لغى العملية أو رفض الإذن — مفيش داعي نزعجه برسالة خطأ
         } else {
-          alert('⚠️ تعذّر تفعيل البصمة: ' + (e && e.message ? e.message : e));
+          await notify('تعذّر تفعيل البصمة: ' + (e && e.message ? e.message : e), { title: '⚠️ خطأ' });
         }
         acceptBtn.disabled = false;
         acceptBtn.textContent = 'تفعيل البصمة';
@@ -197,7 +207,8 @@
         delBtn.textContent = 'حذف';
         delBtn.style.cssText = 'background:#FDEEEE;color:#E5484D;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;white-space:nowrap;';
         delBtn.onclick = async () => {
-          if (!confirm('متأكد إنك عايز تحذف البصمة دي؟ هتحتاج تسجّلها تاني لو غيّرت رأيك.')) return;
+          const ok = await confirmAction('متأكد إنك عايز تحذف البصمة دي؟ هتحتاج تسجّلها تاني لو غيّرت رأيك.');
+          if (!ok) return;
           delBtn.disabled = true;
           delBtn.textContent = 'جارٍ الحذف...';
           try {
@@ -205,7 +216,7 @@
             const remaining = await listCredentials(token);
             renderManagerList(container, token, remaining);
           } catch (e) {
-            alert('⚠️ ' + (e && e.message ? e.message : 'فشل الحذف'));
+            await notify(e && e.message ? e.message : 'فشل الحذف', { title: '⚠️ خطأ' });
             delBtn.disabled = false;
             delBtn.textContent = 'حذف';
           }
@@ -230,9 +241,9 @@
         renderManagerList(container, token, remaining);
       } catch (e) {
         if (e && e.name === 'InvalidStateError') {
-          alert('⚠️ الجهاز ده مسجّل بالفعل');
+          await notify('⚠️ الجهاز ده مسجّل بالفعل', { title: '⚠️ تنبيه' });
         } else if (!(e && e.name === 'NotAllowedError')) {
-          alert('⚠️ تعذّر تفعيل البصمة: ' + (e && e.message ? e.message : e));
+          await notify('تعذّر تفعيل البصمة: ' + (e && e.message ? e.message : e), { title: '⚠️ خطأ' });
         }
       } finally {
         addBtn.disabled = false;
