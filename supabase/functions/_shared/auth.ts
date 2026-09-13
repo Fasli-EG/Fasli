@@ -3,7 +3,11 @@
 // موديول موحّد للتحقق من هوية المستخدم (JWT)
 // يُستورد في كل دالة تحتاج تأكيد هوية بدل تكرار الكود
 // ============================================
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
+// ✅ (هجرة Supabase Auth) verifyToken بقى بيتحقق من توكن Supabase Auth الحقيقي بدل التوكن
+// المخصص القديم (djwt + JWT_SECRET يدوي). بيانات الدور (role/clientId/sub/...) بقت متخزّنة
+// في app_metadata بتاعة مستخدم Supabase (بتتحط وقت إنشاء الحساب)، ونفس شكل TokenPayload
+// اتحافظ عليه بالظبط عشان الـ80+ فانكشن اللي بتستورد الملف ده متحتاجش أي تعديل خالص.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "https://fasli-eg.github.io",
@@ -33,28 +37,25 @@ export class AuthError extends Error {
   }
 }
 
-async function getKey() {
-  const JWT_SECRET = Deno.env.get("JWT_SECRET");
-  if (!JWT_SECRET) {
-    throw new Error("⚠️ JWT_SECRET غير مضبوط في متغيرات البيئة");
-  }
-  return await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(JWT_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"]
-  );
-}
-
-/** عميل Supabase بصلاحيات كاملة، مخصص لفحص الترخيص فقط (بدون تكرار الاستيراد في كل دالة) */
+/** عميل Supabase بصلاحيات كاملة — مستخدم لفحص الترخيص، وكمان للتحقق من توكنات Supabase Auth */
 export async function licenseCheckClient() {
-  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.4");
   // ✅ ترتيب المتغيرات هنا لازم يطابق باقي المشروع (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY الأول) —
   // كان معكوس هنا تحديدًا (نفس فئة الباج التاريخي اللي كسر الأوث قبل كده)
   const url = Deno.env.get("SUPABASE_URL") || Deno.env.get("DATABASE_URL") || "";
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE") || "";
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
+/** يفك تشفير جزء الـpayload من JWT من غير أي تحقق من التوقيع — يُستخدم بس لقراءة exp
+ * (قيمة عرض/توثيق مش منطق أمان، التحقق الحقيقي بيحصل عن طريق supabase.auth.getUser أصلاً) */
+function decodeJwtExpUnsafe(token: string): number {
+  try {
+    const payloadPart = token.split(".")[1];
+    const json = JSON.parse(atob(payloadPart.replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof json.exp === "number" ? json.exp : 0;
+  } catch (_e) {
+    return 0;
+  }
 }
 
 /**
@@ -95,13 +96,29 @@ export async function verifyToken(req: Request, opts?: { skipLicenseCheck?: bool
     throw new AuthError("⚠️ التوكن مطلوب", 401);
   }
   const token = authHeader.substring(7);
-  const key = await getKey();
-  let payload: TokenPayload;
-  try {
-    payload = (await verify(token, key, "HS256")) as unknown as TokenPayload;
-  } catch (_e) {
+
+  const supabase = await licenseCheckClient();
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) {
     throw new AuthError("⚠️ التوكن غير صالح أو منتهي الصلاحية", 401);
   }
+
+  // ✅ بيانات دورنا احنا (role/clientId/sub الحقيقي/...) متخزّنة في app_metadata، مش في
+  // مستوى الـclaims الأعلى بتاعة Supabase نفسها — دي بتتحط وقت إنشاء كل حساب (منطق منفصل)
+  const meta = (data.user.app_metadata || {}) as Record<string, unknown>;
+  if (!meta.role || meta.sub === undefined || meta.sub === null) {
+    throw new AuthError("⚠️ التوكن غير صالح أو منتهي الصلاحية", 401);
+  }
+  const payload: TokenPayload = {
+    sub: String(meta.sub),
+    clientId: meta.clientId as string | undefined,
+    teacherId: meta.teacherId as string | undefined,
+    username: meta.username as string | undefined,
+    phone: meta.phone as string | undefined,
+    role: meta.role as TokenPayload["role"],
+    name: meta.name as string,
+    exp: decodeJwtExpUnsafe(token),
+  };
 
   if (!opts?.skipLicenseCheck && (payload.role === "teacher" || payload.role === "assistant")) {
     const ownerId = payload.clientId || payload.teacherId;

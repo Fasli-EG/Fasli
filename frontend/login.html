@@ -9,6 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -356,6 +357,10 @@
   // CONFIG
   // ============================================
   const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+  // ✅ (هجرة Supabase Auth) المفتاح ده عام (anon/public) مش سر — نفس المفتاح اللي أي متصفح
+  // بيشوفه في أي تطبيق Supabase، محمي بصلاحيات RLS/الفانكشنز نفسها مش بإخفائه
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4a3l4eHpjbnhweGVmb2RmeG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3MTY0MTEsImV4cCI6MjEwMDI5MjQxMX0.oTWvUOrR7DBnhWQF7ym6PNRlucfsESSJovPhnkqvNZc';
+  const supabaseClient = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY);
 
   let selectedGroup = 'staff';
   let systemContactInfo = {};
@@ -842,6 +847,30 @@
     }
 
     setLoading(true);
+
+    // ✅ (هجرة Supabase Auth) المرحلة الأولى: حسابات بإيميل حقيقي (الماستر أدمن حاليًا) بتدخل
+    // مباشرة عن طريق Supabase Auth، بدل فانكشن /login القديمة. بقية الأدوار (كود مدرس/اسم
+    // مستخدم مساعد/رقم هاتف ولي أمر) لسه بتستخدم المسار القديم لحد ما يترحّلوا هما كمان.
+    if (selectedGroup === 'staff' && username.includes('@')) {
+      try {
+        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email: username, password });
+        if (authError || !authData?.session) {
+          showMessage('بيانات الدخول غير صحيحة', 'error');
+          return;
+        }
+        const meta = authData.user?.app_metadata || {};
+        await saveAuth('jwtToken', authData.session.access_token);
+        showMessage('تم تسجيل الدخول بنجاح', 'success');
+        setTimeout(() => redirectUser(meta.role || 'teacher', meta.clientId || username, { name: meta.name }, false, false, '', '', '', ''), 900);
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showMessage('حدث خطأ في الاتصال بالخادم: ' + error.message, 'error');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       const response = await fetch(PROJECT_URL + '/functions/v1/login', {
         method: 'POST',
