@@ -267,7 +267,4 @@ verify_jwt = false
 [functions.manage-payment-receipt]
 verify_jwt = false
 
-[functions.bootstrap-master-admin]
-verify_jwt = false
-
 
