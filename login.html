@@ -10,6 +10,7 @@
   <meta name="theme-color" content="#0B1C33">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -317,6 +318,10 @@
           <span id="loginText">تسجيل الدخول</span>
         </button>
       </form>
+
+      <button type="button" id="webauthnLoginBtn" onclick="handleWebauthnLogin()" style="display:none;width:100%;margin-top:10px;padding:14px;border-radius:12px;border:2px solid var(--teal);background:#fff;color:var(--teal);font-weight:700;font-size:15px;cursor:pointer;align-items:center;justify-content:center;gap:8px;">
+        🔒 الدخول بالبصمة أو الوجه
+      </button>
 
       <div id="message" class="message"></div>
 
@@ -911,6 +916,56 @@
   }
 
   // ============================================
+  // الدخول بالبصمة/الوجه (WebAuthn) — بلا اسم مستخدم، المتصفح بيدوّر بنفسه على أي بصمة
+  // متسجّلة لهذا الموقع، وبعد التحقق من التوقيع في الباك إند بنصدر جلسة Supabase حقيقية
+  // عن طريق verifyOtp (نفس أسلوب Supabase الرسمي لأي نظام دخول مخصص بلا باسورد)
+  // ============================================
+  async function handleWebauthnLogin() {
+    hideMessage();
+    setLoading(true);
+    try {
+      const optRes = await fetch(PROJECT_URL + '/functions/v1/webauthn-login-options', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+      });
+      const optData = await optRes.json();
+      if (!optData.success) throw new Error(optData.message || 'فشل بدء الدخول بالبصمة');
+
+      const assertion = await SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: optData.options });
+
+      const verifyRes = await fetch(PROJECT_URL + '/functions/v1/webauthn-login-verify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({}, assertion, { challengeId: optData.challengeId }))
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) throw new Error(verifyData.message || 'فشل التحقق من البصمة');
+
+      const { data: otpData, error: otpError } = await supabaseClient.auth.verifyOtp({
+        token_hash: verifyData.tokenHash, type: 'magiclink'
+      });
+      if (otpError || !otpData || !otpData.session) throw new Error('تعذّر إنشاء الجلسة');
+
+      const meta = otpData.user?.app_metadata || {};
+      await saveAuth('jwtToken', otpData.session.access_token);
+      await saveAuth('refreshToken', otpData.session.refresh_token);
+      showMessage('تم تسجيل الدخول بنجاح', 'success');
+
+      let identifier;
+      if (meta.role === 'parent') identifier = meta.phone;
+      else if (meta.role === 'student') identifier = meta.sub;
+      else if (meta.role === 'teacher') identifier = meta.clientId;
+      else identifier = meta.username || meta.sub;
+
+      setTimeout(() => redirectUser(meta.role || 'teacher', identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', ''), 900);
+    } catch (error) {
+      if (!(error && error.name === 'NotAllowedError')) {
+        showMessage('⚠️ ' + (error && error.message ? error.message : 'تعذّر الدخول بالبصمة'), 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ============================================
   // التحقق من الجلسة عند فتح الصفحة (بما فيها الجلسة المحفوظة "تذكرني")
   // ============================================
   async function restoreAndCheckSession() {
@@ -979,6 +1034,11 @@
       const el = document.getElementById(id);
       if (el) { el.disabled = false; el.readOnly = false; }
     });
+    // ✅ زرار الدخول بالبصمة يظهر بس لو المتصفح فعلاً بيدعم WebAuthn (تحسين تدريجي)
+    const webauthnBtn = document.getElementById('webauthnLoginBtn');
+    if (webauthnBtn && window.PublicKeyCredential && window.SimpleWebAuthnBrowser) {
+      webauthnBtn.style.display = 'flex';
+    }
     restoreAndCheckSession();
   };
 </script>
