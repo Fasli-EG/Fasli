@@ -78,7 +78,7 @@
         options: { redirectTo: window.location.href },
       });
       if (error) {
-        alert('⚠️ تعذّر بدء الربط بجوجل: ' + error.message);
+        await (window.customAlert ? window.customAlert(error.message, { title: '⚠️ خطأ' }) : Promise.resolve(alert(error.message)));
         acceptBtn.disabled = false;
         acceptBtn.textContent = 'ربط الحساب بجوجل';
       }

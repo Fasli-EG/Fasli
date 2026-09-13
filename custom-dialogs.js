@@ -80,4 +80,56 @@
 
   // ✅ بديل async لـ prompt() — بترجع النص أو null لو اتلغى، بس لازم await قبلها
   window.customPrompt = (message, defaultValue = '') => showDialog({ message, isPrompt: true, defaultValue, danger: false });
+
+  // ============================================
+  // بديل موحّد لـ alert() — نفس هوية النظام البصرية (.modal-overlay/.modal-box) بدل
+  // نافذة المتصفح الافتراضية الرمادية اللي معندهاش أي هوية للتطبيق
+  // ============================================
+  function injectAlertHtml() {
+    if (document.getElementById('customAlertOverlay')) return;
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div class="modal-overlay" id="customAlertOverlay">
+        <div class="modal-box" style="max-width:420px;">
+          <div class="modal-header">
+            <h3 id="customAlertTitle">تنبيه</h3>
+          </div>
+          <div class="modal-body">
+            <p id="customAlertMessage" style="white-space:pre-line;line-height:1.8;font-size:14px;color:var(--gray-700, #374151);margin-bottom:0;"></p>
+          </div>
+          <div class="modal-footer" style="display:flex;padding:16px 24px;">
+            <button class="btn" id="customAlertOk" style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;background:var(--primary, #F2B705);color:var(--primary-contrast, #0B1C33);border:none;padding:11px;border-radius:10px;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px;">تمام</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(div.firstElementChild);
+  }
+
+  /** بديل async لـ alert() — بترجع Promise تتحل لما المستخدم يضغط "تمام". opts.title اختياري */
+  window.customAlert = (message, opts = {}) => {
+    injectAlertHtml();
+    const overlay = document.getElementById('customAlertOverlay');
+    const titleEl = document.getElementById('customAlertTitle');
+    const msgEl = document.getElementById('customAlertMessage');
+    const okBtn = document.getElementById('customAlertOk');
+
+    titleEl.textContent = opts.title || 'تنبيه';
+    msgEl.textContent = message;
+    overlay.classList.add('open');
+
+    return new Promise((resolve) => {
+      function cleanup() {
+        overlay.classList.remove('open');
+        okBtn.onclick = null;
+        overlay.onclick = null;
+        document.removeEventListener('keydown', onKeydown);
+        setTimeout(() => { document.body.focus(); }, 30);
+        resolve();
+      }
+      function onKeydown(e) { if (e.key === 'Escape' || e.key === 'Enter') cleanup(); }
+      okBtn.onclick = cleanup;
+      overlay.onclick = (e) => { if (e.target === overlay) cleanup(); };
+      document.addEventListener('keydown', onKeydown);
+    });
+  };
 })();
