@@ -28,11 +28,11 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        working-directory: ./electron
+        working-directory: ./native-app-config-v2/electron
         run: npm install
 
       - name: Build
-        working-directory: ./electron
+        working-directory: ./native-app-config-v2/electron
         run: npx electron-builder --publish never
 
       - name: Upload to GitHub Release (رابط ثابت دايماً - بس لو دفعت tag حقيقي)
@@ -40,8 +40,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            electron/dist/*.exe
-            electron/dist/*.dmg
+            native-app-config-v2/electron/dist/*.exe
+            native-app-config-v2/electron/dist/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -50,5 +50,5 @@ jobs:
         with:
           name: fasli-desktop-${{ matrix.os }}
           path: |
-            electron/dist/*.exe
-            electron/dist/*.dmg
+            native-app-config-v2/electron/dist/*.exe
+            native-app-config-v2/electron/dist/*.dmg

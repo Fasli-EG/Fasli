@@ -30,15 +30,15 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        working-directory: ./mobile
+        working-directory: ./native-app-config-v2/mobile
         run: npm install
 
       - name: Add Android platform
-        working-directory: ./mobile
+        working-directory: ./native-app-config-v2/mobile
         run: npx cap add android
 
       - name: Add Firebase (google-services.json) for Push Notifications
-        working-directory: ./mobile
+        working-directory: ./native-app-config-v2/mobile
         run: |
           if [ -f "google-services.json" ]; then
             cp google-services.json android/app/google-services.json
@@ -56,15 +56,22 @@ jobs:
           fi
 
       - name: Generate app icons (لوجو فَصلي بدل الأيقونة الافتراضية)
-        working-directory: ./mobile
+        working-directory: ./native-app-config-v2/mobile
         run: npx @capacitor/assets generate --android
 
       - name: Sync Capacitor
-        working-directory: ./mobile
+        working-directory: ./native-app-config-v2/mobile
         run: npx cap sync android
 
+      - name: Use fixed debug keystore (بديل عن مفتاح عشوائي مختلف في كل تشغيل)
+        # ✅ لازم بصمة توقيع ثابتة للتطبيق عشان تسجيل الدخول بالبصمة (Digital Asset Links)
+        # يشتغل — لو المفتاح بيتغيّر كل مرة، أي إعداد assetlinks.json بيبقى غير صالح فورًا
+        run: |
+          mkdir -p ~/.android
+          cp native-app-config-v2/mobile/keystore/debug.keystore ~/.android/debug.keystore
+
       - name: Rename APK for clarity
-        working-directory: ./mobile/android
+        working-directory: ./native-app-config-v2/mobile/android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
@@ -74,7 +81,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: mobile/android/app/build/outputs/apk/debug/فصلي.apk
+          files: native-app-config-v2/mobile/android/app/build/outputs/apk/debug/فصلي.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -82,4 +89,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fasli-android-apk
-          path: mobile/android/app/build/outputs/apk/debug/فصلي.apk
+          path: native-app-config-v2/mobile/android/app/build/outputs/apk/debug/فصلي.apk

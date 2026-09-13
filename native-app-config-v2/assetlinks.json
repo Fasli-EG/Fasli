@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.fasli.app",
+      "sha256_cert_fingerprints": [
+        "AE:50:EA:0C:0C:03:91:85:00:84:91:FF:19:36:5D:9A:DB:EF:FA:48:1B:9D:9F:84:8B:89:98:B8:D2:9C:A5:7E"
+      ]
+    }
+  }
+]
