@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
   </table>
 </div>`;
     try {
-      await sendEmail({ to: row.recovery_email, subject: "استرجاع كلمة المرور — فَصلي", text: plainText, html });
+      await sendEmail({ to: row.recovery_email, subject: "Password Reset - Fasli", text: plainText, html });
     } catch (e) {
       return jsonResponse({ success: false, message: e instanceof Error ? e.message : "⚠️ فشل إرسال الإيميل" }, 500);
     }

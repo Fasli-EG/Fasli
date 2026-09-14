@@ -29,8 +29,12 @@ export async function sendEmail(params: { to: string; subject: string; text: str
   });
 
   try {
+    // ⚠️ اسم المرسل (from) والعنوان (subject) لازم يفضلوا إنجليزي بالكامل — denomailer
+    // بيعمل تشفير غلط (RFC 2047) للعناوين اللي فيها عربي، وده كان بيخلي Gmail يفشل يفهم
+    // الرسالة كلها ويعرض المصدر الخام بدل المحتوى (متأكد منها باختبار حي). محتوى الرسالة
+    // نفسه (params.text/params.html) مش متأثر — بيتشفّر بشكل صحيح كجزء من الـbody
     await client.send({
-      from: `فَصلي <${gmailUser}>`,
+      from: `Fasli <${gmailUser}>`,
       to: params.to,
       subject: params.subject,
       content: params.text,
