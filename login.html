@@ -1020,8 +1020,15 @@
   // بيرجّعه هنا مع event=PASSWORD_RECOVERY؛ لازم نوقف أي تحويل تلقائي ونوريه فورمة كلمة مرور جديدة
   if (isRecoveryReturn) {
     supabaseClient.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') openSetNewPasswordModal();
+      if (event === 'PASSWORD_RECOVERY') openSetNewPasswordModal('supabase');
     });
+  }
+
+  // ✅ رابط الاسترجاع المخصص (باقي الأدوار — request-password-reset)، بيرجّعه هنا كـ
+  // ?resetToken= في الرابط نفسه (مش hash زي Supabase)، فبيتقرا فورًا من غير أي انتظار
+  const customResetToken = new URLSearchParams(window.location.search).get('resetToken');
+  if (customResetToken) {
+    openSetNewPasswordModal('customToken', customResetToken);
   }
 
   // ============================================
@@ -1034,7 +1041,6 @@
   function openForgotPasswordModal() {
     if (document.getElementById('forgotPwOverlay')) return;
     const typedUsername = document.getElementById('username').value.trim();
-    const looksLikeRealEmail = typedUsername.includes('@');
 
     const overlay = document.createElement('div');
     overlay.id = 'forgotPwOverlay';
@@ -1060,48 +1066,78 @@
         </div>
 
         <div style="background:var(--surface-soft);border-radius:12px;padding:14px;margin-bottom:12px;">
-          <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:8px;">📧 عندك إيميل حقيقي مسجّل بحسابك؟</p>
-          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">هنبعتلك رابط لتحديد كلمة مرور جديدة (متاح بس للحسابات ببريد إلكتروني حقيقي، زي حساب المشرف).</p>
-          <input type="email" id="forgotPwEmail" placeholder="example@email.com" value="${looksLikeRealEmail ? typedUsername.replace(/"/g, '&quot;') : ''}" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
-          <button type="button" onclick="sendPasswordResetEmail()" id="forgotPwSendBtn" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--gradient-gold);color:var(--indigo);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">إرسال رابط إعادة التعيين</button>
+          <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:8px;">📧 استرجع بإيميل الاسترجاع بتاعك</p>
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">اكتب إيميلك (لو حساب المشرف) أو كود حسابك (كود المدرس / اسم مستخدم المساعد / رقم تليفون ولي الأمر / كود الطالب) — لو مسجّل إيميل استرجاع بحسابك، هيوصلك رابط لتحديد كلمة مرور جديدة عليه.</p>
+          <input type="text" id="forgotPwIdentifier" placeholder="إيميلك أو كود حسابك" value="${typedUsername.replace(/"/g, '&quot;')}" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
+          <button type="button" onclick="sendPasswordReset()" id="forgotPwSendBtn" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--gradient-gold);color:var(--indigo);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">إرسال رابط إعادة التعيين</button>
           <p id="forgotPwFeedback" style="font-size:12px;margin-top:8px;"></p>
         </div>
 
         <div style="padding:14px;">
-          <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:6px;">👤 غير كده؟</p>
-          <p style="font-size:12.5px;color:var(--muted);line-height:1.7;">لو حسابك بكود مدرس أو اسم مستخدم مساعد أو رقم تليفون (مش إيميل)، اطلب من الشخص المسؤول عن حسابك (المدرس أو الإدارة) يعمل لك إعادة تعيين لكلمة المرور من لوحته — الصلاحية دي موجودة عنده جاهزة.${contactLine ? '<br>' + contactLine : ''}</p>
+          <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:6px;">👤 لسه معملتش إيميل استرجاع؟</p>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.7;">تقدر تضيفه من إعدادات حسابك بعد ما تدخل. لحد ما تعمله، اطلب من الشخص المسؤول عن حسابك (المدرس أو الإدارة) يعمل لك إعادة تعيين لكلمة المرور من لوحته — الصلاحية دي موجودة عنده جاهزة.${contactLine ? '<br>' + contactLine : ''}</p>
         </div>
       </div>`;
     document.body.appendChild(overlay);
   }
 
-  async function sendPasswordResetEmail() {
-    const email = document.getElementById('forgotPwEmail').value.trim();
+  // ✅ بيوجّه لأقرب مسار فعلي حسب اللي المستخدم كتبه: إيميل حقيقي (فيه @) → مسار Supabase
+  // الجاهز (الماستر أدمن بس)، غير كده → مسار إيميل الاسترجاع المخصص (request-password-reset)
+  // لباقي الأدوار (المدرس بيحدّد الإيميل ده بنفسه من إعدادات حسابه، مش هو نفس إيميل الدخول)
+  async function sendPasswordReset() {
+    const identifier = document.getElementById('forgotPwIdentifier').value.trim();
     const feedback = document.getElementById('forgotPwFeedback');
     const btn = document.getElementById('forgotPwSendBtn');
-    if (!email || !email.includes('@')) {
+    if (!identifier) {
       feedback.style.color = 'var(--danger)';
-      feedback.textContent = 'اكتب إيميل صحيح الأول';
+      feedback.textContent = 'اكتب إيميلك أو كود حسابك الأول';
       return;
     }
     btn.disabled = true;
     feedback.style.color = 'var(--muted)';
     feedback.textContent = 'جاري الإرسال...';
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname,
-    });
-    btn.disabled = false;
-    if (error) {
-      feedback.style.color = 'var(--danger)';
-      feedback.textContent = '⚠️ ' + error.message;
+
+    if (identifier.includes('@')) {
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(identifier, {
+        redirectTo: window.location.origin + window.location.pathname,
+      });
+      btn.disabled = false;
+      if (error) {
+        feedback.style.color = 'var(--danger)';
+        feedback.textContent = '⚠️ ' + error.message;
+        return;
+      }
+      feedback.style.color = 'var(--success)';
+      feedback.textContent = '✅ لو الإيميل ده مسجّل عندنا، هيوصلك رابط لتحديد كلمة مرور جديدة';
       return;
     }
-    feedback.style.color = 'var(--success)';
-    feedback.textContent = '✅ لو الإيميل ده مسجّل عندنا، هيوصلك رابط لتحديد كلمة مرور جديدة';
+
+    try {
+      const res = await fetch(PROJECT_URL + '/functions/v1/request-password-reset', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ group: selectedGroup, identifier }),
+      });
+      const data = await res.json();
+      btn.disabled = false;
+      feedback.style.color = data.success ? 'var(--success)' : 'var(--danger)';
+      feedback.textContent = (data.success ? '✅ ' : '⚠️ ') + data.message;
+    } catch (error) {
+      btn.disabled = false;
+      feedback.style.color = 'var(--danger)';
+      feedback.textContent = '⚠️ حدث خطأ في الاتصال بالخادم';
+    }
   }
 
-  // بعد الرجوع من رابط الإيميل (PASSWORD_RECOVERY فوق) — فورمة تحديد كلمة مرور جديدة فورًا
-  function openSetNewPasswordModal() {
+  // ✅ فورمة تحديد كلمة مرور جديدة — تخدم مصدرين مختلفين تمامًا:
+  // (1) mode='supabase': رابط استرجاع Supabase الجاهز (الماستر أدمن، PASSWORD_RECOVERY فوق)
+  //     — عندها جلسة Supabase حقيقية جاهزة، بنستخدم updateUser() مباشرة.
+  // (2) mode='customToken': رابط request-password-reset المخصص (باقي الأدوار) — مفيش أي
+  //     جلسة هنا خالص، التوكن نفسه هو "الإثبات"، فبننادي confirm-password-reset بيه
+  let __passwordResetMode = 'supabase';
+  let __customResetToken = null;
+  function openSetNewPasswordModal(mode, token) {
+    __passwordResetMode = mode || 'supabase';
+    __customResetToken = token || null;
     if (document.getElementById('setNewPwOverlay')) return;
     const overlay = document.createElement('div');
     overlay.id = 'setNewPwOverlay';
@@ -1137,6 +1173,34 @@
     btn.disabled = true;
     feedback.style.color = 'var(--muted)';
     feedback.textContent = 'جاري الحفظ...';
+
+    // ✅ مسار الرابط المخصص (باقي الأدوار) — مفيش جلسة Supabase هنا خالص، التوكن نفسه هو
+    // الإثبات، فمنقدرش نسجّل الدخول تلقائيًا بعدها — نوريه رسالة نجاح ونسيبه يدخل عادي
+    if (__passwordResetMode === 'customToken') {
+      try {
+        const res = await fetch(PROJECT_URL + '/functions/v1/confirm-password-reset', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: __customResetToken, newPassword: pw }),
+        });
+        const data = await res.json();
+        btn.disabled = false;
+        if (!data.success) {
+          feedback.style.color = 'var(--danger)';
+          feedback.textContent = '⚠️ ' + data.message;
+          return;
+        }
+        feedback.style.color = 'var(--success)';
+        feedback.textContent = '✅ اتحفظت كلمة المرور الجديدة — سجّل دخولك بيها دلوقتي';
+        history.replaceState(null, '', window.location.pathname);
+        document.getElementById('setNewPwBtn').style.display = 'none';
+      } catch (error) {
+        btn.disabled = false;
+        feedback.style.color = 'var(--danger)';
+        feedback.textContent = '⚠️ حدث خطأ في الاتصال بالخادم';
+      }
+      return;
+    }
+
     const { error } = await supabaseClient.auth.updateUser({ password: pw });
     btn.disabled = false;
     if (error) {
