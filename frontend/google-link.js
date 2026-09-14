@@ -23,13 +23,30 @@
     if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة (حساب لسه م اتهاجرش، أو مش مسجل دخول)
     if (!window.supabase) return; // فشل تحميل مكتبة Supabase من الـCDN — تجاهل بصمت
 
-    let client;
-    try {
-      client = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY);
-      const { data, error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
-      if (error || !data?.user) return;
+    // ✅ نستنى session-refresh.js يخلص تجهيز عميله الأول (لو موجود) عشان نعيد استخدامه بدل ما
+    // ننشئ عميل تاني على نفس مفتاح التخزين (Multiple GoTrueClient instances warning)
+    if (window.__fasliSessionReady) {
+      try { await window.__fasliSessionReady; } catch (e) { /* تجاهل */ }
+    }
 
-      const identities = data.user.identities || [];
+    try {
+      // ✅ نعيد استخدام نفس عميل Supabase بتاع session-refresh.js لو موجود بدل إنشاء عميل تاني
+      // بنفس مفتاح التخزين — إنشاء أكتر من GoTrueClient على نفس الـstorage key بيولّد تحذير
+      // "Multiple GoTrueClient instances" من Supabase نفسه (سلوك غير مضمون لو استخدموا مع بعض)
+      let client = window.__fasliSessionClient;
+      let user;
+      if (client) {
+        const { data, error } = await client.auth.getUser();
+        if (error || !data?.user) return;
+        user = data.user;
+      } else {
+        client = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY);
+        const { data, error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
+        if (error || !data?.user) return;
+        user = data.user;
+      }
+
+      const identities = user.identities || [];
       const hasGoogle = identities.some((i) => i.provider === 'google');
       if (hasGoogle) return;
 

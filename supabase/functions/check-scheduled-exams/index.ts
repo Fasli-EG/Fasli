@@ -1,21 +1,19 @@
 // supabase/functions/check-scheduled-exams/index.ts
 // ✅ بتتنادى دورياً (كل ما حد فاتح لوحة التحكم أو صفحة الطالب) — بتنشر أي اختبار وصل وقت جدولته ولسه مانشرش
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
+import { verifyToken } from "../_shared/auth.ts";
 
-// ✅ (مراجعة أمان) الدالة كانت من غير أي تحقق هوية خالص — أي حد يقدر ينادّيها من برة التطبيق
-// ويجبر نشر كل الاختبارات المجدولة لكل المدرسين دفعة واحدة. دلوقتي: أي مستخدم مسجّل دخول
+// ✅ (هجرة Supabase Auth) الدالة دي كانت لسه بتتحقق بمنطقها الخاص (توكن مخصص قديم بـJWT_SECRET)
+// بدل ما تستورد من _shared/auth.ts زي باقي الفانكشنز — نفس نوع الاستثناء اللي كان في
+// manage-student.ts قبل ما نصلحه. دلوقتي بتستخدم verifyToken الموحّد؛ أي مستخدم مسجّل دخول
 // (مدرس أو طالب، أيًا كان) يكفي — أو x-cron-secret لو هتتحول لـ pg_cron حقيقي لاحقًا.
 async function verifyAnyToken(req: Request): Promise<boolean> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return false;
-  const JWT_SECRET = Deno.env.get("JWT_SECRET");
-  if (!JWT_SECRET) return false;
   try {
-    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(JWT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-    await verify(authHeader.substring(7), key, "HS256");
+    await verifyToken(req, { skipLicenseCheck: true });
     return true;
-  } catch (_e) { return false; }
+  } catch (_e) {
+    return false;
+  }
 }
 
 const corsHeaders = {

@@ -54,9 +54,13 @@
     }
   }
 
+  // ✅ باقي السكريبتات (google-link.js) بتستنى الـpromise ده قبل ما تنشئ عميل Supabase خاص بيها،
+  // عشان تستخدم نفس العميل ده بدل ما تعمل GoTrueClient تاني على نفس مفتاح التخزين
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    window.__fasliSessionReady = new Promise((resolve) => {
+      document.addEventListener('DOMContentLoaded', () => init().then(resolve));
+    });
   } else {
-    init();
+    window.__fasliSessionReady = init();
   }
 })();
