@@ -2,7 +2,7 @@
 // بيخزّن "هيكل" التطبيق (CSS/JS/الأيقونات) للسرعة والعمل الجزئي بدون إنترنت
 // لكن **مايخزّنش** أي طلب لـ Supabase (بيانات الطلاب/الدرجات/المدفوعات) — دي المفروض دايماً تيجي من الإنترنت مباشرة
 
-const CACHE_VERSION = 'fasli-shell-v1';
+const CACHE_VERSION = 'fasli-shell-v2';
 const SHELL_ASSETS = [
   './style.css',
   './activity-format.js',
@@ -34,10 +34,15 @@ self.addEventListener('fetch', (event) => {
     return; // نسيب المتصفح يتعامل مع الطلب عادي بدون تدخل
   }
 
-  // الصفحات (HTML): نحاول الإنترنت الأول، ولو مفيش اتصال نرجع للنسخة المخزنة لو موجودة
+  // الصفحات (HTML): نحاول الإنترنت الأول، ولو مفيش اتصال نرجع للنسخة المخزنة لو موجودة.
+  // ⚠️ cache:'no-store' ضروري هنا — fetch() العادي بيحترم Cache-Control العادي بتاع
+  // المتصفح (مش بس Cache Storage API اللي إحنا بنتحكم فيه)، فمن غيرها صفحة زي login.html
+  // ممكن تفضل بتترجع نسخة HTTP قديمة مخزّنة لفترة طويلة حتى لو "الإنترنت" شغال فعلاً —
+  // وده اللي كان بيخلي إصلاحات جوه login.html (زي رابط استرجاع كلمة المرور) تفضل مش ظاهرة
+  // لمستخدم زاره قبل كده، حتى بعد ما ننشر التعديل فعليًا على GitHub Pages
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
     );
     return;
   }
