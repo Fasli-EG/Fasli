@@ -77,25 +77,22 @@ if (!supabaseKey) {
 }
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// ✅ اكتشاف نوع الحساب تلقائياً، بدل ما المستخدم يحدد الدور بنفسه — يقلل عدد الاختيارات في صفحة الدخول
-// "staff": نجرب سنتر، ثم مدرس، ثم مساعد (بالترتيب). "family": نجرب ولي أمر، ثم طالب.
-async function detectRole(group: string, username: string): Promise<string | null> {
-  if (group === "staff") {
-    // ✅ Aug 2026 (تعديل جوهري): جدول centers ومفهوم "حساب سنتر منفصل" اتلغى تماماً —
-    // السنتر بقى مجرد صف في جدول teachers عليه علامة is_center، فبيتكشف عادي هنا زي أي مدرس.
-    const { data: teacher } = await supabase.from("teachers").select("client_id").eq("client_id", username).maybeSingle();
-    if (teacher) return "teacher";
-    const { data: assistant } = await supabase.from("assistants").select("username").eq("username", username).maybeSingle();
-    if (assistant) return "assistant";
-    return null;
-  }
-  if (group === "family") {
-    const { data: parent } = await supabase.from("parents").select("phone").eq("phone", username).maybeSingle();
-    if (parent) return "parent";
-    const { data: student } = await supabase.from("students").select("uid").eq("uid", username).maybeSingle();
-    if (student) return "student";
-    return null;
-  }
+// ✅ اكتشاف نوع الحساب تلقائياً على الـ4 جداول كلها — بعد إلغاء تبويبي "الطاقم"/"الأسرة" في
+// صفحة الدخول، مبقاش عندنا تلميح "group" من الفرونت إند نضيّق بيه البحث، فبنجرب بترتيب ثابت:
+// مدرس (client_id) → مساعد (username) → ولي أمر (phone) → طالب (uid)، أول تطابق بيكسب.
+// ⚠️ الترتيب ده بيفترض عدم تصادم قيمة بين الجداول الأربعة (كل جدول متفرّد لوحده بس، مفيش
+// تفرّد مضمون عبر الجداول) — مقبول في حجم نظام زي فَصلي، مش سوق متعدد المستأجرين ضخم.
+async function detectRole(username: string): Promise<string | null> {
+  // ✅ Aug 2026 (تعديل جوهري): جدول centers ومفهوم "حساب سنتر منفصل" اتلغى تماماً —
+  // السنتر بقى مجرد صف في جدول teachers عليه علامة is_center، فبيتكشف عادي هنا زي أي مدرس.
+  const { data: teacher } = await supabase.from("teachers").select("client_id").eq("client_id", username).maybeSingle();
+  if (teacher) return "teacher";
+  const { data: assistant } = await supabase.from("assistants").select("username").eq("username", username).maybeSingle();
+  if (assistant) return "assistant";
+  const { data: parent } = await supabase.from("parents").select("phone").eq("phone", username).maybeSingle();
+  if (parent) return "parent";
+  const { data: student } = await supabase.from("students").select("uid").eq("uid", username).maybeSingle();
+  if (student) return "student";
   return null;
 }
 
@@ -116,16 +113,16 @@ Deno.serve(async (req) => {
     const { username, password } = body;
     let role = body.role;
 
-    if (!username || !password || (!role && !body.group)) {
+    if (!username || !password) {
       return new Response(
         JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ✅ لو الواجهة الجديدة بعتت "group" بدل "role" الصريحة، نكتشف نوع الحساب تلقائياً
-    if (!role && body.group) {
-      role = await detectRole(body.group, username);
+    // ✅ الواجهة الجديدة بتبعت "username"+"password" بس (بلا "role"/"group") — نكتشف نوع الحساب تلقائياً
+    if (!role) {
+      role = await detectRole(username);
       if (!role) {
         return new Response(
           JSON.stringify({ success: false, message: "⚠️ الحساب غير مسجّل في المنظومة" }),

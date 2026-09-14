@@ -3,7 +3,7 @@
 // إيميل الاسترجاع الاختياري — موحّد لكل الأدوار (مدرس/مساعد/ولي أمر/طالب). لو المستخدم
 // ضايف إيميل استرجاع من هنا، هيقدر يستخدم "نسيت كلمة المرور" في صفحة الدخول عشان يوصله
 // رابط تحديد كلمة مرور جديدة عليه (request-password-reset في الباك إند). نفس نمط
-// google-link.js/webauthn.js بالظبط: window.FasliRecoveryEmail = { renderManager, openManagerModal }
+// webauthn.js بالظبط: window.FasliRecoveryEmail = { renderManager, openManagerModal }
 // ============================================
 (function () {
   const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';

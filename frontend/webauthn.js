@@ -53,7 +53,7 @@
       body: '{}',
     });
     const data = await res.json();
-    if (!data.success) throw new Error(data.message || 'فشل تحميل البصمات المسجّلة');
+    if (!data.success) throw new Error(data.message || 'فشل تحميل أجهزة الدخول السريع المسجّلة');
     return data.credentials || [];
   }
 
@@ -123,11 +123,9 @@
 
     const bar = document.createElement('div');
     bar.id = 'webauthnBanner';
-    const googleBar = document.getElementById('googleLinkBanner');
-    const bottomOffset = googleBar ? googleBar.offsetHeight + 4 : 0;
     const rightInset = getSidebarInsetPx();
     bar.style.cssText = [
-      'position:fixed', `bottom:${bottomOffset}px`, 'left:0', `right:${rightInset}px`, 'z-index:99998',
+      'position:fixed', 'bottom:0', 'left:0', `right:${rightInset}px`, 'z-index:99998',
       'background:#0E8074', 'color:#fff', 'padding:14px 18px',
       'display:flex', 'align-items:center', 'justify-content:center', 'gap:14px', 'flex-wrap:wrap',
       'font-family:"IBM Plex Sans Arabic","Cairo",sans-serif', 'font-size:14px',
@@ -135,11 +133,11 @@
     ].join(';');
 
     const text = document.createElement('span');
-    text.textContent = '🔒 فعّل الدخول بالبصمة أو الوجه عشان تدخل بضغطة واحدة من غير ما تكتب كلمة المرور';
+    text.textContent = '⚡ فعّل الدخول السريع عشان تدخل بضغطة واحدة من غير ما تكتب كلمة المرور';
     text.style.cssText = 'flex:1;min-width:200px;';
 
     const acceptBtn = document.createElement('button');
-    acceptBtn.textContent = 'تفعيل البصمة';
+    acceptBtn.textContent = 'تفعيل الدخول السريع';
     acceptBtn.style.cssText = 'background:#F2B705;color:#0B1C33;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-weight:700;font-family:inherit;font-size:14px;white-space:nowrap;';
 
     const dismissBtn = document.createElement('button');
@@ -164,10 +162,10 @@
         } else if (e && e.name === 'NotAllowedError') {
           // ✅ المستخدم لغى العملية أو رفض الإذن — مفيش داعي نزعجه برسالة خطأ
         } else {
-          await notify('تعذّر تفعيل البصمة: ' + (e && e.message ? e.message : e), { title: '⚠️ خطأ' });
+          await notify('تعذّر تفعيل الدخول السريع: ' + (e && e.message ? e.message : e), { title: '⚠️ خطأ' });
         }
         acceptBtn.disabled = false;
-        acceptBtn.textContent = 'تفعيل البصمة';
+        acceptBtn.textContent = 'تفعيل الدخول السريع';
       }
     };
 
@@ -188,7 +186,7 @@
 
     const support = checkWebAuthnSupport();
     if (!support.ok) {
-      container.innerHTML = `<p style="color:#6B7280;font-size:13px;">المتصفح ده مش بيدعم الدخول بالبصمة/الوجه.<br><span style="color:#9CA3AF;font-size:11.5px;">(${support.reason})</span></p>`;
+      container.innerHTML = `<p style="color:#6B7280;font-size:13px;">المتصفح ده مش بيدعم الدخول السريع.<br><span style="color:#9CA3AF;font-size:11.5px;">(${support.reason})</span></p>`;
       return;
     }
 
@@ -206,7 +204,7 @@
 
     if (creds.length === 0) {
       const p = document.createElement('p');
-      p.textContent = 'مفيش أي بصمة مسجّلة لحسابك دلوقتي.';
+      p.textContent = 'مفيش أي جهاز دخول سريع مسجّل لحسابك دلوقتي.';
       p.style.cssText = 'color:#6B7280;font-size:13px;margin:0 0 12px;';
       container.appendChild(p);
     } else {
@@ -226,7 +224,7 @@
         delBtn.textContent = 'حذف';
         delBtn.style.cssText = 'background:#FDEEEE;color:#E5484D;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;white-space:nowrap;';
         delBtn.onclick = async () => {
-          const ok = await confirmAction('متأكد إنك عايز تحذف البصمة دي؟ هتحتاج تسجّلها تاني لو غيّرت رأيك.');
+          const ok = await confirmAction('متأكد إنك عايز تحذف جهاز الدخول السريع ده؟ هتحتاج تسجّله تاني لو غيّرت رأيك.');
           if (!ok) return;
           delBtn.disabled = true;
           delBtn.textContent = 'جارٍ الحذف...';
@@ -249,7 +247,7 @@
     }
 
     const addBtn = document.createElement('button');
-    addBtn.textContent = '➕ إضافة بصمة جهاز جديد';
+    addBtn.textContent = '➕ إضافة جهاز دخول سريع جديد';
     addBtn.style.cssText = 'background:#0E8074;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;font-family:inherit;';
     addBtn.onclick = async () => {
       addBtn.disabled = true;
@@ -262,11 +260,11 @@
         if (e && e.name === 'InvalidStateError') {
           await notify('⚠️ الجهاز ده مسجّل بالفعل', { title: '⚠️ تنبيه' });
         } else if (!(e && e.name === 'NotAllowedError')) {
-          await notify('تعذّر تفعيل البصمة: ' + (e && e.message ? e.message : e), { title: '⚠️ خطأ' });
+          await notify('تعذّر تفعيل الدخول السريع: ' + (e && e.message ? e.message : e), { title: '⚠️ خطأ' });
         }
       } finally {
         addBtn.disabled = false;
-        addBtn.textContent = '➕ إضافة بصمة جهاز جديد';
+        addBtn.textContent = '➕ إضافة جهاز دخول سريع جديد';
       }
     };
     container.appendChild(addBtn);
@@ -288,7 +286,7 @@
     const header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;';
     const title = document.createElement('h3');
-    title.textContent = '🔒 الدخول بالبصمة/الوجه';
+    title.textContent = '⚡ الدخول السريع';
     title.style.cssText = 'font-size:16px;font-weight:800;color:#0B1C33;margin:0;';
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';
@@ -299,7 +297,7 @@
     header.appendChild(closeBtn);
 
     const hint = document.createElement('p');
-    hint.textContent = 'الأجهزة المسجّلة للدخول ببصمتك أو وجهك بدل كلمة المرور.';
+    hint.textContent = 'الأجهزة المسجّلة للدخول السريع بدل كلمة المرور.';
     hint.style.cssText = 'color:#6B7280;font-size:13px;margin:0 0 14px;';
 
     const contentContainer = document.createElement('div');

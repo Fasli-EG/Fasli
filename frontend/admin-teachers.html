@@ -592,6 +592,7 @@
     <!-- ✅ نفس أسلوب التبويبات الفرعية اللي في صفحة الكروت -->
     <div class="sidebar-sub-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
       <button class="sub-tab-btn active" data-subtab="contact" onclick="switchSettingsSubTab('contact')">⚙️ بيانات التواصل</button>
+      <button class="sub-tab-btn" data-subtab="footer" onclick="switchSettingsSubTab('footer')">📝 تذييل صفحة الدخول</button>
       <button class="sub-tab-btn" data-subtab="downloads" onclick="switchSettingsSubTab('downloads')">📥 روابط التحميل</button>
       <button class="sub-tab-btn" data-subtab="ads" onclick="switchSettingsSubTab('ads')">🖼️ الصور الإعلانية</button>
       <button class="sub-tab-btn" data-subtab="background" onclick="switchSettingsSubTab('background')">🖼️ صور الخلفية</button>
@@ -629,6 +630,31 @@
           <label>رابط تيك توك</label>
           <input type="text" id="settingsTiktok" placeholder="https://tiktok.com/@..." dir="ltr">
         </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
+    </div>
+
+    <div class="card settings-subtab-panel" data-subtab-panel="footer" style="display:none;">
+      <h2>📝 الظهور في صفحة تسجيل الدخول</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
+        الاسم ده مختلف عن اسمك في القائمة الجانبية — ده اللي بيظهر لكل المستخدمين في تذييل صفحة تسجيل الدخول "تم تصميم هذه المنصة بكل حب من...".
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>اسمك (يظهر في تذييل صفحة تسجيل الدخول)</label>
+          <input type="text" id="settingsAdminName" placeholder="مثال: Sabry Elgammal">
+        </div>
+        <div class="field">
+          <label>رقم واتسابك (يتربط بالاسم في نفس التذييل)</label>
+          <input type="text" id="settingsAdminWhatsapp" placeholder="مثال: 201007702434" dir="ltr">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:14px 0;font-size:14px;">
+        <input type="checkbox" id="loginCreditShow" checked style="width:auto;"> إظهار هذا النص أسفل صفحة تسجيل الدخول
+      </label>
+      <div class="field">
+        <label>نص مخصص بديل (اختياري — لو سيبته فاضي هيتبني تلقائيًا من الاسم والواتساب فوق)</label>
+        <input type="text" id="loginCreditText" placeholder="مثال: بإدارة مركز كذا — للتواصل: 01xxxxxxxxx">
       </div>
       <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
     </div>
@@ -778,31 +804,6 @@
     </div>
 
     <div class="card" style="margin-top:24px;">
-      <h2>📝 الظهور في صفحة تسجيل الدخول</h2>
-      <p style="color:var(--muted-text);font-size:13px;margin-bottom:16px;">
-        الاسم ده مختلف عن اللي فوق — ده اللي بيظهر لكل المستخدمين في تذييل صفحة تسجيل الدخول "تم تصميم هذه المنصة بكل حب من...".
-      </p>
-      <div class="field-row">
-        <div class="field">
-          <label>اسمك (يظهر في تذييل صفحة تسجيل الدخول)</label>
-          <input type="text" id="settingsAdminName" placeholder="مثال: Sabry Elgammal">
-        </div>
-        <div class="field">
-          <label>رقم واتسابك (يتربط بالاسم في نفس التذييل)</label>
-          <input type="text" id="settingsAdminWhatsapp" placeholder="مثال: 201007702434" dir="ltr">
-        </div>
-      </div>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:14px 0;font-size:14px;">
-        <input type="checkbox" id="loginCreditShow" checked style="width:auto;"> إظهار هذا النص أسفل صفحة تسجيل الدخول
-      </label>
-      <div class="field">
-        <label>نص مخصص بديل (اختياري — لو سيبته فاضي هيتبني تلقائيًا من الاسم والواتساب فوق)</label>
-        <input type="text" id="loginCreditText" placeholder="مثال: بإدارة مركز كذا — للتواصل: 01xxxxxxxxx">
-      </div>
-      <button class="btn btn-primary" onclick="saveSystemSettings()">💾 حفظ التغييرات</button>
-    </div>
-
-    <div class="card" style="margin-top:24px;">
       <h2>🔐 تغيير كلمة المرور</h2>
       <div class="field-row">
         <div class="field">
@@ -818,13 +819,13 @@
     </div>
 
     <div class="card" style="margin-top:24px;">
-      <h2>🔗 ربط حساب جوجل</h2>
-      <p style="color:var(--muted-text);font-size:13px;margin-bottom:14px;">اربط حسابك بجوجل عشان تدخل بضغطة واحدة، وتقدر تسترجع حسابك لو نسيت كلمة المرور.</p>
-      <div id="adminGoogleLinkManager"></div>
+      <h2>📧 إيميل الاسترجاع</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:14px;">لو نسيت كلمة المرور، هنبعتلك رابط لتحديد واحدة جديدة على الإيميل ده — من صفحة الدخول، اكتب <strong>master_admin</strong> كمعرّف حسابك.</p>
+      <div id="adminRecoveryEmailManager"></div>
     </div>
 
     <div class="card" style="margin-top:24px;">
-      <h2>🔒 الدخول بالبصمة/الوجه</h2>
+      <h2>⚡ دخول سريع</h2>
       <p style="color:var(--muted-text);font-size:13px;margin-bottom:14px;">الأجهزة المسجّلة للدخول ببصمتك أو وجهك بدل كلمة المرور — تقدر تضيف أو تحذف أي جهاز.</p>
       <div id="adminPasskeyManager"></div>
     </div>
@@ -1406,6 +1407,12 @@
     }
 
     function switchAdminTab(tab) {
+      // ✅ (طلب) على الشاشات الصغيرة، السايدبار كان بيفضل مفتوح فوق المحتوى بعد اختيار أي تبويب
+      if (window.innerWidth <= 900) {
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (sidebar?.classList.contains('open')) { sidebar.classList.remove('open'); backdrop?.classList.remove('open'); }
+      }
       document.getElementById('panelTeachers').style.display = tab === 'teachers' ? '' : 'none';
       document.getElementById('panelCards').style.display = tab === 'cards' ? '' : 'none';
       document.getElementById('panelSettings').style.display = tab === 'settings' ? '' : 'none';
@@ -1415,7 +1422,7 @@
       document.getElementById('tabBtnSettings').classList.toggle('active', tab === 'settings');
       document.getElementById('tabBtnProfile').classList.toggle('active', tab === 'profile');
       if (tab === 'settings') loadSystemSettings();
-      if (tab === 'profile') { loadAdminProfile(); loadSystemSettings(); window.FasliWebauthn?.renderManager('adminPasskeyManager'); window.FasliGoogleLink?.renderManager('adminGoogleLinkManager'); }
+      if (tab === 'profile') { loadAdminProfile(); window.FasliWebauthn?.renderManager('adminPasskeyManager'); window.FasliRecoveryEmail?.renderManager('adminRecoveryEmailManager'); }
       if (tab === 'cards') initCardsTab();
     }
 
@@ -2541,11 +2548,10 @@
     }
   </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="session-refresh.js?v=5"></script>
-<script src="google-link.js?v=8"></script>
+<script src="session-refresh.js?v=6"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
-<script src="webauthn.js?v=5"></script>
-<script src="recovery-email.js?v=1"></script>
+<script src="webauthn.js?v=6"></script>
+<script src="recovery-email.js?v=2"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=4"></script>
 </body>

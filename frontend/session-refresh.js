@@ -6,10 +6,8 @@
 // Supabase يجدد التوكن تلقائيًا (قبل انتهائه بشوية) بيكتب القيم الجديدة في نفس المكان
 // اللي كل صفحات النظام بتقرأ منه (sessionStorage/localStorage.jwtToken).
 //
-// ✅ العميل ده persistSession:true عمداً (مش false زي أول نسخة) — google-link.js بيعيد
-// استخدامه بالظبط عشان تدفق OAuth (ربط جوجل) محتاج تخزين حقيقي يعيش بعد التنقل الكامل
-// لصفحة جوجل ورجوعه (حالة PKCE/code_verifier)؛ لو استخدمنا تخزين مؤقت (in-memory) هتضيع
-// الحالة دي تمامًا لما الصفحة تتقفل، وده اللي كان بيكسر عملية الربط قبل كده.
+// ✅ العميل ده persistSession:true عمداً (مش false) — تخزين حقيقي بيفضل موجود حتى لو
+// الصفحة اتقفلت وتفتحت تاني، بدل تخزين مؤقت (in-memory) بيضيع فورًا.
 // ============================================
 (function () {
   const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
@@ -63,15 +61,15 @@
 
       // ✅ لازم نفضل ماسكين مرجع للعميل ده — Supabase بيجدول التجديد التلقائي داخليًا
       // (setTimeout قبل انتهاء الصلاحية بشوية)، ولو العميل اتنضف من الذاكرة (garbage collected)
-      // التجديد مش هيحصل خالص. google-link.js بيعيد استخدام نفس العميل ده كمان.
+      // التجديد مش هيحصل خالص.
       window.__fasliSessionClient = client;
     } catch (e) {
       // ✅ أي فشل هنا لازم يتجاهل بصمت — تحسين خلفي اختياري، مش لازم يعطّل الصفحة الأساسية
     }
   }
 
-  // ✅ باقي السكريبتات (google-link.js) بتستنى الـpromise ده قبل ما تستخدم window.__fasliSessionClient،
-  // عشان تتأكد إنه اتجهّز الأول بدل ما تعمل GoTrueClient تاني على نفس مفتاح التخزين
+  // ✅ أي سكريبت تاني محتاج window.__fasliSessionClient لازم يستنى الـpromise ده الأول،
+  // عشان يتأكد إنه اتجهّز قبل ما يعمل GoTrueClient تاني على نفس مفتاح التخزين
   if (document.readyState === 'loading') {
     window.__fasliSessionReady = new Promise((resolve) => {
       document.addEventListener('DOMContentLoaded', () => init().then(resolve));

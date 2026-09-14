@@ -29,35 +29,37 @@ async function hashToken(raw: string): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   try {
-    const { group, identifier } = await req.json();
-    if (!group || !identifier || (group !== "staff" && group !== "family")) {
+    const { identifier } = await req.json();
+    if (!identifier) {
       return jsonResponse({ success: false, message: "⚠️ بيانات ناقصة" }, 400);
     }
 
     // ✅ حماية من التخمين/الإرسال المتكرر — نفس جدول login_attempts المستخدم في تسجيل الدخول،
     // ببادئة مختلفة، وحد أقل (3 محاولات) لأن ده بيبعت إيميل فعلي مش مجرد فحص باسورد
-    const rateLimitKey = `pwreset:${group}:${identifier}`;
+    const rateLimitKey = `pwreset:${identifier}`;
     const rateLimit = await checkRateLimit(rateLimitKey, { maxAttempts: 3, lockMinutes: 30 });
     if (rateLimit.blocked) return jsonResponse({ success: false, message: rateLimit.message }, 429);
     await registerFailedAttempt(rateLimitKey, { maxAttempts: 3, lockMinutes: 30 });
 
     const supabase = supabaseAdmin();
 
+    // ✅ بعد إلغاء تبويبي "الطاقم"/"الأسرة"، بنجرب الجداول الأربعة كلها بنفس ترتيب detectRole()
+    // في login/index.ts (مدرس → مساعد → ولي أمر → طالب) — شامل الماستر أدمن كمان، لأن حسابه
+    // مجرد صف عادي في جدول teachers بـclient_id='master_admin'
     let row: { auth_user_id: string | null; recovery_email: string | null; name?: string } | null = null;
-    if (group === "staff") {
-      const { data: teacher } = await supabase.from("teachers").select("auth_user_id, recovery_email, name").eq("client_id", identifier).maybeSingle();
-      row = teacher ?? null;
-      if (!row) {
-        const { data: assistant } = await supabase.from("assistants").select("auth_user_id, recovery_email, name").eq("username", identifier).maybeSingle();
-        row = assistant ?? null;
-      }
-    } else {
+    const { data: teacher } = await supabase.from("teachers").select("auth_user_id, recovery_email, name").eq("client_id", identifier).maybeSingle();
+    row = teacher ?? null;
+    if (!row) {
+      const { data: assistant } = await supabase.from("assistants").select("auth_user_id, recovery_email, name").eq("username", identifier).maybeSingle();
+      row = assistant ?? null;
+    }
+    if (!row) {
       const { data: parent } = await supabase.from("parents").select("auth_user_id, recovery_email, name").eq("phone", identifier).maybeSingle();
       row = parent ?? null;
-      if (!row) {
-        const { data: student } = await supabase.from("students").select("auth_user_id, recovery_email, name").eq("uid", identifier).maybeSingle();
-        row = student ?? null;
-      }
+    }
+    if (!row) {
+      const { data: student } = await supabase.from("students").select("auth_user_id, recovery_email, name").eq("uid", identifier).maybeSingle();
+      row = student ?? null;
     }
 
     if (!row) return jsonResponse({ success: false, message: "❌ الحساب غير موجود" }, 404);
