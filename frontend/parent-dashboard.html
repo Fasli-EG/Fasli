@@ -104,6 +104,9 @@
       <button class="btn btn-ghost btn-sm" onclick="window.FasliWebauthn && window.FasliWebauthn.openManagerModal()" title="الدخول بالبصمة">
         <i class="fas fa-fingerprint"></i>
       </button>
+      <button class="btn btn-ghost btn-sm" onclick="window.FasliRecoveryEmail && window.FasliRecoveryEmail.openManagerModal()" title="إيميل الاسترجاع">
+        <i class="fas fa-envelope-circle-check"></i>
+      </button>
       <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" id="themeToggle" title="الوضع الليلي">
         <i class="fas fa-moon"></i>
       </button>
@@ -875,6 +878,7 @@
 <script src="google-link.js?v=8"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <script src="webauthn.js?v=5"></script>
+<script src="recovery-email.js?v=1"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=4"></script>
 </body>

@@ -285,4 +285,13 @@ verify_jwt = false
 [functions.webauthn-delete-credential]
 verify_jwt = false
 
+[functions.request-password-reset]
+verify_jwt = false
+
+[functions.confirm-password-reset]
+verify_jwt = false
+
+[functions.manage-recovery-email]
+verify_jwt = false
+
 

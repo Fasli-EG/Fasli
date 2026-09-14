@@ -1,0 +1,104 @@
+// supabase/functions/request-password-reset/index.ts
+// ============================================
+// استرجاع كلمة المرور الذاتي لكل الأدوار غير الماستر أدمن (كود مدرس/اسم مستخدم مساعد/
+// رقم هاتف ولي أمر/كود كارت طالب) — نفس منطق التعرّف على الدور المستخدم في login/index.ts
+// (group + identifier، مش إيميل، لأن باقي الأدوار مالهاش إيميل حقيقي في auth.users أصلاً).
+// لو الحساب مسجّل له "إيميل استرجاع" اختياري (من إعدادات حسابه)، بنولّد توكن لمرة واحدة
+// صالح ساعة ونبعته عن طريق Resend مباشرة — من غير أي حاجة لصلاحية Supabase Auth الجاهزة.
+// ============================================
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { corsHeaders } from "../_shared/auth.ts";
+import { sendEmail } from "../_shared/email.ts";
+import { checkRateLimit, registerFailedAttempt } from "../_shared/rateLimit.ts";
+
+function supabaseAdmin() {
+  const url = Deno.env.get("SUPABASE_URL") || Deno.env.get("DATABASE_URL") || "";
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE") || "";
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+async function hashToken(raw: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  try {
+    const { group, identifier } = await req.json();
+    if (!group || !identifier || (group !== "staff" && group !== "family")) {
+      return jsonResponse({ success: false, message: "⚠️ بيانات ناقصة" }, 400);
+    }
+
+    // ✅ حماية من التخمين/الإرسال المتكرر — نفس جدول login_attempts المستخدم في تسجيل الدخول،
+    // ببادئة مختلفة، وحد أقل (3 محاولات) لأن ده بيبعت إيميل فعلي مش مجرد فحص باسورد
+    const rateLimitKey = `pwreset:${group}:${identifier}`;
+    const rateLimit = await checkRateLimit(rateLimitKey, { maxAttempts: 3, lockMinutes: 30 });
+    if (rateLimit.blocked) return jsonResponse({ success: false, message: rateLimit.message }, 429);
+    await registerFailedAttempt(rateLimitKey, { maxAttempts: 3, lockMinutes: 30 });
+
+    const supabase = supabaseAdmin();
+
+    let row: { auth_user_id: string | null; recovery_email: string | null; name?: string } | null = null;
+    if (group === "staff") {
+      const { data: teacher } = await supabase.from("teachers").select("auth_user_id, recovery_email, name").eq("client_id", identifier).maybeSingle();
+      row = teacher ?? null;
+      if (!row) {
+        const { data: assistant } = await supabase.from("assistants").select("auth_user_id, recovery_email, name").eq("username", identifier).maybeSingle();
+        row = assistant ?? null;
+      }
+    } else {
+      const { data: parent } = await supabase.from("parents").select("auth_user_id, recovery_email, name").eq("phone", identifier).maybeSingle();
+      row = parent ?? null;
+      if (!row) {
+        const { data: student } = await supabase.from("students").select("auth_user_id, recovery_email, name").eq("uid", identifier).maybeSingle();
+        row = student ?? null;
+      }
+    }
+
+    if (!row) return jsonResponse({ success: false, message: "❌ الحساب غير موجود" }, 404);
+    if (!row.auth_user_id) {
+      return jsonResponse({ success: false, message: "⚠️ الحساب ده من النظام القديم ولسه معملوش حساب دخول جديد — تواصل مع الشخص المسؤول عن حسابك" }, 400);
+    }
+    if (!row.recovery_email) {
+      return jsonResponse({
+        success: false,
+        code: "NO_RECOVERY_EMAIL",
+        message: "لا يوجد إيميل استرجاع مسجّل لهذا الحساب — تقدر تضيفه من إعدادات حسابك بعد ما تدخل، أو تواصل مع الشخص المسؤول عن حسابك عشان يعمل لك إعادة تعيين لكلمة المرور",
+      }, 200);
+    }
+
+    const rawToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+    const tokenHash = await hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+    const { error: insertError } = await supabase.from("password_reset_tokens").insert({
+      auth_user_id: row.auth_user_id, token_hash: tokenHash, expires_at: expiresAt,
+    });
+    if (insertError) return jsonResponse({ success: false, message: "⚠️ حدث خطأ غير متوقع، حاول مرة أخرى" }, 500);
+
+    const resetLink = `https://fasli-eg.github.io/Fasli/login.html?resetToken=${rawToken}`;
+    try {
+      await sendEmail({
+        to: row.recovery_email,
+        subject: "استرجاع كلمة المرور — فَصلي",
+        html: `<div dir="rtl" style="font-family:sans-serif;font-size:15px;color:#0B1C33;line-height:1.7;">
+          <p>مرحباً ${row.name || ""}،</p>
+          <p>وصلنا طلب لاسترجاع كلمة المرور بتاعة حسابك في فَصلي. اضغط على الرابط ده لتحديد كلمة مرور جديدة (صالح لمدة ساعة واحدة بس):</p>
+          <p><a href="${resetLink}" style="background:#F2B705;color:#0B1C33;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block;">تحديد كلمة مرور جديدة</a></p>
+          <p style="color:#6B7280;font-size:13px;">لو معملتش الطلب ده، تقدر تتجاهل الإيميل ده بأمان — حسابك في أمان.</p>
+        </div>`,
+      });
+    } catch (e) {
+      return jsonResponse({ success: false, message: e instanceof Error ? e.message : "⚠️ فشل إرسال الإيميل" }, 500);
+    }
+
+    return jsonResponse({ success: true, message: "✅ اتبعت رابط تحديد كلمة مرور جديدة على الإيميل المسجّل عندك" });
+  } catch (error) {
+    return jsonResponse({ success: false, message: error instanceof Error ? error.message : "⚠️ خطأ غير متوقع" }, 500);
+  }
+});

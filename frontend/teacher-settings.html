@@ -72,7 +72,7 @@
 
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
-    <script src="layout.js?v=3"></script>
+    <script src="layout.js?v=4"></script>
     <script>renderShell({active:'settings'});</script>
 
     <div class="main-area">
@@ -136,6 +136,16 @@
         </div>
       </div>
       <div id="teacherGoogleLinkManager"></div>
+    </div>
+
+    <div class="wifi-card" style="margin-top:24px;">
+      <div class="page-header" style="margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:18px;">📧 إيميل الاسترجاع</h2>
+          <span class="sub">لو نسيت كلمة المرور، هنبعتلك رابط لتحديد واحدة جديدة على الإيميل ده</span>
+        </div>
+      </div>
+      <div id="teacherRecoveryEmailManager"></div>
     </div>
 
     <div class="wifi-card" style="margin-top:24px;">
@@ -1130,6 +1140,7 @@ async function confirmReset() {
       loadCenterSharingStatus();
       window.FasliWebauthn?.renderManager('teacherPasskeyManager');
       window.FasliGoogleLink?.renderManager('teacherGoogleLinkManager');
+      window.FasliRecoveryEmail?.renderManager('teacherRecoveryEmailManager');
     };
 
     // ============================================
@@ -1561,6 +1572,7 @@ async function confirmReset() {
 <script src="google-link.js?v=8"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <script src="webauthn.js?v=5"></script>
+<script src="recovery-email.js?v=1"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=4"></script>
 </body>
