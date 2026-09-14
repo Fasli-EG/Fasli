@@ -6,10 +6,10 @@
 // Supabase يجدد التوكن تلقائيًا (قبل انتهائه بشوية) بيكتب القيم الجديدة في نفس المكان
 // اللي كل صفحات النظام بتقرأ منه (sessionStorage/localStorage.jwtToken).
 //
-// ✅ ملاحظة: العميل هنا persistSession:false عمداً (إحنا بنتحكم في التخزين بأنفسنا).
-// ده معناه مينفعش يُستخدم لبدء أو استكمال أي تدفق OAuth (زي ربط جوجل) لأن حالة PKCE
-// (code_verifier) محتاجة تخزين حقيقي يعيش بعد التنقل الكامل لصفحة تانية ورجوعه —
-// google-link.js بيعمل عميله المستقل بتخزين حقيقي لنفس السبب ده بالظبط.
+// ✅ العميل ده persistSession:true عمداً (مش false زي أول نسخة) — google-link.js بيعيد
+// استخدامه بالظبط عشان تدفق OAuth (ربط جوجل) محتاج تخزين حقيقي يعيش بعد التنقل الكامل
+// لصفحة جوجل ورجوعه (حالة PKCE/code_verifier)؛ لو استخدمنا تخزين مؤقت (in-memory) هتضيع
+// الحالة دي تمامًا لما الصفحة تتقفل، وده اللي كان بيكسر عملية الربط قبل كده.
 // ============================================
 (function () {
   const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
@@ -31,37 +31,52 @@
   async function init() {
     if (!window.supabase) return; // فشل تحميل مكتبة Supabase من الـCDN — تجاهل بصمت
 
-    const token = getStored('jwtToken');
-    const refreshToken = getStored('refreshToken');
-    if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة (حساب لسه م اتهاجرش، أو مش مسجل دخول)
+    // ✅ لو الصفحة دي راجعة من ربط جوجل (أو أي OAuth تاني)، الرابط بيحتوي على كود/توكنات
+    // جديدة لازم Supabase يعالجها بنفسه (detectSessionInUrl) — من غير ما نكتب فوقها بتوكن
+    // قديم من التخزين قبل ما تتعالج
+    const hasOAuthCallback = window.location.hash.includes('access_token=')
+      || new URLSearchParams(window.location.search).has('code');
 
     try {
       const client = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY, {
-        auth: { autoRefreshToken: true, persistSession: false, detectSessionInUrl: false },
+        auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: hasOAuthCallback },
       });
 
-      const { error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
-      if (error) return; // توكن/refresh غير صالحين — نسيب باقي الصفحة تتعامل مع 401 زي ما هي
-
       client.auth.onAuthStateChange((event, session) => {
-        if (event === 'TOKEN_REFRESHED' && session) {
+        if (session) {
           persist('jwtToken', session.access_token);
           persist('refreshToken', session.refresh_token);
         }
       });
 
+      if (hasOAuthCallback) {
+        // ✅ نستنى Supabase يخلص معالجة الرابط ويصدر الجلسة الجديدة — بتوصلنا عن طريق
+        // onAuthStateChange فوق، فبنستخدم getSession() بس عشان نستنى الجاهزية
+        await client.auth.getSession();
+      } else {
+        const token = getStored('jwtToken');
+        const refreshToken = getStored('refreshToken');
+        if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة (حساب لسه م اتهاجرش، أو مش مسجل دخول)
+        const { error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
+        if (error) return; // توكن/refresh غير صالحين — نسيب باقي الصفحة تتعامل مع 401 زي ما هي
+      }
+
       // ✅ لازم نفضل ماسكين مرجع للعميل ده — Supabase بيجدول التجديد التلقائي داخليًا
       // (setTimeout قبل انتهاء الصلاحية بشوية)، ولو العميل اتنضف من الذاكرة (garbage collected)
-      // التجديد مش هيحصل خالص
+      // التجديد مش هيحصل خالص. google-link.js بيعيد استخدام نفس العميل ده كمان.
       window.__fasliSessionClient = client;
     } catch (e) {
       // ✅ أي فشل هنا لازم يتجاهل بصمت — تحسين خلفي اختياري، مش لازم يعطّل الصفحة الأساسية
     }
   }
 
+  // ✅ باقي السكريبتات (google-link.js) بتستنى الـpromise ده قبل ما تستخدم window.__fasliSessionClient،
+  // عشان تتأكد إنه اتجهّز الأول بدل ما تعمل GoTrueClient تاني على نفس مفتاح التخزين
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    window.__fasliSessionReady = new Promise((resolve) => {
+      document.addEventListener('DOMContentLoaded', () => init().then(resolve));
+    });
   } else {
-    init();
+    window.__fasliSessionReady = init();
   }
 })();
