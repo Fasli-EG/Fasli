@@ -5,6 +5,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { corsHeaders, AuthError, verifyToken, requireOwnClientId, authErrorResponse } from "../_shared/auth.ts";
+import { signInAuthUser, syntheticEmailFor } from "../_shared/authProvision.ts";
 
 // ============================================
 // (من _shared/password.ts — مدموج مباشرة لأن Dashboard لا يدعم الاستيراد بين الدوال)
@@ -202,17 +203,15 @@ serve(async (req) => {
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ✅ التحقق الفعلي من كلمة مرور المدرس نفسه (بدل كلمة تأكيد نصية ثابتة)
-    const { data: teacherRow, error: teacherError } = await supabase
-      .from("teachers").select("password_hash").eq("client_id", finalClientId).maybeSingle();
-
-    if (teacherError || !teacherRow) {
-      return new Response(JSON.stringify({ success: false, message: "تعذر التحقق من الحساب" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const { valid } = await verifyPassword(password, teacherRow.password_hash);
-    if (!valid) {
+    // ✅ Batch 25: التحقق الفعلي من كلمة مرور المدرس نفسه — كان بيتحقق من عمود password_hash المحلي
+    // القديم، اللي بقى ممكن يكون null (حساب مربوط بجوجل مثلاً) أو قيمة قديمة متحدّتش بعد هجرة
+    // Supabase Auth، فيفشل الحذف بصمت لكل حساب متعمل بيه تسجيل دخول حديث. لازم نتحقق من Supabase
+    // Auth نفسه، بنفس الطريقة اللي /login بتتحقق بيها فعليًا
+    const { error: signInError } = await signInAuthUser({
+      email: syntheticEmailFor("teacher", finalClientId),
+      password,
+    });
+    if (signInError) {
       await registerFailedAttempt(rateLimitKey);
       return new Response(JSON.stringify({ success: false, message: "⛔ كلمة المرور غير صحيحة" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -310,6 +309,16 @@ serve(async (req) => {
     // ✅ الإشعارات
     if (want("notifications")) {
       await supabase.from("notifications").delete().eq("teacher_id", finalClientId);
+    }
+
+    // ✅ طلبات التسجيل المعلّقة (كانت موجودة كخيار في الواجهة بس متجاهلة هنا فعليًا)
+    if (want("registrationRequests")) {
+      await supabase.from("registration_requests").delete().eq("teacher_id", finalClientId);
+    }
+
+    // ✅ المحادثات مع أولياء الأمور (كانت موجودة كخيار في الواجهة بس متجاهلة هنا فعليًا)
+    if (want("conversations")) {
+      await supabase.from("conversation_messages").delete().eq("teacher_id", finalClientId);
     }
 
     // ✅ مسح كل سجل النشاطات القديم الخاص بالمدرس (كما طُلب)

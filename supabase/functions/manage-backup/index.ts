@@ -2,6 +2,7 @@
 // ✅ دالة موحّدة تجمع export-backup + restore-backup — action: export | restore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
+import { signInAuthUser, syntheticEmailFor } from "../_shared/authProvision.ts";
 
 function requireOwnClientId(payload: TokenPayload, requestedClientId?: string | null): string {
   const tokenClientId = payload.clientId || payload.teacherId;
@@ -110,8 +111,9 @@ async function handleExport(supabase: any, payload: TokenPayload, body: any) {
     attendanceRes, assistantsRes, attendanceSessionsRes, expensesRes, instructorNamesRes,
     educationLevelsRes, paymentTitlesRes, examTitlesRes, onlineExamsRes, studentGroupLinksRes,
     studentTeacherLinksRes, conversationMessagesRes, systemCardsRes, cardActionModeRes, notificationsRes,
+    registrationRequestsRes,
   ] = await Promise.all([
-    supabase.from("teachers").select("client_id, name, expiry_date, max_students, permissions, contact_whatsapp, contact_phone").eq("client_id", finalClientId).maybeSingle(),
+    supabase.from("teachers").select("client_id, name, expiry_date, max_students, permissions, contact_whatsapp, contact_phone, phone_visible, whatsapp_visible, conversations_enabled, brand_logo_url, brand_color, electronic_payment_enabled, payment_instapay, payment_wallet, payment_bank_details").eq("client_id", finalClientId).maybeSingle(),
     supabase.from("students").select("*").eq("teacher_id", finalClientId),
     supabase.from("groups").select("*").eq("teacher_id", finalClientId),
     supabase.from("grades").select("*").eq("teacher_id", finalClientId),
@@ -133,6 +135,7 @@ async function handleExport(supabase: any, payload: TokenPayload, body: any) {
     supabase.from("system_cards").select("*").eq("teacher_id", finalClientId),
     supabase.from("card_action_mode").select("*").eq("teacher_id", finalClientId),
     supabase.from("notifications").select("*").eq("teacher_id", finalClientId),
+    supabase.from("registration_requests").select("*").eq("teacher_id", finalClientId),
   ]);
 
   // بيانات الاختبارات الإلكترونية بترتبط بـ exam_id/attempt_id مش teacher_id مباشرة
@@ -185,6 +188,7 @@ async function handleExport(supabase: any, payload: TokenPayload, body: any) {
     card_action_mode: cardActionModeRes.data || [],
     parents: parentsRes.data || [],
     notifications: notificationsRes.data || [],
+    registration_requests: registrationRequestsRes.data || [],
   };
 
   await supabase.from("activity_logs").insert({
@@ -220,14 +224,14 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
       { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const { data: teacherRow, error: teacherError } = await supabase.from("teachers").select("password_hash").eq("client_id", finalClientId).maybeSingle();
-  if (teacherError || !teacherRow) {
-    return new Response(JSON.stringify({ success: false, message: "تعذر التحقق من الحساب" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-
-  const { valid } = await verifyPassword(password, teacherRow.password_hash);
-  if (!valid) {
+  // ✅ Batch 25: password_hash عمود قديم من قبل هجرة Supabase Auth — بقى ممكن يكون null (حساب
+  // مربوط بجوجل مثلاً) أو قيمة قديمة متحدّتش بعد أي تغيير باسورد لاحق عبر Supabase Auth.
+  // التحقق الحقيقي الوحيد دلوقتي لازم يعدي على Supabase Auth نفسه، بنفس الطريقة اللي /login بتتحقق بيها
+  const { error: signInError } = await signInAuthUser({
+    email: syntheticEmailFor("teacher", finalClientId),
+    password,
+  });
+  if (signInError) {
     await registerFailedAttempt(supabase, rateLimitKey);
     return new Response(JSON.stringify({ success: false, message: "⛔ كلمة المرور غير صحيحة" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -265,6 +269,7 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
   await supabase.from("card_action_mode").delete().eq("teacher_id", finalClientId);
   await supabase.from("conversation_messages").delete().eq("teacher_id", finalClientId);
   await supabase.from("notifications").delete().eq("teacher_id", finalClientId);
+  await supabase.from("registration_requests").delete().eq("teacher_id", finalClientId);
   await supabase.from("student_teacher_links").delete().eq("teacher_id", finalClientId);
   await supabase.from("system_cards").update({ student_uid: null, linked_at: null }).eq("teacher_id", finalClientId);
   if (currentUids.length > 0) {
@@ -318,7 +323,10 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
   if (backup.students?.length) {
     let restored = 0;
     for (const student of backup.students) {
-      const { error } = await supabase.from("students").insert(student);
+      // ✅ Batch 25: عمود id عند students هو "generated always as identity" — إدراج قيمة id صريحة
+      // من النسخة القديمة كان بيفشل بصمت لكل طالب (خطأ Postgres)، فيرجع "نجح" بدون ما يستعيد أي طالب فعليًا
+      const { id, ...studentRest } = student;
+      const { error } = await supabase.from("students").insert(studentRest);
       if (error) console.error(`⚠️ فشل استعادة الطالب ${student.name || student.uid}:`, error.message);
       else restored++;
     }
@@ -334,13 +342,21 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
     if (error) console.error("⚠️ فشل استعادة المدفوعات:", error.message);
     restoredCounts.payments = backup.payments.length;
   }
+  // ✅ Batch 25: نفس مشكلة students بالظبط — id عند books هو "generated always as identity"،
+  // وbook_payments.book_id بيشاور على id القديم فلازم mapping زي instructor_names/education_levels
+  const bookIdMap: Record<string, string> = {};
   if (backup.books?.length) {
-    const { error } = await supabase.from("books").insert(backup.books);
+    const { data, error } = await supabase.from("books").insert(clean(backup.books)).select("id");
     if (error) console.error("⚠️ فشل استعادة المذكرات:", error.message);
-    restoredCounts.books = backup.books.length;
+    else (data || []).forEach((row: any, idx: number) => { bookIdMap[String(backup.books[idx].id)] = row.id; });
+    restoredCounts.books = data?.length || 0;
   }
   if (backup.book_payments?.length) {
-    const { error } = await supabase.from("book_payments").insert(clean(backup.book_payments));
+    const remapped = backup.book_payments.map((bp: any) => {
+      const { id, ...rest } = bp;
+      return { ...rest, book_id: bp.book_id ? (bookIdMap[String(bp.book_id)] ?? null) : null };
+    });
+    const { error } = await supabase.from("book_payments").insert(remapped);
     if (error) console.error("⚠️ فشل استعادة سدادات المذكرات:", error.message);
     restoredCounts.book_payments = backup.book_payments.length;
   }
@@ -410,6 +426,15 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
     if (error) console.error("⚠️ فشل استعادة الإشعارات:", error.message);
     restoredCounts.notifications = backup.notifications.length;
   }
+  if (backup.registration_requests?.length) {
+    const remapped = backup.registration_requests.map((r: any) => {
+      const { id, ...rest } = r;
+      return { ...rest, instructor_name_id: r.instructor_name_id ? (instructorIdMap[String(r.instructor_name_id)] ?? null) : null };
+    });
+    const { error } = await supabase.from("registration_requests").insert(remapped);
+    if (error) console.error("⚠️ فشل استعادة طلبات التسجيل:", error.message);
+    restoredCounts.registration_requests = backup.registration_requests.length;
+  }
   // ✅ كروت الـ NFC مش بتتحذف/تتعاد إنشاؤها (مخزون فعلي)، بس بنعيد ربطها بالطلاب حسب النسخة
   if (backup.system_cards?.length) {
     let relinked = 0;
@@ -470,6 +495,26 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
     const { error } = await supabase.from("exam_answers").insert(remapped);
     if (error) console.error("⚠️ فشل استعادة إجابات الاختبارات:", error.message);
     restoredCounts.exam_answers = backup.exam_answers.length;
+  }
+
+  // ✅ Batch 25: كانت بيانات المدرس نفسه (رقم التواصل، البراندنج، إعدادات الدفع الإلكتروني...) بتتصدّر
+  // في النسخة الاحتياطية لكن محدش بيرجّعها فعليًا عند الاستعادة. بنرجّع بس الحقول اللي المدرس نفسه بيتحكم
+  // فيها من إعداداته — وعمدًا مش بنرجّع expiry_date/max_students/permissions/is_center وغيرها من الحقول
+  // اللي الماستر بيتحكم فيها، عشان نسخة قديمة متتحطش استخدمت لإلغاء تعديل إداري (تمديد صلاحية/تقييد باقة)
+  if (backup.teacher) {
+    const allowedFields = [
+      "name", "contact_phone", "contact_whatsapp", "phone_visible", "whatsapp_visible",
+      "conversations_enabled", "brand_logo_url", "brand_color", "electronic_payment_enabled",
+      "payment_instapay", "payment_wallet", "payment_bank_details",
+    ];
+    const safeUpdate: Record<string, any> = {};
+    for (const field of allowedFields) {
+      if (backup.teacher[field] !== undefined) safeUpdate[field] = backup.teacher[field];
+    }
+    if (Object.keys(safeUpdate).length > 0) {
+      const { error } = await supabase.from("teachers").update(safeUpdate).eq("client_id", finalClientId);
+      if (error) console.error("⚠️ فشل استعادة إعدادات حساب المدرس:", error.message);
+    }
   }
 
   await supabase.from("teachers").update({ student_count: backup.students?.length || 0 }).eq("client_id", finalClientId);
