@@ -1035,7 +1035,9 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
   inset: 0;
   background: rgba(15,23,42,0.7);
   backdrop-filter: blur(6px);
-  z-index: 9999;
+  /* ✅ لازم يكون فوق .sidebar (z-index:100001) — لو السايدبار فاضل مفتوح على شاشة صغيرة
+     ودوس المستخدم على "إعادة تهيئة النظام"، النافذة دي كانت بتظهر تحت السايدبار وتختفي */
+  z-index: 100010;
   align-items: center;
   justify-content: center;
   padding: 20px;
@@ -1043,6 +1045,7 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
 }
 .reset-modal-overlay.open { display: flex; }
 .reset-modal-box {
+  position: relative;
   background: white;
   border-radius: var(--radius-lg);
   max-width: 480px;
@@ -1058,6 +1061,11 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
   animation: slideUp 0.4s ease;
   text-align: center;
 }
+.reset-modal-box .reset-modal-close {
+  position: absolute; top: 14px; left: 14px; background: none; border: none;
+  font-size: 24px; line-height: 1; cursor: pointer; color: var(--gray-400); padding: 4px;
+}
+.reset-modal-box .reset-modal-close:hover { color: var(--gray-700); }
 .reset-modal-box .modal-icon { font-size: 44px; color: var(--danger); margin-bottom: 8px; }
 .reset-modal-box h3 { font-size: 19px; font-weight: 700; color: var(--gray-900); margin-bottom: 6px; }
 .reset-modal-box p { font-size: 13.5px; color: var(--gray-600); margin-bottom: 6px; line-height: 1.55; }

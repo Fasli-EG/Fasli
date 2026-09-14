@@ -31,8 +31,11 @@
       { key: 'staff', href: 'staff.html', id: 'navManageAssistants', icon: 'fa-users-gear', label: 'إدارة فريق العمل', gated: true },
       { key: 'settings', href: 'teacher-settings.html', id: 'navSettings', icon: 'fa-gear', label: 'إعدادات الحساب', gated: true },
       { key: 'assistantColor', href: '#', onclick: 'window.openAssistantColorModal && window.openAssistantColorModal(); return false;', id: 'navAssistantColor', icon: 'fa-palette', label: 'لون الواجهة', gated: true },
-      { key: 'passkeys', href: '#', onclick: 'window.FasliWebauthn && window.FasliWebauthn.openManagerModal(); return false;', icon: 'fa-bolt', label: 'دخول سريع' },
-      { key: 'recoveryEmail', href: '#', onclick: 'window.FasliRecoveryEmail && window.FasliRecoveryEmail.openManagerModal(); return false;', icon: 'fa-envelope-circle-check', label: 'إيميل الاسترجاع' }
+      // ✅ (طلب) المدرس بقاله تبويب مخصص لهم في إعدادات الحساب (teacher-settings.html)،
+      // فاختصار السايدبار بقى تكرار عنده — لكن المساعد معندوش صفحة إعدادات منفصلة بتاعته
+      // خالص، فده لسه الطريقة الوحيدة ليه يوصلهم. assistantOnly بيتفلتر في sidebarHtml() تحت.
+      { key: 'passkeys', href: '#', onclick: 'window.FasliWebauthn && window.FasliWebauthn.openManagerModal(); return false;', icon: 'fa-bolt', label: 'دخول سريع', assistantOnly: true },
+      { key: 'recoveryEmail', href: '#', onclick: 'window.FasliRecoveryEmail && window.FasliRecoveryEmail.openManagerModal(); return false;', icon: 'fa-envelope-circle-check', label: 'إيميل الاسترجاع', assistantOnly: true }
     ]}
   ];
 
@@ -49,10 +52,12 @@
            '<i class="fas ' + item.icon + '"></i> ' + item.label + '</a>';
   }
 
-  function sidebarHtml(activeKey, gateMessages, notifStartsHidden) {
+  function sidebarHtml(activeKey, gateMessages, notifStartsHidden, isAssistant) {
     var nav = NAV_SECTIONS.map(function (section) {
+      var items = section.items.filter(function (it) { return !it.assistantOnly || isAssistant; });
+      if (!items.length) return '';
       var label = section.label ? '<div class="sidebar-section-label">' + section.label + '</div>' : '';
-      return label + section.items.map(function (it) { return navItemHtml(it, activeKey, gateMessages); }).join('');
+      return label + items.map(function (it) { return navItemHtml(it, activeKey, gateMessages); }).join('');
     }).join('');
     var notifWrapStyle = notifStartsHidden ? ' style="display:none;"' : '';
 
@@ -98,15 +103,16 @@
     document.body.insertAdjacentHTML('afterbegin', '<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>');
     var slot = document.getElementById('app-shell-sidebar-slot');
     var notifStartsHidden = opts.notifStartsHidden !== false; /* default true (teacher pages); pass false for assistant-dashboard */
-    if (slot) slot.outerHTML = sidebarHtml(opts.active, !!opts.gateMessages, notifStartsHidden);
+    if (slot) slot.outerHTML = sidebarHtml(opts.active, !!opts.gateMessages, notifStartsHidden, !!opts.isAssistant);
 
     /* ✅ (طلب) على الشاشات الصغيرة، السايدبار كان بيفضل مفتوح فوق المحتوى بعد ما تختار
-       أي عنصر منه (خصوصاً عناصر زي "الدخول السريع"/"إيميل الاسترجاع" اللي بتفتح موديال
-       من غير أي تنقل فعلي بين الصفحات) — نقفله تلقائيًا هنا بمستمع واحد مُفوَّض بدل ما
-       نضيف onclick يدوي لكل عنصر في navItemHtml() */
-    var nav = document.querySelector('.sidebar-nav');
-    if (nav) {
-      nav.addEventListener('click', function (e) {
+       أي عنصر منه (خصوصاً عناصر زي "الدخول السريع"/"إيميل الاسترجاع"/"إعادة تهيئة النظام"
+       اللي بتفتح موديال من غير أي تنقل فعلي بين الصفحات) — نقفله تلقائيًا هنا بمستمع واحد
+       مُفوَّض على كل السايدبار (مش .sidebar-nav بس) عشان يغطي navResetSystem كمان اللي
+       عايش في .sidebar-footer، بدل ما نضيف onclick يدوي لكل عنصر في navItemHtml() */
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+      sidebar.addEventListener('click', function (e) {
         if (window.innerWidth <= 900 && e.target.closest('.sidebar-item') && window.toggleSidebar) {
           window.toggleSidebar();
         }
