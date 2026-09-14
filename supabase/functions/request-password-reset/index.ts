@@ -82,17 +82,18 @@ Deno.serve(async (req) => {
     if (insertError) return jsonResponse({ success: false, message: "⚠️ حدث خطأ غير متوقع، حاول مرة أخرى" }, 500);
 
     const resetLink = `https://fasli-eg.github.io/Fasli/login.html?resetToken=${rawToken}`;
+    // ✅ الرابط لازم يظهر كنص واضح في الاتنين (مش زرار HTML بس) — عشان النسخة النصية
+    // العادية تفضل فيها الرابط، وعشان يقل احتمال فلاتر السبام (تصميم بسيط بلا تنسيق مبالغ فيه)
+    const greeting = row.name ? `مرحباً ${row.name}،` : "مرحباً،";
+    const plainText = `${greeting}\n\nوصلنا طلب لاسترجاع كلمة المرور بتاعة حسابك في فَصلي.\nافتح الرابط ده لتحديد كلمة مرور جديدة (صالح لمدة ساعة واحدة بس):\n\n${resetLink}\n\nلو معملتش الطلب ده، تقدر تتجاهل الإيميل ده بأمان — حسابك في أمان.`;
+    const html = `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1C33;line-height:1.8;">
+      <p>${greeting}</p>
+      <p>وصلنا طلب لاسترجاع كلمة المرور بتاعة حسابك في فَصلي. افتح الرابط ده لتحديد كلمة مرور جديدة (صالح لمدة ساعة واحدة بس):</p>
+      <p><a href="${resetLink}">${resetLink}</a></p>
+      <p style="color:#6B7280;font-size:13px;">لو معملتش الطلب ده، تقدر تتجاهل الإيميل ده بأمان — حسابك في أمان.</p>
+    </div>`;
     try {
-      await sendEmail({
-        to: row.recovery_email,
-        subject: "استرجاع كلمة المرور — فَصلي",
-        html: `<div dir="rtl" style="font-family:sans-serif;font-size:15px;color:#0B1C33;line-height:1.7;">
-          <p>مرحباً ${row.name || ""}،</p>
-          <p>وصلنا طلب لاسترجاع كلمة المرور بتاعة حسابك في فَصلي. اضغط على الرابط ده لتحديد كلمة مرور جديدة (صالح لمدة ساعة واحدة بس):</p>
-          <p><a href="${resetLink}" style="background:#F2B705;color:#0B1C33;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block;">تحديد كلمة مرور جديدة</a></p>
-          <p style="color:#6B7280;font-size:13px;">لو معملتش الطلب ده، تقدر تتجاهل الإيميل ده بأمان — حسابك في أمان.</p>
-        </div>`,
-      });
+      await sendEmail({ to: row.recovery_email, subject: "استرجاع كلمة المرور — فَصلي", text: plainText, html });
     } catch (e) {
       return jsonResponse({ success: false, message: e instanceof Error ? e.message : "⚠️ فشل إرسال الإيميل" }, 500);
     }

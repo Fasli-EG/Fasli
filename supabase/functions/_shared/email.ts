@@ -1,27 +1,44 @@
 // supabase/functions/_shared/email.ts
 // ============================================
-// إرسال إيميلات حقيقية عن طريق Resend API — منفصل تمامًا عن إعدادات SMTP المدمجة في
-// Supabase Auth (اللي بتخدم رابط استرجاع الماستر أدمن بس، لأنه الحساب الوحيد بإيميل حقيقي
-// في auth.users). ده بديل مباشر عن طريق API لتدفق استرجاع كلمة المرور المخصص لباقي الأدوار.
+// إرسال إيميلات حقيقية عن طريق حساب جيميل حقيقي (SMTP) — بديل مجاني تمامًا عن Resend،
+// اللي محتاج دومين موثّق عشان يبعت لأي مستقبل غير حساب Resend نفسه. جيميل عادي (بكلمة
+// مرور تطبيقات/App Password، مش كلمة المرور الحقيقية) بيبعت لأي حد من غير أي قيود دومين.
+// منفصل تمامًا عن إعدادات SMTP المدمجة في Supabase Auth (اللي بتخدم رابط استرجاع
+// الماستر أدمن بس، لأنه الحساب الوحيد بإيميل حقيقي في auth.users).
 // ============================================
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
-export async function sendEmail(params: { to: string; subject: string; html: string }): Promise<void> {
-  const apiKey = Deno.env.get("RESEND_API_KEY");
-  if (!apiKey) throw new Error("⚠️ خدمة إرسال الإيميلات غير مفعّلة حاليًا، حاول لاحقًا أو تواصل مع الإدارة");
+// ⚠️ لازم نمرّر نص عادي (text) صريح جنب الـhtml، مش نسيب denomailer يولّده تلقائيًا
+// (content:"auto") — الطريقة دي بتشيل أي وسم HTML بـregex ساذج، فأي رابط جوه <a href="...">
+// بيتشال بالكامل وميفضلش أي أثر ليه في نسخة النص العادي؛ ده اللي كان بيخلي رابط استرجاع
+// كلمة المرور يختفي تمامًا لما عميل الإيميل يعرض نسخة النص العادي بدل الـHTML
+export async function sendEmail(params: { to: string; subject: string; text: string; html: string }): Promise<void> {
+  const gmailUser = Deno.env.get("GMAIL_USER");
+  const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+  if (!gmailUser || !gmailAppPassword) {
+    throw new Error("⚠️ خدمة إرسال الإيميلات غير مفعّلة حاليًا، حاول لاحقًا أو تواصل مع الإدارة");
+  }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: "فَصلي <onboarding@resend.dev>",
-      to: [params.to],
-      subject: params.subject,
-      html: params.html,
-    }),
+  const client = new SMTPClient({
+    connection: {
+      hostname: "smtp.gmail.com",
+      port: 465,
+      tls: true,
+      auth: { username: gmailUser, password: gmailAppPassword },
+    },
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`⚠️ فشل إرسال الإيميل (${res.status}): ${text || "خطأ غير معروف"}`);
+  try {
+    await client.send({
+      from: `فَصلي <${gmailUser}>`,
+      to: params.to,
+      subject: params.subject,
+      content: params.text,
+      html: params.html,
+    });
+  } catch (e) {
+    throw new Error(`⚠️ فشل إرسال الإيميل: ${e instanceof Error ? e.message : "خطأ غير معروف"}`);
+  } finally {
+    try { await client.close(); } catch (_e) { /* تجاهل */ }
   }
 }
