@@ -26,24 +26,35 @@
   async function init() {
     if (!window.supabase) return; // فشل تحميل مكتبة Supabase من الـCDN — تجاهل بصمت
 
-    const token = getStored('jwtToken');
-    const refreshToken = getStored('refreshToken');
-    if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة (حساب لسه م اتهاجرش، أو مش مسجل دخول)
+    // ✅ لو الصفحة دي راجعة من ربط جوجل (أو أي OAuth تاني)، الرابط بيحتوي على توكنات/كود
+    // جديد لازم Supabase يعالجه بنفسه (detectSessionInUrl) — من غير ما نكتب فوقه بتوكن قديم
+    // من التخزين قبل ما يتعالج، وإلا الربط يفشل بصمت (الصفحة بترجّع تحمّل من غير ما حاجة تتغيّر)
+    const hasOAuthCallback = window.location.hash.includes('access_token=')
+      || new URLSearchParams(window.location.search).has('code');
 
     try {
       const client = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY, {
-        auth: { autoRefreshToken: true, persistSession: false, detectSessionInUrl: false },
+        auth: { autoRefreshToken: true, persistSession: false, detectSessionInUrl: hasOAuthCallback },
       });
 
-      const { error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
-      if (error) return; // توكن/refresh غير صالحين — نسيب باقي الصفحة تتعامل مع 401 زي ما هي
-
       client.auth.onAuthStateChange((event, session) => {
-        if (event === 'TOKEN_REFRESHED' && session) {
+        if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
           persist('jwtToken', session.access_token);
           persist('refreshToken', session.refresh_token);
         }
       });
+
+      if (hasOAuthCallback) {
+        // ✅ نستنى Supabase يخلص معالجة الرابط ويصدر الجلسة الجديدة — بتوصلنا عن طريق
+        // onAuthStateChange فوق (SIGNED_IN)، فبنستخدم getSession() بس عشان نستنى الجاهزية
+        await client.auth.getSession();
+      } else {
+        const token = getStored('jwtToken');
+        const refreshToken = getStored('refreshToken');
+        if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة (حساب لسه م اتهاجرش، أو مش مسجل دخول)
+        const { error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
+        if (error) return; // توكن/refresh غير صالحين — نسيب باقي الصفحة تتعامل مع 401 زي ما هي
+      }
 
       // ✅ لازم نفضل ماسكين مرجع للعميل ده — Supabase بيجدول التجديد التلقائي داخليًا
       // (setTimeout قبل انتهاء الصلاحية بشوية)، ولو العميل اتنضف من الذاكرة (garbage collected)
