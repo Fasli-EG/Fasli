@@ -1907,7 +1907,7 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
   position: sticky;
   top: 0;
   height: 100vh;
-  z-index: 100;
+  z-index: 100001;
   transition: transform 0.25s ease;
   overflow-y: auto;
   scrollbar-width: none; -ms-overflow-style: none;
@@ -1995,7 +1995,7 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
 }
 .topbar h2 { font-size: 17px; font-weight: 700; color: var(--gray-900); }
 .sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: var(--gray-700); cursor: pointer; }
-.sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+.sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100000; }
 .sidebar-backdrop.open { display: block; }
 .sidebar.collapsed { width: 0; overflow: hidden; }
 

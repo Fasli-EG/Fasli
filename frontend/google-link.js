@@ -244,7 +244,7 @@
 
     const overlay = document.createElement('div');
     overlay.id = 'googleLinkModalOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,51,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,51,.55);z-index:100010;display:flex;align-items:center;justify-content:center;padding:20px;';
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
     const card = document.createElement('div');
