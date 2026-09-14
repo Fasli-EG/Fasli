@@ -4,11 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>سجّل ابنك - فَصلي</title>
-  <link rel="icon" type="image/svg+xml" href="/Fasli/assets/logo-icon-DMEeWQpm.svg">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>body{background:var(--gray-50);justify-content:center;align-items:center;min-height:100vh;padding:20px;display:flex}.reg-box{width:100%;max-width:460px;box-shadow:var(--shadow-lg);border-top:4px solid var(--primary);background:#fff;border-radius:18px;padding:32px 28px}[data-theme=dark] .reg-box{background:var(--gray-100)}.reg-brand{justify-content:center;align-items:center;gap:8px;margin-bottom:20px;display:flex}.reg-brand img{border-radius:8px;width:30px;height:30px}.reg-brand span{font-family:var(--font-display);color:var(--gray-900);font-size:17px;font-weight:900}.reg-box h2{text-align:center;font-family:var(--font-display);color:var(--gray-900);margin-bottom:6px;font-size:21px;font-weight:800}.reg-box .sub{text-align:center;color:var(--gray-500);margin-bottom:24px;font-size:13.5px}.reg-box .field{margin-bottom:14px}.reg-box input,.reg-box select,.reg-box textarea{border:1px solid var(--gray-200);border-radius:10px;width:100%;padding:12px 14px;font-family:inherit;font-size:14px}.instructor-list{border:1px solid var(--gray-200);border-radius:10px;max-height:220px;padding:8px 12px;overflow-y:auto}.instructor-list label{cursor:pointer;align-items:center;gap:10px;padding:8px 2px;font-size:14px;display:flex}.instructor-list label input{width:auto}</style>
-  <link rel="stylesheet" crossorigin href="/Fasli/assets/style-DOs6gUEG.css">
+  <link rel="stylesheet" href="style.css?v=53">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: var(--gray-50); }
+    .reg-box { max-width: 460px; width: 100%; background: #fff; border-radius: 18px; padding: 32px 28px; box-shadow: var(--shadow-lg); border-top: 4px solid var(--primary); }
+    [data-theme="dark"] .reg-box { background: var(--gray-100); }
+    .reg-brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px; }
+    .reg-brand img { width: 30px; height: 30px; border-radius: 8px; }
+    .reg-brand span { font-family: var(--font-display); font-weight: 900; font-size: 17px; color: var(--gray-900); }
+    .reg-box h2 { text-align: center; margin-bottom: 6px; font-family: var(--font-display); font-weight: 800; font-size: 21px; color: var(--gray-900); }
+    .reg-box .sub { text-align: center; color: var(--gray-500); font-size: 13.5px; margin-bottom: 24px; }
+    .reg-box .field { margin-bottom: 14px; }
+    .reg-box input, .reg-box select, .reg-box textarea {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--gray-200); border-radius: 10px; font-family: inherit; font-size: 14px;
+    }
+    .instructor-list { border: 1px solid var(--gray-200); border-radius: 10px; padding: 8px 12px; max-height: 220px; overflow-y: auto; }
+    .instructor-list label { display: flex; align-items: center; gap: 10px; padding: 8px 2px; cursor: pointer; font-size: 14px; }
+    .instructor-list label input { width: auto; }
+  </style>
 </head>
 <body>
 
@@ -18,7 +34,7 @@
     </div>
 
     <div id="regFormContainer" style="display:none;">
-      <div class="reg-brand"><img src="/Fasli/assets/logo-icon-DMEeWQpm.svg" alt="شعار فَصلي"><span>فَصلي</span></div>
+      <div class="reg-brand"><img src="assets/logo-icon.svg" alt="شعار فَصلي"><span>فَصلي</span></div>
       <h2>📝 سجّل ابنك معانا</h2>
       <p class="sub" id="teacherNameLabel">هنتواصل معاك في أقرب وقت لتأكيد التسجيل</p>
 

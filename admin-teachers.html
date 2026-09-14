@@ -307,7 +307,7 @@
     .sidebar {
       width: 240px; flex-shrink: 0; background: #0B1C33; color: #fff;
       display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
-      z-index: 100; transition: transform 0.25s ease;
+      z-index: 100001; transition: transform 0.25s ease;
     }
     .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar-brand .logo-icon { width: 34px; height: 34px; border-radius: 9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
@@ -350,7 +350,7 @@
     }
     .topbar h2 { font-family: var(--font-display); font-size: 17px; font-weight: 800; color: #0B1C33; }
     .sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: #333B47; cursor: pointer; padding: 4px; }
-    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100000; }
     .sidebar-backdrop.open { display: block; }
     .sidebar.collapsed { width: 0; overflow: hidden; }
     @media (max-width: 900px) {
@@ -2542,9 +2542,9 @@
   </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="session-refresh.js?v=5"></script>
-<script src="google-link.js?v=7"></script>
+<script src="google-link.js?v=8"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
-<script src="webauthn.js?v=4"></script>
+<script src="webauthn.js?v=5"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=4"></script>
 </body>

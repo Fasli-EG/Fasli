@@ -5,8 +5,16 @@
 /* ---------- المتغيرات العامة ---------- */
 :root {
   --primary: #F2B705;
+  /* ✅ نفس لون --primary لكن كمكوّنات RGB منفصلة (بدون #) — لازمة عشان rgba() تقدر تستخدم لون
+     العلامة التجارية المخصص في الظلال/التوهجات (شفافية جزئية)، مش بس في خلفيات صلبة. branding.js
+     بيحدّثها هي كمان لما المدرس يغيّر لونه، فأي ظل هنا بيتلوّن تلقائي بلون العلامة الجديد */
+  --primary-rgb: 242, 183, 5;
   --primary-light: #FFF4D6;
   --primary-dark: #B8890A;
+  /* ✅ لون نص واضح فوق خلفية --primary/--gradient-primary — افتراضيًا غامق (يناسب الدهبي الفاتح).
+     branding.js بيحسبها تلقائي (أبيض أو غامق) حسب سطوع لون العلامة التجارية المخصص، عشان لو
+     المدرس اختار لون غامق (كحلي، بنفسجي غامق..) النص يفضل مقروء بدل ما يبقى غامق على غامق */
+  --primary-contrast: #0B1C33;
   --accent: #F2B705;
   --accent-deep: #B8890A;
   --success: #1FAA6D;
@@ -57,9 +65,9 @@
   /* ملاحظة: أول نسخة من التدرج كانت بين لونين قريبين من بعض (دهبي فاتح/غامق) فكان
      الفرق صعب يتلاحظ في الأزرار الصغيرة. النسخة دي بتضيف وقفة تمييز فاتحة (#FFD84D)
      في الأول عشان مدى الألوان يبقى أوضح، وظل بـ"حافة" سفلية (0 4px 0) بيدّي إحساس زرار مجسّم حقيقي. */
-  --shadow-primary: 0 4px 0 0 rgba(122,88,6,0.5), 0 20px 40px -12px rgba(184,137,10,0.6);
+  --shadow-primary: 0 4px 0 0 rgba(var(--primary-rgb),0.5), 0 20px 40px -12px rgba(var(--primary-rgb),0.6);
   --shadow-teal: 0 14px 30px -14px rgba(10,88,80,0.45);
-  --gradient-primary: linear-gradient(135deg, #FFD84D 0%, var(--primary) 45%, var(--primary-dark) 100%);
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
 }
 
 /* ---------- استيراد خطوط الهوية الجديدة ---------- */
@@ -204,7 +212,7 @@ body {
 .field textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(242,183,5,0.18);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 .field input::placeholder,
 .field textarea::placeholder { color: var(--gray-400); }
@@ -240,7 +248,7 @@ body {
 .btn:active { transform: scale(0.97); }
 .btn-danger { background: var(--danger); color: white; }
 .btn-danger:hover { background: #C93D3D; transform: translateY(-1px); box-shadow: var(--shadow); }
-.btn-primary { background: var(--gradient-primary); color: #0B1C33; box-shadow: var(--shadow-primary); }
+.btn-primary { background: var(--gradient-primary); color: var(--primary-contrast); box-shadow: var(--shadow-primary); }
 .btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: var(--shadow-primary); }
 .btn-success { background: var(--success); color: white; }
 .btn-success:hover { background: #188F5C; transform: translateY(-1px); box-shadow: var(--shadow); }
@@ -276,7 +284,7 @@ body {
 .btn-info:hover { background: #2F63B8; transform: translateY(-1px); box-shadow: var(--shadow); }
 .btn-read {
   background: var(--primary);
-  color: #0B1C33;
+  color: var(--primary-contrast);
   padding: 8px 14px;
   border: none;
   border-radius: 8px;
@@ -288,15 +296,15 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 4px 14px rgba(242, 183, 5, 0.25);
+  box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.25);
   white-space: nowrap;
 }
-.btn-read:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(242, 183, 5, 0.4); }
+.btn-read:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.4); }
 .btn-read.active { background: linear-gradient(135deg, #E5484D, #C93D3D); box-shadow: 0 4px 14px rgba(229, 72, 77, 0.35); }
 .btn-read.active:hover { box-shadow: 0 8px 25px rgba(229, 72, 77, 0.5); }
 .btn-book {
   background: var(--primary);
-  color: #0B1C33;
+  color: var(--primary-contrast);
   padding: 10px 24px;
   font-size: 15px;
   border: none;
@@ -308,18 +316,18 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 14px rgba(242, 183, 5, 0.28);
+  box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.28);
 }
 .btn-book:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(242, 183, 5, 0.4);
+  box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.4);
   background: var(--primary-dark);
 }
 .btn-book:active { transform: scale(0.96); }
 .btn-book i { font-size: 18px; }
 .btn-reset-password {
   background: var(--primary);
-  color: #0B1C33;
+  color: var(--primary-contrast);
   border: none;
   padding: 6px 14px;
   border-radius: 8px;
@@ -330,12 +338,12 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 2px 8px rgba(242, 183, 5, 0.2);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.2);
 }
 .btn-reset-password:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(242, 183, 5, 0.32);
-  background: #B8890A;
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.32);
+  background: var(--primary-dark);
 }
 .btn-reset-password:active { transform: scale(0.95); }
 .btn-reset-password i { font-size: 13px; }
@@ -560,6 +568,7 @@ tr:hover td { background: var(--gray-50); }
 .badge-danger { background: #FDEEEE; color: #991b1b; }
 .badge-info { background: #E7F1FC; color: #1e40af; }
 .badge-primary { background: #FDF1CC; color: #8A6300; }
+.badge-purple { background: #EEE9FB; color: #6b46c1; }
 
 .score-badge {
   display: inline-block;
@@ -606,6 +615,8 @@ tr:hover td { background: var(--gray-50); }
 .stat-card .stat-value.success { color: var(--success); }
 .stat-card .stat-value.danger { color: var(--danger); }
 .stat-card .stat-value.warning { color: var(--warning); }
+.stat-card .stat-value.purple { color: #6b46c1; }
+[data-theme="dark"] .stat-card .stat-value.purple { color: #B79EF0; }
 
 /* ---------- ستات كارد بأيقونة ملونة + مؤشر اتجاه (اختياري، فوق نفس .stat-card الأساسية) ---------- */
 .stat-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -615,9 +626,9 @@ tr:hover td { background: var(--gray-50); }
 /* ---------- نسخة مميّزة من stat-card (لأهم رقم في الصفحة، زي صافي الربح) ---------- */
 .stat-card.stat-card-featured { background: var(--gradient-primary); border-color: transparent; border-top-color: transparent; box-shadow: var(--shadow-primary); }
 .stat-card.stat-card-featured:hover { border-top-color: transparent; box-shadow: var(--shadow-primary); transform: translateY(-3px); }
-.stat-card.stat-card-featured .stat-label { color: rgba(11,28,51,0.65); }
-.stat-card.stat-card-featured .stat-value { color: #0B1C33; }
-.stat-card.stat-card-featured .stat-card-icon { background: rgba(11,28,51,0.12); color: #0B1C33; }
+.stat-card.stat-card-featured .stat-label { color: var(--primary-contrast); opacity: 0.65; }
+.stat-card.stat-card-featured .stat-value { color: var(--primary-contrast); }
+.stat-card.stat-card-featured .stat-card-icon { background: rgba(11,28,51,0.12); color: var(--primary-contrast); }
 
 /* ---------- الإجراءات السريعة ---------- */
 .quick-actions {
@@ -659,7 +670,7 @@ tr:hover td { background: var(--gray-50); }
 .quick-card .card-icon.green { background: var(--success-light); color: var(--success); }
 .quick-card:hover .card-icon.green { background: var(--success); color: white; }
 .quick-card .card-icon.blue { background: #E7F1FC; color: var(--primary); }
-.quick-card:hover .card-icon.blue { background: var(--primary); color: #0B1C33; }
+.quick-card:hover .card-icon.blue { background: var(--primary); color: var(--primary-contrast); }
 .quick-card .card-icon.orange { background: var(--warning-light); color: var(--warning); }
 .quick-card:hover .card-icon.orange { background: var(--warning); color: white; }
 .quick-card .card-icon.purple { background: #F1EFFA; color: #5B52D6; }
@@ -850,7 +861,7 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
 }
 .modal-toast.success { background: var(--success); color: white; }
 .modal-toast.error { background: var(--danger); color: white; }
-.modal-toast.info { background: var(--primary); color: #0B1C33; }
+.modal-toast.info { background: var(--primary); color: var(--primary-contrast); }
 .modal-toast.warning { background: var(--warning); color: white; }
 .modal-toast.read { background: #5B52D6; color: white; }
 
@@ -888,7 +899,7 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
 }
 .toast.success { background: var(--success); color: white; }
 .toast.error { background: var(--danger); color: white; }
-.toast.info { background: var(--primary); color: #0B1C33; }
+.toast.info { background: var(--primary); color: var(--primary-contrast); }
 .toast.warning { background: var(--warning); color: white; }
 
 /* ---------- الحقول المقترحة ---------- */
@@ -1412,7 +1423,7 @@ body.dark-mode .modal-close:hover { background: #3D2F0A; color: #F5C842; }
   background: var(--gray-50);
   transition: var(--transition);
 }
-.book-item:hover { background: white; border-color: var(--primary); box-shadow: var(--shadow); }
+.book-item:hover { background: var(--gray-100); border-color: var(--primary); box-shadow: var(--shadow); }
 .book-item .book-info { display: flex; align-items: center; gap: 12px; }
 .book-item .book-info .book-icon { font-size: 24px; color: var(--primary); }
 .book-item .book-info .book-name { font-weight: 600; color: var(--gray-800); }
@@ -1802,6 +1813,12 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
   .btn-book { padding: 6px 12px; font-size: 12px; }
   .btn-book i { font-size: 14px; }
 }
+/* ✅ minmax(300px,...) في .groups-list-grid بيفرض عرض أدنى 300px حتى لو الشاشة نفسها أضيق
+   من كده (موبايل صغير جدًا أو webview ضيقة) — بيطلع الكارت برّه حدود الشاشة. نفس الإصلاح
+   المطبّق على .students-grid في parent-dashboard.html */
+@media (max-width: 340px) {
+  .groups-list-grid { grid-template-columns: 1fr; }
+}
 .status-partial {
   background: #FCF1E1;
   color: #92400e;
@@ -1890,7 +1907,7 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
   position: sticky;
   top: 0;
   height: 100vh;
-  z-index: 100;
+  z-index: 100001;
   transition: transform 0.25s ease;
   overflow-y: auto;
   scrollbar-width: none; -ms-overflow-style: none;
@@ -1920,11 +1937,11 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
 .sidebar-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
 /* ✅ اتجاه بصري جديد: مؤشر نشاط بشريط متوهج + تدرج خفيف بدل التعبئة المصمتة السابقة */
 .sidebar-item.active {
-  background: linear-gradient(90deg, rgba(242,183,5,0.35), rgba(242,183,5,0.06));
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.35), rgba(var(--primary-rgb), 0.06));
   color: #fff;
   font-weight: 700;
 }
-.sidebar-item.active i { color: var(--primary); text-shadow: 0 0 12px rgba(242,183,5,0.8); }
+.sidebar-item.active i { color: var(--primary); text-shadow: 0 0 12px rgba(var(--primary-rgb), 0.8); }
 .sidebar-item.active::before {
   content: "";
   position: absolute;
@@ -1935,13 +1952,13 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
   height: 22px;
   border-radius: 4px;
   background: linear-gradient(180deg, #FFD84D, var(--primary));
-  box-shadow: 0 0 14px 2px rgba(242,183,5,0.75);
+  box-shadow: 0 0 14px 2px rgba(var(--primary-rgb), 0.75);
 }
 .sidebar-item .badge-dot { margin-inline-start: auto; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display:flex; align-items:center; justify-content:center; padding: 0 3px; }
 
 .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
 .sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.sidebar-user .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #0B1C33; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
+.sidebar-user .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: var(--primary-contrast); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
 .sidebar-user .u-info { overflow: hidden; }
 .sidebar-user .u-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-user .u-role { font-size: 11px; color: rgba(255,255,255,0.5); }
@@ -1978,7 +1995,7 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
 }
 .topbar h2 { font-size: 17px; font-weight: 700; color: var(--gray-900); }
 .sidebar-toggle-btn { display: block; background: none; border: none; font-size: 20px; color: var(--gray-700); cursor: pointer; }
-.sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+.sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100000; }
 .sidebar-backdrop.open { display: block; }
 .sidebar.collapsed { width: 0; overflow: hidden; }
 
@@ -2067,6 +2084,7 @@ html body .report-preview .report-row-alert td { background: #fef2f2 !important;
 [data-theme="dark"] .badge-danger { background: #3A1F20 !important; color: #F29999 !important; }
 [data-theme="dark"] .badge-info { background: #1A2A3A !important; color: #7FB3E8 !important; }
 [data-theme="dark"] .badge-primary { background: #3D2F0A !important; color: #F5C842 !important; }
+[data-theme="dark"] .badge-purple { background: #2A1F42 !important; color: #B79EF0 !important; }
 [data-theme="dark"] .permission-badge.view-only { background: #3A2E1A !important; color: #E8B860 !important; }
 [data-theme="dark"] .permission-badge.full-access { background: #16332A !important; color: #6FCF97 !important; }
 [data-theme="dark"] .status-present { background: #16332A !important; color: #6FCF97 !important; }

@@ -326,7 +326,7 @@
       <button type="button" id="googleSignInBtn" onclick="handleGoogleSignIn()" style="width:100%;margin-top:10px;padding:14px;border-radius:12px;border:2px solid #4285F4;background:#fff;color:#4285F4;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
         🔵 الدخول بحساب جوجل
       </button>
-      <p style="text-align:center;font-size:12.5px;color:#6B7280;margin-top:6px;">نسيت كلمة المرور؟ لو حسابك مربوط بجوجل من قبل، تقدر تدخل بيه مباشرة من غير ما تكتبها</p>
+      <button type="button" onclick="openForgotPasswordModal()" style="display:block;width:100%;text-align:center;font-size:12.5px;color:#6B7280;margin-top:8px;background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit;">نسيت كلمة المرور؟</button>
 
       <div id="message" class="message"></div>
 
@@ -988,8 +988,12 @@
   // supabaseClient (اللي عامل persistSession/detectSessionInUrl افتراضيًا) هيعالج الرابط
   // بنفسه ويطلق SIGNED_IN؛ إحنا بس محتاجين نكمل التوجيه حسب دور الحساب زي أي دخول عادي.
   // الفحص ده لازم يحصل قبل ما Supabase ينضّف الرابط، فبنسجّله فورًا من غير ما ننتظر أي حاجة.
-  const isOAuthReturn = window.location.hash.includes('access_token=')
-    || new URLSearchParams(window.location.search).has('code');
+  // ⚠️ رابط استرجاع كلمة المرور (PASSWORD_RECOVERY) بيرجع بنفس شكل الرابط ده بالظبط
+  // (access_token# في الـhash)، فلازم نستثنيه هنا (isRecoveryReturn تحت) عشان ما نحولّهش
+  // تلقائيًا كأنه دخول عادي قبل ما المستخدم يحط كلمة مرور جديدة
+  const isRecoveryReturn = window.location.hash.includes('type=recovery');
+  const isOAuthReturn = !isRecoveryReturn && (window.location.hash.includes('access_token=')
+    || new URLSearchParams(window.location.search).has('code'));
   if (isOAuthReturn) {
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
       if (!(event === 'SIGNED_IN' || event === 'INITIAL_SESSION') || !session) return;
@@ -1010,6 +1014,149 @@
       showMessage('تم تسجيل الدخول بنجاح', 'success');
       setTimeout(() => redirectUser(meta.role, identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', ''), 600);
     });
+  }
+
+  // ✅ رابط استرجاع كلمة المرور اللي بيوصل بالإيميل (سيناريو الماستر أدمن — إيميله حقيقي)
+  // بيرجّعه هنا مع event=PASSWORD_RECOVERY؛ لازم نوقف أي تحويل تلقائي ونوريه فورمة كلمة مرور جديدة
+  if (isRecoveryReturn) {
+    supabaseClient.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') openSetNewPasswordModal();
+    });
+  }
+
+  // ============================================
+  // نسيت كلمة المرور — موديال بسيط بيوجّه المستخدم لأقرب طريقة استرجاع فعلية لحالته:
+  // (1) حسابه مربوط بجوجل بالفعل → يدخل بيه على طول من غير كلمة مرور.
+  // (2) حساب بإيميل حقيقي (الماستر أدمن حاليًا) → رابط استرجاع فعلي من Supabase على بريده.
+  // (3) باقي الحالات (مدرس/مساعد/ولي أمر/طالب بكود أو تليفون) → التواصل مع المسؤول عن حسابه،
+  //     اللي أصلاً عنده صلاحية إعادة تعيين كلمة مرورهم من لوحته (manage-password-reset)
+  // ============================================
+  function openForgotPasswordModal() {
+    if (document.getElementById('forgotPwOverlay')) return;
+    const typedUsername = document.getElementById('username').value.trim();
+    const looksLikeRealEmail = typedUsername.includes('@');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'forgotPwOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,51,.55);z-index:100010;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+    const contactBits = [];
+    if (systemContactInfo.whatsapp_number) contactBits.push(`<a href="https://wa.me/${systemContactInfo.whatsapp_number}" target="_blank" rel="noopener" style="color:var(--teal);font-weight:700;">واتساب</a>`);
+    if (systemContactInfo.phone_number) contactBits.push(`<a href="tel:${systemContactInfo.phone_number}" style="color:var(--teal);font-weight:700;">${systemContactInfo.phone_number}</a>`);
+    const contactLine = contactBits.length ? `تواصل معانا: ${contactBits.join(' — ')}` : '';
+
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.3);font-family:'IBM Plex Sans Arabic','Cairo',sans-serif;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <h3 style="font-size:16px;font-weight:800;color:var(--ink);">🔑 استرجاع الحساب</h3>
+          <button type="button" onclick="document.getElementById('forgotPwOverlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9CA3AF;line-height:1;">×</button>
+        </div>
+
+        <div style="background:var(--surface-soft);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:8px;">🔵 حسابك مربوط بجوجل من قبل؟</p>
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">ادخل على طول بضغطة واحدة من غير ما تكتب كلمة المرور خالص.</p>
+          <button type="button" onclick="document.getElementById('forgotPwOverlay').remove();handleGoogleSignIn();" style="width:100%;padding:11px;border-radius:10px;border:2px solid #4285F4;background:#fff;color:#4285F4;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">الدخول بحساب جوجل</button>
+        </div>
+
+        <div style="background:var(--surface-soft);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:8px;">📧 عندك إيميل حقيقي مسجّل بحسابك؟</p>
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">هنبعتلك رابط لتحديد كلمة مرور جديدة (متاح بس للحسابات ببريد إلكتروني حقيقي، زي حساب المشرف).</p>
+          <input type="email" id="forgotPwEmail" placeholder="example@email.com" value="${looksLikeRealEmail ? typedUsername.replace(/"/g, '&quot;') : ''}" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
+          <button type="button" onclick="sendPasswordResetEmail()" id="forgotPwSendBtn" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--gradient-gold);color:var(--indigo);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">إرسال رابط إعادة التعيين</button>
+          <p id="forgotPwFeedback" style="font-size:12px;margin-top:8px;"></p>
+        </div>
+
+        <div style="padding:14px;">
+          <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:6px;">👤 غير كده؟</p>
+          <p style="font-size:12.5px;color:var(--muted);line-height:1.7;">لو حسابك بكود مدرس أو اسم مستخدم مساعد أو رقم تليفون (مش إيميل)، اطلب من الشخص المسؤول عن حسابك (المدرس أو الإدارة) يعمل لك إعادة تعيين لكلمة المرور من لوحته — الصلاحية دي موجودة عنده جاهزة.${contactLine ? '<br>' + contactLine : ''}</p>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  async function sendPasswordResetEmail() {
+    const email = document.getElementById('forgotPwEmail').value.trim();
+    const feedback = document.getElementById('forgotPwFeedback');
+    const btn = document.getElementById('forgotPwSendBtn');
+    if (!email || !email.includes('@')) {
+      feedback.style.color = 'var(--danger)';
+      feedback.textContent = 'اكتب إيميل صحيح الأول';
+      return;
+    }
+    btn.disabled = true;
+    feedback.style.color = 'var(--muted)';
+    feedback.textContent = 'جاري الإرسال...';
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname,
+    });
+    btn.disabled = false;
+    if (error) {
+      feedback.style.color = 'var(--danger)';
+      feedback.textContent = '⚠️ ' + error.message;
+      return;
+    }
+    feedback.style.color = 'var(--success)';
+    feedback.textContent = '✅ لو الإيميل ده مسجّل عندنا، هيوصلك رابط لتحديد كلمة مرور جديدة';
+  }
+
+  // بعد الرجوع من رابط الإيميل (PASSWORD_RECOVERY فوق) — فورمة تحديد كلمة مرور جديدة فورًا
+  function openSetNewPasswordModal() {
+    if (document.getElementById('setNewPwOverlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'setNewPwOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,51,.7);z-index:100010;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;max-width:400px;width:100%;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.3);font-family:'IBM Plex Sans Arabic','Cairo',sans-serif;">
+        <h3 style="font-size:16px;font-weight:800;color:var(--ink);margin-bottom:6px;">🔑 حدّد كلمة مرور جديدة</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">اكتب كلمة المرور الجديدة اللي عايز تستخدمها من دلوقتي.</p>
+        <input type="password" id="newPwInput" placeholder="كلمة المرور الجديدة" autocomplete="new-password" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
+        <input type="password" id="newPwConfirm" placeholder="تأكيد كلمة المرور" autocomplete="new-password" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
+        <button type="button" onclick="submitNewPassword()" id="setNewPwBtn" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gradient-gold);color:var(--indigo);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;">حفظ كلمة المرور</button>
+        <p id="setNewPwFeedback" style="font-size:12px;margin-top:8px;text-align:center;"></p>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  async function submitNewPassword() {
+    const pw = document.getElementById('newPwInput').value;
+    const confirm = document.getElementById('newPwConfirm').value;
+    const feedback = document.getElementById('setNewPwFeedback');
+    const btn = document.getElementById('setNewPwBtn');
+    if (!pw || pw.length < 6) {
+      feedback.style.color = 'var(--danger)';
+      feedback.textContent = 'كلمة المرور لازم تكون 6 أحرف على الأقل';
+      return;
+    }
+    if (pw !== confirm) {
+      feedback.style.color = 'var(--danger)';
+      feedback.textContent = 'كلمتا المرور مش متطابقتين';
+      return;
+    }
+    btn.disabled = true;
+    feedback.style.color = 'var(--muted)';
+    feedback.textContent = 'جاري الحفظ...';
+    const { error } = await supabaseClient.auth.updateUser({ password: pw });
+    btn.disabled = false;
+    if (error) {
+      feedback.style.color = 'var(--danger)';
+      feedback.textContent = '⚠️ ' + error.message;
+      return;
+    }
+    feedback.style.color = 'var(--success)';
+    feedback.textContent = '✅ اتحفظت كلمة المرور الجديدة، جاري تسجيل الدخول...';
+    history.replaceState(null, '', window.location.pathname);
+    setTimeout(async () => {
+      const { data } = await supabaseClient.auth.getUser();
+      const meta = data?.user?.app_metadata || {};
+      let identifier;
+      if (meta.role === 'parent') identifier = meta.phone;
+      else if (meta.role === 'student') identifier = meta.sub;
+      else if (meta.role === 'teacher') identifier = meta.clientId;
+      else identifier = meta.username || meta.sub;
+      redirectUser(meta.role || 'teacher', identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', '');
+    }, 1000);
   }
 
   // ============================================
