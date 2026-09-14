@@ -31,6 +31,7 @@
       { key: 'staff', href: 'staff.html', id: 'navManageAssistants', icon: 'fa-users-gear', label: 'إدارة فريق العمل', gated: true },
       { key: 'settings', href: 'teacher-settings.html', id: 'navSettings', icon: 'fa-gear', label: 'إعدادات الحساب', gated: true },
       { key: 'assistantColor', href: '#', onclick: 'window.openAssistantColorModal && window.openAssistantColorModal(); return false;', id: 'navAssistantColor', icon: 'fa-palette', label: 'لون الواجهة', gated: true },
+      { key: 'googleLink', href: '#', onclick: 'window.FasliGoogleLink && window.FasliGoogleLink.openManagerModal(); return false;', icon: 'fa-link', label: 'ربط حساب جوجل' },
       { key: 'passkeys', href: '#', onclick: 'window.FasliWebauthn && window.FasliWebauthn.openManagerModal(); return false;', icon: 'fa-fingerprint', label: 'الدخول بالبصمة' }
     ]}
   ];

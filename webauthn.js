@@ -110,6 +110,14 @@
     }
   }
 
+  /** بيحسب مساحة السايدبار (لو موجود وظاهر في وضع الديسكتوب) عشان البانر ميغطّيهوش —
+   * السايدبار (240px) بيبقى overlay مخفي في الموبايل (أقل من 901px)، مش لازم نبعد عنه وقتها */
+  function getSidebarInsetPx() {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar && window.innerWidth > 900) return sidebar.offsetWidth;
+    return 0;
+  }
+
   function showBanner(token) {
     if (document.getElementById('webauthnBanner')) return;
 
@@ -117,8 +125,9 @@
     bar.id = 'webauthnBanner';
     const googleBar = document.getElementById('googleLinkBanner');
     const bottomOffset = googleBar ? googleBar.offsetHeight + 4 : 0;
+    const rightInset = getSidebarInsetPx();
     bar.style.cssText = [
-      'position:fixed', `bottom:${bottomOffset}px`, 'left:0', 'right:0', 'z-index:99998',
+      'position:fixed', `bottom:${bottomOffset}px`, 'left:0', `right:${rightInset}px`, 'z-index:99998',
       'background:#0E8074', 'color:#fff', 'padding:14px 18px',
       'display:flex', 'align-items:center', 'justify-content:center', 'gap:14px', 'flex-wrap:wrap',
       'font-family:"IBM Plex Sans Arabic","Cairo",sans-serif', 'font-size:14px',
