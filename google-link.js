@@ -13,40 +13,54 @@
     return sessionStorage.getItem(key) || localStorage.getItem(key) || null;
   }
 
+  function isRemembered() {
+    return localStorage.getItem('fasliRememberMe') === 'true';
+  }
+
+  function persist(key, value) {
+    sessionStorage.setItem(key, value);
+    if (isRemembered()) localStorage.setItem(key, value);
+  }
+
   async function init() {
     // ✅ الطالب بيدخل امتحان إلكتروني ممكن يكون في نص وقت محدود — مش وقته المناسب لبانر زي ده
     if (document.body?.dataset?.suppressAccountBanners === 'true') return;
     if (sessionStorage.getItem(DISMISS_KEY)) return;
-
-    const token = getStored('jwtToken');
-    const refreshToken = getStored('refreshToken');
-    if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة (حساب لسه م اتهاجرش، أو مش مسجل دخول)
     if (!window.supabase) return; // فشل تحميل مكتبة Supabase من الـCDN — تجاهل بصمت
 
-    // ✅ نستنى session-refresh.js يخلص تجهيز عميله الأول (لو موجود) عشان نعيد استخدامه بدل ما
-    // ننشئ عميل تاني على نفس مفتاح التخزين (Multiple GoTrueClient instances warning)
-    if (window.__fasliSessionReady) {
-      try { await window.__fasliSessionReady; } catch (e) { /* تجاهل */ }
-    }
-
     try {
-      // ✅ نعيد استخدام نفس عميل Supabase بتاع session-refresh.js لو موجود بدل إنشاء عميل تاني
-      // بنفس مفتاح التخزين — إنشاء أكتر من GoTrueClient على نفس الـstorage key بيولّد تحذير
-      // "Multiple GoTrueClient instances" من Supabase نفسه (سلوك غير مضمون لو استخدموا مع بعض)
-      let client = window.__fasliSessionClient;
-      let user;
-      if (client) {
-        const { data, error } = await client.auth.getUser();
-        if (error || !data?.user) return;
-        user = data.user;
-      } else {
-        client = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY);
-        const { data, error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
-        if (error || !data?.user) return;
-        user = data.user;
+      // ✅ عميل مخصص بتخزين Supabase الحقيقي (persistSession: true) — ده أساسي عشان تدفق
+      // OAuth (PKCE) محتاج "code_verifier" يفضل محفوظ في التخزين الحقيقي طول ما المتصفح
+      // متنقل بالكامل لصفحة جوجل ورجوعه؛ لو استخدمنا عميل بدون تخزين حقيقي (زي عميل
+      // session-refresh.js المشترك) بتتفقد الحالة دي تمامًا لما الصفحة تتقفل، فعملية الربط
+      // كانت بتفشل بصمت بعد الرجوع من جوجل رغم إن الرابط بيرجع لصفحتنا عادي
+      const client = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY, {
+        auth: { autoRefreshToken: false, persistSession: true, detectSessionInUrl: true },
+      });
+
+      client.auth.onAuthStateChange((event, session) => {
+        if (session) {
+          persist('jwtToken', session.access_token);
+          persist('refreshToken', session.refresh_token);
+        }
+      });
+
+      // ✅ getSession() بينتظر انتهاء أي معالجة تلقائية لرابط عائد من جوجل (detectSessionInUrl)
+      // قبل ما يرجّع نتيجة — لو مفيش جلسة خالص (أول تحميل عادي، مش عودة من جوجل)، نزرعها
+      // من تخزيننا الخاص (jwtToken/refreshToken) اللي باقي صفحات النظام بتقرأ منه
+      const { data: existing } = await client.auth.getSession();
+      if (!existing?.session) {
+        const token = getStored('jwtToken');
+        const refreshToken = getStored('refreshToken');
+        if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة أصلاً
+        const { error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
+        if (error) return;
       }
 
-      const identities = user.identities || [];
+      const { data: userData, error: userError } = await client.auth.getUser();
+      if (userError || !userData?.user) return;
+
+      const identities = userData.user.identities || [];
       const hasGoogle = identities.some((i) => i.provider === 'google');
       if (hasGoogle) return;
 
