@@ -5,6 +5,11 @@
 // بيشتغل بصمت في الخلفية: يهيّئ جلسة Supabase من التوكنات المخزّنة، وبعدين أي مرة
 // Supabase يجدد التوكن تلقائيًا (قبل انتهائه بشوية) بيكتب القيم الجديدة في نفس المكان
 // اللي كل صفحات النظام بتقرأ منه (sessionStorage/localStorage.jwtToken).
+//
+// ✅ ملاحظة: العميل هنا persistSession:false عمداً (إحنا بنتحكم في التخزين بأنفسنا).
+// ده معناه مينفعش يُستخدم لبدء أو استكمال أي تدفق OAuth (زي ربط جوجل) لأن حالة PKCE
+// (code_verifier) محتاجة تخزين حقيقي يعيش بعد التنقل الكامل لصفحة تانية ورجوعه —
+// google-link.js بيعمل عميله المستقل بتخزين حقيقي لنفس السبب ده بالظبط.
 // ============================================
 (function () {
   const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
@@ -26,35 +31,24 @@
   async function init() {
     if (!window.supabase) return; // فشل تحميل مكتبة Supabase من الـCDN — تجاهل بصمت
 
-    // ✅ لو الصفحة دي راجعة من ربط جوجل (أو أي OAuth تاني)، الرابط بيحتوي على توكنات/كود
-    // جديد لازم Supabase يعالجه بنفسه (detectSessionInUrl) — من غير ما نكتب فوقه بتوكن قديم
-    // من التخزين قبل ما يتعالج، وإلا الربط يفشل بصمت (الصفحة بترجّع تحمّل من غير ما حاجة تتغيّر)
-    const hasOAuthCallback = window.location.hash.includes('access_token=')
-      || new URLSearchParams(window.location.search).has('code');
+    const token = getStored('jwtToken');
+    const refreshToken = getStored('refreshToken');
+    if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة (حساب لسه م اتهاجرش، أو مش مسجل دخول)
 
     try {
       const client = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY, {
-        auth: { autoRefreshToken: true, persistSession: false, detectSessionInUrl: hasOAuthCallback },
+        auth: { autoRefreshToken: true, persistSession: false, detectSessionInUrl: false },
       });
 
+      const { error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
+      if (error) return; // توكن/refresh غير صالحين — نسيب باقي الصفحة تتعامل مع 401 زي ما هي
+
       client.auth.onAuthStateChange((event, session) => {
-        if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        if (event === 'TOKEN_REFRESHED' && session) {
           persist('jwtToken', session.access_token);
           persist('refreshToken', session.refresh_token);
         }
       });
-
-      if (hasOAuthCallback) {
-        // ✅ نستنى Supabase يخلص معالجة الرابط ويصدر الجلسة الجديدة — بتوصلنا عن طريق
-        // onAuthStateChange فوق (SIGNED_IN)، فبنستخدم getSession() بس عشان نستنى الجاهزية
-        await client.auth.getSession();
-      } else {
-        const token = getStored('jwtToken');
-        const refreshToken = getStored('refreshToken');
-        if (!token || !refreshToken) return; // مفيش جلسة Supabase Auth كاملة (حساب لسه م اتهاجرش، أو مش مسجل دخول)
-        const { error } = await client.auth.setSession({ access_token: token, refresh_token: refreshToken });
-        if (error) return; // توكن/refresh غير صالحين — نسيب باقي الصفحة تتعامل مع 401 زي ما هي
-      }
 
       // ✅ لازم نفضل ماسكين مرجع للعميل ده — Supabase بيجدول التجديد التلقائي داخليًا
       // (setTimeout قبل انتهاء الصلاحية بشوية)، ولو العميل اتنضف من الذاكرة (garbage collected)
@@ -65,13 +59,9 @@
     }
   }
 
-  // ✅ باقي السكريبتات (google-link.js) بتستنى الـpromise ده قبل ما تنشئ عميل Supabase خاص بيها،
-  // عشان تستخدم نفس العميل ده بدل ما تعمل GoTrueClient تاني على نفس مفتاح التخزين
   if (document.readyState === 'loading') {
-    window.__fasliSessionReady = new Promise((resolve) => {
-      document.addEventListener('DOMContentLoaded', () => init().then(resolve));
-    });
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    window.__fasliSessionReady = init();
+    init();
   }
 })();
