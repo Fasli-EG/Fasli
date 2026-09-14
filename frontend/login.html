@@ -991,6 +991,11 @@
   // ⚠️ رابط استرجاع كلمة المرور (PASSWORD_RECOVERY) بيرجع بنفس شكل الرابط ده بالظبط
   // (access_token# في الـhash)، فلازم نستثنيه هنا (isRecoveryReturn تحت) عشان ما نحولّهش
   // تلقائيًا كأنه دخول عادي قبل ما المستخدم يحط كلمة مرور جديدة
+  // ✅ لازم يتعرّفوا هنا فوق (مش جوّه تعريف openSetNewPasswordModal تحت) — الفانكشن ممكن
+  // تتنادى فورًا تحت (customResetToken) قبل ما التنفيذ يوصل لسطر تعريفهم الأصلي، وده كان بيرمي
+  // "Cannot access before initialization" (TDZ) لأي متغيّر let معرّف بعد نقطة استخدامه الفعلي
+  let __passwordResetMode = 'supabase';
+  let __customResetToken = null;
   const isRecoveryReturn = window.location.hash.includes('type=recovery');
   const isOAuthReturn = !isRecoveryReturn && (window.location.hash.includes('access_token=')
     || new URLSearchParams(window.location.search).has('code'));
@@ -1133,8 +1138,6 @@
   //     — عندها جلسة Supabase حقيقية جاهزة، بنستخدم updateUser() مباشرة.
   // (2) mode='customToken': رابط request-password-reset المخصص (باقي الأدوار) — مفيش أي
   //     جلسة هنا خالص، التوكن نفسه هو "الإثبات"، فبننادي confirm-password-reset بيه
-  let __passwordResetMode = 'supabase';
-  let __customResetToken = null;
   function openSetNewPasswordModal(mode, token) {
     __passwordResetMode = mode || 'supabase';
     __customResetToken = token || null;
