@@ -166,6 +166,13 @@ async function handleDelete(supabase: any, body: any) {
   await supabase.from("book_payments").delete().eq("teacher_id", clientId);
   await supabase.from("attendance").delete().eq("teacher_id", clientId);
 
+  // ✅ لازم يتمسحوا هنا صراحةً قبل ما نوصل لحذف teachers تحت — card_action_mode فيه
+  // active_session_id بيشاور على attendance_sessions من غير ON DELETE CASCADE على العمود ده،
+  // فلو فضل موجود وقت ما الـcascade بتاع teachers يحاول يمسح attendance_sessions هيفشل بخطأ FK
+  await supabase.from("card_action_mode").delete().eq("teacher_id", clientId);
+  await supabase.from("attendance_sessions").delete().eq("teacher_id", clientId);
+  await supabase.from("rfid_scans").delete().eq("client_id", clientId);
+
   await supabase.from("system_cards").delete().eq("teacher_id", clientId);
   await supabase.from("pending_card_registrations").delete().eq("teacher_id", clientId);
 
