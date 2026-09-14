@@ -292,21 +292,16 @@
       <h2>تسجيل الدخول</h2>
       <p class="lede">ادخل بياناتك للمتابعة إلى حسابك</p>
 
-      <div class="tabs" role="tablist" aria-label="نوع الحساب">
-        <button type="button" class="tab active" data-group="staff" onclick="selectGroup('staff')" role="tab" aria-selected="true"><span class="tab-emoji">👥</span> الطاقم (سنتر / مدرس / مساعد)</button>
-        <button type="button" class="tab" data-group="family" onclick="selectGroup('family')" role="tab" aria-selected="false"><span class="tab-emoji">👨‍👩‍👧</span> الأسرة (ولي أمر / طالب)</button>
-      </div>
-
       <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="field">
-          <label id="usernameLabel" for="username">كود المدرس (Client ID)</label>
-          <input type="text" id="username" placeholder="مثال: teacher_001" autocomplete="username" required>
-          <div class="hint" id="usernameHint">أدخل الكود الخاص بك من الإدارة</div>
+          <label id="usernameLabel" for="username">كود الدخول</label>
+          <input type="text" id="username" placeholder="كود المدرس / اسم المستخدم / رقم الهاتف / كود الطالب" autocomplete="username" required>
+          <div class="hint" id="usernameHint">هنتعرف على نوع حسابك تلقائيًا — أو اكتب إيميلك لو حساب المشرف</div>
         </div>
         <div class="field">
           <label for="password">كلمة المرور</label>
           <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
-          <div class="hint" id="passwordHint">لأول مرة، استخدم <strong>نفس الكود</strong> ككلمة مرور</div>
+          <div class="hint" id="passwordHint">لأول مرة، استخدم <strong>نفس القيمة اللي كتبتها فوق</strong> ككلمة مرور</div>
         </div>
 
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#4B5563;cursor:pointer;margin-bottom:4px;">
@@ -320,12 +315,9 @@
       </form>
 
       <button type="button" id="webauthnLoginBtn" onclick="handleWebauthnLogin()" style="display:none;width:100%;margin-top:10px;padding:14px;border-radius:12px;border:2px solid var(--teal);background:#fff;color:var(--teal);font-weight:700;font-size:15px;cursor:pointer;align-items:center;justify-content:center;gap:8px;">
-        🔒 الدخول بالبصمة أو الوجه
+        ⚡ دخول سريع
       </button>
 
-      <button type="button" id="googleSignInBtn" onclick="handleGoogleSignIn()" style="width:100%;margin-top:10px;padding:14px;border-radius:12px;border:2px solid #4285F4;background:#fff;color:#4285F4;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-        🔵 الدخول بحساب جوجل
-      </button>
       <button type="button" onclick="openForgotPasswordModal()" style="display:block;width:100%;text-align:center;font-size:12.5px;color:#6B7280;margin-top:8px;background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit;">نسيت كلمة المرور؟</button>
 
       <div id="message" class="message"></div>
@@ -372,7 +364,6 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4a3l4eHpjbnhweGVmb2RmeG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3MTY0MTEsImV4cCI6MjEwMDI5MjQxMX0.oTWvUOrR7DBnhWQF7ym6PNRlucfsESSJovPhnkqvNZc';
   const supabaseClient = window.supabase.createClient(PROJECT_URL, SUPABASE_ANON_KEY);
 
-  let selectedGroup = 'staff';
   let systemContactInfo = {};
 
   async function loadContactInfo() {
@@ -581,43 +572,6 @@
     } catch (e) { return false; }
   }
 
-  // ============================================
-  // اختيار الدور
-  // ============================================
-  function selectGroup(group) {
-    selectedGroup = group;
-    document.querySelectorAll('.tab').forEach(btn => {
-      const active = btn.dataset.group === group;
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-
-    const usernameLabel = document.getElementById('usernameLabel');
-    const usernameInput = document.getElementById('username');
-    const usernameHint = document.getElementById('usernameHint');
-    const passwordHint = document.getElementById('passwordHint');
-
-    // ✅ النظام بيكتشف نوع الحساب بالظبط (سنتر/مدرس/مساعد أو ولي أمر/طالب) تلقائياً بعد إدخال البيانات،
-    // مش لازم تحددي بنفسك
-    if (group === 'staff') {
-      usernameLabel.textContent = 'كود الدخول';
-      usernameInput.placeholder = 'كود السنتر أو كود المدرس أو اسم مستخدم المساعد';
-      usernameInput.removeAttribute('dir');
-      usernameHint.textContent = 'أدخل الكود أو اسم المستخدم اللي معاكِ، والنظام هيتعرّف على نوع حسابك تلقائياً';
-      passwordHint.innerHTML = 'لأول مرة، استخدمي <strong>نفس الكود</strong> ككلمة مرور (أو الكلمة المؤقتة لو إنتِ مساعدة)';
-    } else {
-      usernameLabel.textContent = 'رقم الهاتف أو كود الكارت';
-      usernameInput.placeholder = 'رقم هاتفك (ولي أمر) أو كود كارت ابنك (طالب)';
-      usernameInput.setAttribute('dir', 'ltr');
-      usernameHint.textContent = 'ولي الأمر: رقم الهاتف المسجّل. الطالب: كود الكارت — والنظام هيتعرّف على نوع حسابك تلقائياً';
-      passwordHint.innerHTML = 'لأول مرة، استخدمي <strong>نفس القيمة اللي كتبتيها فوق</strong> ككلمة مرور';
-    }
-
-    hideMessage();
-    usernameInput.value = '';
-    document.getElementById('password').value = '';
-  }
-
   function showMessage(text, type = 'info') {
     messageDiv.innerHTML = text;
     messageDiv.className = 'message ' + type;
@@ -632,14 +586,14 @@
   // ============================================
   // رسالة المستخدم غير المسجل
   // ============================================
-  function showUnregisteredMessage(role, username) {
-    let roleName = role === 'teacher' ? 'المدرس' : role === 'assistant' ? 'المساعد' : role === 'student' ? 'الطالب' : 'ولي الأمر';
-    let idName = role === 'teacher' ? 'كود' : role === 'assistant' ? 'اسم المستخدم' : role === 'student' ? 'كود الكارت' : 'رقم الهاتف';
+  // ✅ بعد إلغاء تبويبي الطاقم/الأسرة، مبقاش عندنا الدور المقصود قبل ما نحاول الدخول —
+  // النظام بيدوّر على الـ4 جداول كلها، فرسالة "غير مسجّل" بقت عامة بدل ما تحدد دور بعينه
+  function showUnregisteredMessage(username) {
     const contactLine = systemContactInfo.phone_number
-      ? `يرجى التواصل مع ${role === 'student' ? 'مدرستك' : 'الإدارة'} على الرقم: <strong>${systemContactInfo.phone_number}</strong> لتسجيل بياناتك`
-      : `يرجى التواصل مع ${role === 'student' ? 'مدرستك' : 'الإدارة'} لتسجيل بياناتك`;
+      ? `يرجى التواصل مع الإدارة على الرقم: <strong>${systemContactInfo.phone_number}</strong> لتسجيل بياناتك`
+      : `يرجى التواصل مع الإدارة لتسجيل بياناتك`;
     showMessage(
-      `عذراً، ${roleName} غير مسجل في المنظومة (${idName}: ${username})<br><br>` + contactLine,
+      `عذراً، الحساب ده مش مسجّل في المنظومة (${username})<br><br>` + contactLine,
       'warning'
     );
   }
@@ -862,7 +816,7 @@
     // Supabase Auth من غير المرور بفانكشن /login. باقي الأدوار (كود مدرس/اسم مستخدم مساعد/رقم
     // هاتف ولي أمر) بتفضل تنادي /login زي ما هي — الفانكشن نفسها بقت بتتحقق عن طريق Supabase
     // Auth من جوّه (login/index.ts)، فمفيش داعي الفرونت إند يتغيّر خالص لباقي الأدوار.
-    if (selectedGroup === 'staff' && username.includes('@')) {
+    if (username.includes('@')) {
       try {
         const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email: username, password });
         if (authError || !authData?.session) {
@@ -887,7 +841,7 @@
       const response = await fetch(PROJECT_URL + '/functions/v1/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, group: selectedGroup })
+        body: JSON.stringify({ username, password })
       });
       const data = await response.json();
 
@@ -899,7 +853,7 @@
       } else {
         const errorMsg = data.message || '';
         if (errorMsg.includes('غير موجود') || errorMsg.includes('لا يوجد') || errorMsg.includes('not found') || errorMsg.includes('غير مسجّل')) {
-          showUnregisteredMessage(selectedGroup === 'staff' ? 'teacher' : 'parent', username);
+          showUnregisteredMessage(username);
         } else if (errorMsg.includes('غير مفعل') && (data.contactWhatsapp || data.contactPhone)) {
           const who = data.contactAudience === 'teacher' ? 'المدرس الخاص بك' : 'الإدارة';
           let contactHtml = `${errorMsg}<br><br>تواصل مع ${who}: `;
@@ -933,7 +887,7 @@
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
       });
       const optData = await optRes.json();
-      if (!optData.success) throw new Error(optData.message || 'فشل بدء الدخول بالبصمة');
+      if (!optData.success) throw new Error(optData.message || 'فشل بدء الدخول السريع');
 
       const assertion = await SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: optData.options });
 
@@ -942,7 +896,7 @@
         body: JSON.stringify(Object.assign({}, assertion, { challengeId: optData.challengeId }))
       });
       const verifyData = await verifyRes.json();
-      if (!verifyData.success) throw new Error(verifyData.message || 'فشل التحقق من البصمة');
+      if (!verifyData.success) throw new Error(verifyData.message || 'فشل التحقق من الدخول السريع');
 
       const { data: otpData, error: otpError } = await supabaseClient.auth.verifyOtp({
         token_hash: verifyData.tokenHash, type: 'magiclink'
@@ -963,85 +917,27 @@
       setTimeout(() => redirectUser(meta.role || 'teacher', identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', ''), 900);
     } catch (error) {
       if (!(error && error.name === 'NotAllowedError')) {
-        showMessage('⚠️ ' + (error && error.message ? error.message : 'تعذّر الدخول بالبصمة'), 'error');
+        showMessage('⚠️ ' + (error && error.message ? error.message : 'تعذّر الدخول السريع'), 'error');
       }
     } finally {
       setLoading(false);
     }
   }
 
-  // ============================================
-  // الدخول بحساب جوجل — بديل لنسيان كلمة المرور لمن ربط حسابه بجوجل من قبل من صفحة الإعدادات
-  // ============================================
-  async function handleGoogleSignIn() {
-    hideMessage();
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + window.location.pathname },
-    });
-    if (error) showMessage('⚠️ ' + error.message, 'error');
-    // ✅ لو نجح، المتصفح بيتحوّل تلقائياً لجوجل — استكمال الدخول بعد الرجوع بيحصل في
-    // المستمع onAuthStateChange تحت (isOAuthReturn)
-  }
-
-  // ✅ الصفحة دي ممكن ترجع من تحويلة جوجل (بعد الضغط على "الدخول بحساب جوجل" فوق) — لو كده،
-  // supabaseClient (اللي عامل persistSession/detectSessionInUrl افتراضيًا) هيعالج الرابط
-  // بنفسه ويطلق SIGNED_IN؛ إحنا بس محتاجين نكمل التوجيه حسب دور الحساب زي أي دخول عادي.
-  // الفحص ده لازم يحصل قبل ما Supabase ينضّف الرابط، فبنسجّله فورًا من غير ما ننتظر أي حاجة.
-  // ⚠️ رابط استرجاع كلمة المرور (PASSWORD_RECOVERY) بيرجع بنفس شكل الرابط ده بالظبط
-  // (access_token# في الـhash)، فلازم نستثنيه هنا (isRecoveryReturn تحت) عشان ما نحولّهش
-  // تلقائيًا كأنه دخول عادي قبل ما المستخدم يحط كلمة مرور جديدة
-  // ✅ لازم يتعرّفوا هنا فوق (مش جوّه تعريف openSetNewPasswordModal تحت) — الفانكشن ممكن
-  // تتنادى فورًا تحت (customResetToken) قبل ما التنفيذ يوصل لسطر تعريفهم الأصلي، وده كان بيرمي
-  // "Cannot access before initialization" (TDZ) لأي متغيّر let معرّف بعد نقطة استخدامه الفعلي
-  let __passwordResetMode = 'supabase';
+  // ✅ رابط الاسترجاع المخصص (كل الأدوار بما فيهم الماستر — request-password-reset)، بيرجّعه
+  // هنا كـ ?resetToken= في الرابط نفسه، فبيتقرا فورًا من غير أي انتظار. لازم يتعرّف فوق كده
+  // (مش جوّه تعريف openSetNewPasswordModal تحت) لأن الفانكشن ممكن تتنادى فورًا هنا قبل ما
+  // التنفيذ يوصل لسطر تعريفها الأصلي، وده كان بيرمي "Cannot access before initialization" (TDZ)
   let __customResetToken = null;
-  const isRecoveryReturn = window.location.hash.includes('type=recovery');
-  const isOAuthReturn = !isRecoveryReturn && (window.location.hash.includes('access_token=')
-    || new URLSearchParams(window.location.search).has('code'));
-  if (isOAuthReturn) {
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      if (!(event === 'SIGNED_IN' || event === 'INITIAL_SESSION') || !session) return;
-      const meta = session.user?.app_metadata || {};
-      if (!meta.role) {
-        showMessage('⚠️ حساب جوجل ده مش مربوط بأي حساب في فَصلي بعد — سجّل دخولك بالطريقة العادية الأول واربطه من إعدادات حسابك', 'error');
-        return;
-      }
-      await saveAuth('jwtToken', session.access_token);
-      await saveAuth('refreshToken', session.refresh_token);
-
-      let identifier;
-      if (meta.role === 'parent') identifier = meta.phone;
-      else if (meta.role === 'student') identifier = meta.sub;
-      else if (meta.role === 'teacher') identifier = meta.clientId;
-      else identifier = meta.username || meta.sub;
-
-      showMessage('تم تسجيل الدخول بنجاح', 'success');
-      setTimeout(() => redirectUser(meta.role, identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', ''), 600);
-    });
-  }
-
-  // ✅ رابط استرجاع كلمة المرور اللي بيوصل بالإيميل (سيناريو الماستر أدمن — إيميله حقيقي)
-  // بيرجّعه هنا مع event=PASSWORD_RECOVERY؛ لازم نوقف أي تحويل تلقائي ونوريه فورمة كلمة مرور جديدة
-  if (isRecoveryReturn) {
-    supabaseClient.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') openSetNewPasswordModal('supabase');
-    });
-  }
-
-  // ✅ رابط الاسترجاع المخصص (باقي الأدوار — request-password-reset)، بيرجّعه هنا كـ
-  // ?resetToken= في الرابط نفسه (مش hash زي Supabase)، فبيتقرا فورًا من غير أي انتظار
   const customResetToken = new URLSearchParams(window.location.search).get('resetToken');
   if (customResetToken) {
-    openSetNewPasswordModal('customToken', customResetToken);
+    openSetNewPasswordModal(customResetToken);
   }
 
   // ============================================
-  // نسيت كلمة المرور — موديال بسيط بيوجّه المستخدم لأقرب طريقة استرجاع فعلية لحالته:
-  // (1) حسابه مربوط بجوجل بالفعل → يدخل بيه على طول من غير كلمة مرور.
-  // (2) حساب بإيميل حقيقي (الماستر أدمن حاليًا) → رابط استرجاع فعلي من Supabase على بريده.
-  // (3) باقي الحالات (مدرس/مساعد/ولي أمر/طالب بكود أو تليفون) → التواصل مع المسؤول عن حسابه،
-  //     اللي أصلاً عنده صلاحية إعادة تعيين كلمة مرورهم من لوحته (manage-password-reset)
+  // نسيت كلمة المرور — موديال بسيط: تكتب إيميل الاسترجاع أو كود حسابك، ولو موجود إيميل
+  // استرجاع مسجّل بيوصلك رابط لتحديد كلمة مرور جديدة (request-password-reset)، وغير كده
+  // بيوجهك تتواصل مع المسؤول عن حسابك (اللي أصلاً عنده صلاحية إعادة التعيين من لوحته)
   // ============================================
   function openForgotPasswordModal() {
     if (document.getElementById('forgotPwOverlay')) return;
@@ -1065,15 +961,9 @@
         </div>
 
         <div style="background:var(--surface-soft);border-radius:12px;padding:14px;margin-bottom:12px;">
-          <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:8px;">🔵 حسابك مربوط بجوجل من قبل؟</p>
-          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">ادخل على طول بضغطة واحدة من غير ما تكتب كلمة المرور خالص.</p>
-          <button type="button" onclick="document.getElementById('forgotPwOverlay').remove();handleGoogleSignIn();" style="width:100%;padding:11px;border-radius:10px;border:2px solid #4285F4;background:#fff;color:#4285F4;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">الدخول بحساب جوجل</button>
-        </div>
-
-        <div style="background:var(--surface-soft);border-radius:12px;padding:14px;margin-bottom:12px;">
           <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:8px;">📧 استرجع بإيميل الاسترجاع بتاعك</p>
-          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">اكتب إيميلك (لو حساب المشرف) أو كود حسابك (كود المدرس / اسم مستخدم المساعد / رقم تليفون ولي الأمر / كود الطالب) — لو مسجّل إيميل استرجاع بحسابك، هيوصلك رابط لتحديد كلمة مرور جديدة عليه.</p>
-          <input type="text" id="forgotPwIdentifier" placeholder="إيميلك أو كود حسابك" value="${typedUsername.replace(/"/g, '&quot;')}" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">اكتب كود حسابك (كود المدرس / اسم مستخدم المساعد / رقم تليفون ولي الأمر / كود الطالب — أو master_admin لو حساب المشرف) — لو مسجّل إيميل استرجاع بحسابك، هيوصلك رابط لتحديد كلمة مرور جديدة عليه.</p>
+          <input type="text" id="forgotPwIdentifier" placeholder="كود حسابك" value="${typedUsername.replace(/"/g, '&quot;')}" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
           <button type="button" onclick="sendPasswordReset()" id="forgotPwSendBtn" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--gradient-gold);color:var(--indigo);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">إرسال رابط إعادة التعيين</button>
           <p id="forgotPwFeedback" style="font-size:12px;margin-top:8px;"></p>
         </div>
@@ -1086,41 +976,25 @@
     document.body.appendChild(overlay);
   }
 
-  // ✅ بيوجّه لأقرب مسار فعلي حسب اللي المستخدم كتبه: إيميل حقيقي (فيه @) → مسار Supabase
-  // الجاهز (الماستر أدمن بس)، غير كده → مسار إيميل الاسترجاع المخصص (request-password-reset)
-  // لباقي الأدوار (المدرس بيحدّد الإيميل ده بنفسه من إعدادات حسابه، مش هو نفس إيميل الدخول)
+  // ✅ استرجاع موحّد لكل الأدوار بما فيهم الماستر (اللي حسابه client_id='master_admin' في
+  // نفس جدول teachers) — بيدوّر على إيميل استرجاع اختياري مسجّل بالحساب ويبعت عليه رابط
   async function sendPasswordReset() {
     const identifier = document.getElementById('forgotPwIdentifier').value.trim();
     const feedback = document.getElementById('forgotPwFeedback');
     const btn = document.getElementById('forgotPwSendBtn');
     if (!identifier) {
       feedback.style.color = 'var(--danger)';
-      feedback.textContent = 'اكتب إيميلك أو كود حسابك الأول';
+      feedback.textContent = 'اكتب كود حسابك الأول';
       return;
     }
     btn.disabled = true;
     feedback.style.color = 'var(--muted)';
     feedback.textContent = 'جاري الإرسال...';
 
-    if (identifier.includes('@')) {
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(identifier, {
-        redirectTo: window.location.origin + window.location.pathname,
-      });
-      btn.disabled = false;
-      if (error) {
-        feedback.style.color = 'var(--danger)';
-        feedback.textContent = '⚠️ ' + error.message;
-        return;
-      }
-      feedback.style.color = 'var(--success)';
-      feedback.textContent = '✅ لو الإيميل ده مسجّل عندنا، هيوصلك رابط لتحديد كلمة مرور جديدة';
-      return;
-    }
-
     try {
       const res = await fetch(PROJECT_URL + '/functions/v1/request-password-reset', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ group: selectedGroup, identifier }),
+        body: JSON.stringify({ identifier }),
       });
       const data = await res.json();
       btn.disabled = false;
@@ -1133,14 +1007,10 @@
     }
   }
 
-  // ✅ فورمة تحديد كلمة مرور جديدة — تخدم مصدرين مختلفين تمامًا:
-  // (1) mode='supabase': رابط استرجاع Supabase الجاهز (الماستر أدمن، PASSWORD_RECOVERY فوق)
-  //     — عندها جلسة Supabase حقيقية جاهزة، بنستخدم updateUser() مباشرة.
-  // (2) mode='customToken': رابط request-password-reset المخصص (باقي الأدوار) — مفيش أي
-  //     جلسة هنا خالص، التوكن نفسه هو "الإثبات"، فبننادي confirm-password-reset بيه
-  function openSetNewPasswordModal(mode, token) {
-    __passwordResetMode = mode || 'supabase';
-    __customResetToken = token || null;
+  // ✅ فورمة تحديد كلمة مرور جديدة بعد الرجوع من رابط الإيميل (request-password-reset) —
+  // مفيش أي جلسة Supabase هنا خالص، التوكن نفسه هو "الإثبات"، فبننادي confirm-password-reset بيه
+  function openSetNewPasswordModal(token) {
+    __customResetToken = token;
     if (document.getElementById('setNewPwOverlay')) return;
     const overlay = document.createElement('div');
     overlay.id = 'setNewPwOverlay';
@@ -1177,63 +1047,39 @@
     feedback.style.color = 'var(--muted)';
     feedback.textContent = 'جاري الحفظ...';
 
-    // ✅ مسار الرابط المخصص (باقي الأدوار) — مفيش جلسة Supabase هنا خالص، التوكن نفسه هو
-    // الإثبات، فمنقدرش نسجّل الدخول تلقائيًا بعدها — نوريه رسالة نجاح ونسيبه يدخل عادي
-    if (__passwordResetMode === 'customToken') {
-      try {
-        const res = await fetch(PROJECT_URL + '/functions/v1/confirm-password-reset', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: __customResetToken, newPassword: pw }),
-        });
-        const data = await res.json();
-        btn.disabled = false;
-        if (!data.success) {
-          feedback.style.color = 'var(--danger)';
-          feedback.textContent = '⚠️ ' + data.message;
-          return;
-        }
-        feedback.style.color = 'var(--success)';
-        feedback.textContent = '✅ اتحفظت كلمة المرور الجديدة — سجّل دخولك بيها دلوقتي';
-        history.replaceState(null, '', window.location.pathname);
-        document.getElementById('setNewPwBtn').style.display = 'none';
-      } catch (error) {
-        btn.disabled = false;
+    // ✅ مفيش جلسة Supabase هنا خالص — التوكن نفسه هو الإثبات، فمنقدرش نسجّل الدخول
+    // تلقائيًا بعدها، نوريه رسالة نجاح ونسيبه يدخل عادي
+    try {
+      const res = await fetch(PROJECT_URL + '/functions/v1/confirm-password-reset', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: __customResetToken, newPassword: pw }),
+      });
+      const data = await res.json();
+      btn.disabled = false;
+      if (!data.success) {
         feedback.style.color = 'var(--danger)';
-        feedback.textContent = '⚠️ حدث خطأ في الاتصال بالخادم';
+        feedback.textContent = '⚠️ ' + data.message;
+        return;
       }
-      return;
-    }
-
-    const { error } = await supabaseClient.auth.updateUser({ password: pw });
-    btn.disabled = false;
-    if (error) {
+      feedback.style.color = 'var(--success)';
+      feedback.textContent = '✅ اتحفظت كلمة المرور الجديدة — سجّل دخولك بيها دلوقتي';
+      history.replaceState(null, '', window.location.pathname);
+      document.getElementById('setNewPwBtn').style.display = 'none';
+    } catch (error) {
+      btn.disabled = false;
       feedback.style.color = 'var(--danger)';
-      feedback.textContent = '⚠️ ' + error.message;
-      return;
+      feedback.textContent = '⚠️ حدث خطأ في الاتصال بالخادم';
     }
-    feedback.style.color = 'var(--success)';
-    feedback.textContent = '✅ اتحفظت كلمة المرور الجديدة، جاري تسجيل الدخول...';
-    history.replaceState(null, '', window.location.pathname);
-    setTimeout(async () => {
-      const { data } = await supabaseClient.auth.getUser();
-      const meta = data?.user?.app_metadata || {};
-      let identifier;
-      if (meta.role === 'parent') identifier = meta.phone;
-      else if (meta.role === 'student') identifier = meta.sub;
-      else if (meta.role === 'teacher') identifier = meta.clientId;
-      else identifier = meta.username || meta.sub;
-      redirectUser(meta.role || 'teacher', identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', '');
-    }, 1000);
   }
 
   // ============================================
   // التحقق من الجلسة عند فتح الصفحة (بما فيها الجلسة المحفوظة "تذكرني")
   // ============================================
   async function restoreAndCheckSession() {
-    // ✅ لو المستخدم جاي من رابط استرجاع كلمة مرور (أي نوع)، ده قصد صريح لازم ياخد أولوية
-    // مطلقة — لو كمّلنا وعندهم جلسة "تذكرني" قديمة محفوظة على نفس الجهاز، كنا هنحوّلهم
-    // للوحة التحكم فورًا من غير ما ياخدوا فرصة يحددوا كلمة المرور الجديدة خالص
-    if (isRecoveryReturn || customResetToken) return;
+    // ✅ لو المستخدم جاي من رابط استرجاع كلمة مرور، ده قصد صريح لازم ياخد أولوية مطلقة —
+    // لو كمّلنا وعندهم جلسة "تذكرني" قديمة محفوظة على نفس الجهاز، كنا هنحوّلهم للوحة
+    // التحكم فورًا من غير ما ياخدوا فرصة يحددوا كلمة المرور الجديدة خالص
+    if (customResetToken) return;
     // ✅ لو التطبيق (Capacitor) وعنده جلسة محفوظة في التخزين الحقيقي، نسترجعها الأول
     const Preferences = window.Capacitor?.Plugins?.Preferences;
     if (Preferences && !sessionStorage.getItem('jwtToken')) {

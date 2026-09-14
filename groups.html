@@ -19,7 +19,7 @@
 <body>
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
-    <script src="layout.js?v=4"></script>
+    <script src="layout.js?v=5"></script>
     <script>renderShell({active:'groups'});</script>
 
     <div class="main-area">
@@ -221,6 +221,33 @@
         </div>
 
         <div id="registrationRequestsContainer" style="margin-top:18px;"></div>
+      </div>
+    </div>
+
+    <!-- ✅ نُقلت من صفحة إعدادات الحساب (teacher-settings.html) — بتظهر بس لو المدرس تابع لسنتر فعلاً -->
+    <div class="card" id="centerSharingCard" style="display:none;margin-top:18px;">
+      <div class="card-header">
+        <h3><i class="fas fa-building" style="color:var(--primary);"></i> المشاركة مع السنتر</h3>
+      </div>
+      <div class="card-body">
+        <span class="sub">إنت تابع لسنتر — حدد هنا إيه اللي صاحب السنتر يقدر يشوفه بالتفصيل. الأرقام الإجمالية (عدد طلابك وإيرادك) ظاهرة له دايماً بغض النظر عن اختيارك هنا.</span>
+        <div style="margin-top:12px;">
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;">
+            <input type="checkbox" id="shareFinancialCb" style="width:20px;height:20px;">
+            <span>💰 مشاركة التفاصيل المالية الدقيقة (كل دفعة لوحدها)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;">
+            <input type="checkbox" id="shareAcademicCb" style="width:20px;height:20px;">
+            <span>📝 مشاركة التفاصيل الأكاديمية (درجات الطلاب)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;">
+            <input type="checkbox" id="shareAttendanceCb" style="width:20px;height:20px;">
+            <span>✅ مشاركة تفاصيل الحضور والغياب</span>
+          </label>
+          <button class="btn btn-primary" style="margin-top:10px;" onclick="saveCenterSharing()">
+            <i class="fas fa-save"></i> حفظ إعدادات المشاركة
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1596,6 +1623,47 @@ async function markAllRead() {
       } catch (error) { console.error('❌ خطأ في تحميل رابط التسجيل:', error); }
     }
 
+    // ============================================
+    // ✅ صلاحيات المشاركة مع السنتر — نُقلت من صفحة إعدادات الحساب (teacher-settings.html)
+    // ============================================
+    async function loadCenterSharingStatus() {
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-center', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'getMySharingStatus' })
+        });
+        const result = await response.json();
+        if (!result.success || !result.belongsToCenter) return; // ✅ مش تابعة لسنتر، القسم يفضل مخفي
+
+        document.getElementById('centerSharingCard').style.display = 'block';
+        const perms = result.permissions || {};
+        document.getElementById('shareFinancialCb').checked = perms.share_financial_details === true;
+        document.getElementById('shareAcademicCb').checked = perms.share_academic_details === true;
+        document.getElementById('shareAttendanceCb').checked = perms.share_attendance_details === true;
+      } catch (error) { console.error('❌ خطأ في تحميل حالة السنتر:', error); }
+    }
+
+    async function saveCenterSharing() {
+      const permissions = {
+        share_financial_details: document.getElementById('shareFinancialCb').checked,
+        share_academic_details: document.getElementById('shareAcademicCb').checked,
+        share_attendance_details: document.getElementById('shareAttendanceCb').checked,
+      };
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-center', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'updateSharingPermissions', permissions })
+        });
+        const result = await response.json();
+        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        showToast('❌ فشل الحفظ', 'error');
+      }
+    }
+
     // ✅ (طلب) توليد QR code لرابط التسجيل — بيتولد محلياً في المتصفح (مكتبة qrcodejs عبر CDN)
     function renderRegistrationQr(link) {
       const container = document.getElementById('registrationQrCode');
@@ -1802,6 +1870,7 @@ async function markAllRead() {
       if (canManageRegistration) {
         loadGroupsForRegistration().then(() => loadRegistrationRequests());
         setupRegistrationLink();
+        loadCenterSharingStatus();
       }
     };
   </script>
@@ -1984,11 +2053,10 @@ async function markAllRead() {
     }
   </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="session-refresh.js?v=5"></script>
-<script src="google-link.js?v=8"></script>
+<script src="session-refresh.js?v=6"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
-<script src="webauthn.js?v=5"></script>
-<script src="recovery-email.js?v=1"></script>
+<script src="webauthn.js?v=6"></script>
+<script src="recovery-email.js?v=2"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=4"></script>
 </body>

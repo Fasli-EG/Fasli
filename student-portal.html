@@ -54,8 +54,7 @@
           </div>
         </div>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="window.FasliGoogleLink && window.FasliGoogleLink.openManagerModal()" title="ربط حساب جوجل"><i class="fas fa-link"></i></button>
-      <button class="btn btn-outline btn-sm" onclick="window.FasliWebauthn && window.FasliWebauthn.openManagerModal()" title="الدخول بالبصمة"><i class="fas fa-fingerprint"></i></button>
+      <button class="btn btn-outline btn-sm" onclick="window.FasliWebauthn && window.FasliWebauthn.openManagerModal()" title="دخول سريع"><i class="fas fa-bolt"></i></button>
       <button class="btn btn-outline btn-sm" onclick="window.FasliRecoveryEmail && window.FasliRecoveryEmail.openManagerModal()" title="إيميل الاسترجاع"><i class="fas fa-envelope-circle-check"></i></button>
       <button class="btn btn-outline btn-sm" onclick="toggleDarkMode()"><i class="fas fa-moon"></i></button>
       <button class="btn btn-outline btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> خروج</button>
@@ -1098,11 +1097,10 @@
     </div>
   </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="session-refresh.js?v=5"></script>
-<script src="google-link.js?v=8"></script>
+<script src="session-refresh.js?v=6"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
-<script src="webauthn.js?v=5"></script>
-<script src="recovery-email.js?v=1"></script>
+<script src="webauthn.js?v=6"></script>
+<script src="recovery-email.js?v=2"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=4"></script>
 </body>

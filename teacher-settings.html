@@ -72,7 +72,7 @@
 
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
-    <script src="layout.js?v=4"></script>
+    <script src="layout.js?v=5"></script>
     <script>renderShell({active:'settings'});</script>
 
     <div class="main-area">
@@ -102,9 +102,6 @@
       <button class="tab active" data-tab="account" onclick="switchSettingsTab('account')">
         <i class="fas fa-id-card"></i> الحساب والعلامة التجارية
       </button>
-      <button class="tab" data-tab="registration" onclick="switchSettingsTab('registration')">
-        <i class="fas fa-link"></i> التسجيل والمشاركة
-      </button>
       <button class="tab" data-tab="import" onclick="switchSettingsTab('import')">
         <i class="fas fa-clock-rotate-left"></i> النسخ الاحتياطي
       </button>
@@ -131,16 +128,6 @@
     <div class="wifi-card" style="margin-top:24px;">
       <div class="page-header" style="margin-bottom:16px;">
         <div>
-          <h2 style="font-size:18px;">🔗 ربط حساب جوجل</h2>
-          <span class="sub">اربط حسابك بجوجل عشان تدخل بضغطة واحدة، وتقدر تسترجع حسابك لو نسيت كلمة المرور</span>
-        </div>
-      </div>
-      <div id="teacherGoogleLinkManager"></div>
-    </div>
-
-    <div class="wifi-card" style="margin-top:24px;">
-      <div class="page-header" style="margin-bottom:16px;">
-        <div>
           <h2 style="font-size:18px;">📧 إيميل الاسترجاع</h2>
           <span class="sub">لو نسيت كلمة المرور، هنبعتلك رابط لتحديد واحدة جديدة على الإيميل ده</span>
         </div>
@@ -151,7 +138,7 @@
     <div class="wifi-card" style="margin-top:24px;">
       <div class="page-header" style="margin-bottom:16px;">
         <div>
-          <h2 style="font-size:18px;">🔒 الدخول بالبصمة/الوجه</h2>
+          <h2 style="font-size:18px;">⚡ دخول سريع</h2>
           <span class="sub">الأجهزة المسجّلة للدخول ببصمتك أو وجهك بدل كلمة المرور — تقدر تضيف أو تحذف أي جهاز</span>
         </div>
       </div>
@@ -299,37 +286,6 @@
       </div>
 
       <div id="brandingMessage" class="message"></div>
-    </div>
-
-    </div>
-    <div class="tab-content" id="tab-registration">
-
-    <!-- ✅ صلاحيات المشاركة مع السنتر — بتظهر بس لو المدرس تابع لسنتر فعلاً -->
-    <div class="wifi-card" id="centerSharingCard" style="display:none;">
-      <div class="page-header" style="margin-bottom:16px;">
-        <div>
-          <h2 style="font-size:18px;">🏢 المشاركة مع السنتر</h2>
-          <span class="sub">إنت تابع لسنتر — حدد هنا إيه اللي صاحب السنتر يقدر يشوفه بالتفصيل. الأرقام الإجمالية (عدد طلابك وإيرادك) ظاهرة له دايماً بغض النظر عن اختيارك هنا.</span>
-        </div>
-      </div>
-
-      <div class="wifi-form">
-        <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;">
-          <input type="checkbox" id="shareFinancialCb" style="width:20px;height:20px;">
-          <span>💰 مشاركة التفاصيل المالية الدقيقة (كل دفعة لوحدها)</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;">
-          <input type="checkbox" id="shareAcademicCb" style="width:20px;height:20px;">
-          <span>📝 مشاركة التفاصيل الأكاديمية (درجات الطلاب)</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;">
-          <input type="checkbox" id="shareAttendanceCb" style="width:20px;height:20px;">
-          <span>✅ مشاركة تفاصيل الحضور والغياب</span>
-        </label>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px;" onclick="saveCenterSharing()">
-          <i class="fas fa-save"></i> حفظ إعدادات المشاركة
-        </button>
-      </div>
     </div>
 
     </div>
@@ -1119,11 +1075,6 @@ async function confirmReset() {
       }
     }
 
-    // ✅ (طلب) قسم "رابط التسجيل العام وطلبات الانضمام" اتنقل من هنا (صفحة إعدادات الحساب)
-    // لصفحة المجموعات (groups.html) — أقرب منطقياً لمجموعات الطلاب (لأن قبول الطلب بيحتاج
-    // اختيار مجموعة للطالب الجديد)، وعشان المساعد يقدر يوصله بسهولة أكتر لو معاه صلاحية
-    // manage_registration من غير ما يحتاج صفحة إعدادات حساب المدرس أصلاً
-
     // ✅ Aug 2026: تبديل تبويبات صفحة إعدادات الحساب — كل بيانات الصفحة بتتحمّل مرة واحدة في
     // window.onload زي ما كانت قبل التبويبات، فمفيش تحميل كسول لازم هنا
     function switchSettingsTab(name) {
@@ -1137,52 +1088,9 @@ async function confirmReset() {
 
     window.onload = async function() {
       loadContactInfo();
-      loadCenterSharingStatus();
       window.FasliWebauthn?.renderManager('teacherPasskeyManager');
-      window.FasliGoogleLink?.renderManager('teacherGoogleLinkManager');
       window.FasliRecoveryEmail?.renderManager('teacherRecoveryEmailManager');
     };
-
-    // ============================================
-    // ✅ صلاحيات المشاركة مع السنتر
-    // ============================================
-    async function loadCenterSharingStatus() {
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-center', {
-          method: 'POST', headers, body: JSON.stringify({ action: 'getMySharingStatus' })
-        });
-        const result = await response.json();
-        if (!result.success || !result.belongsToCenter) return; // ✅ مش تابعة لسنتر، القسم يفضل مخفي
-
-        document.getElementById('centerSharingCard').style.display = 'block';
-        const perms = result.permissions || {};
-        document.getElementById('shareFinancialCb').checked = perms.share_financial_details === true;
-        document.getElementById('shareAcademicCb').checked = perms.share_academic_details === true;
-        document.getElementById('shareAttendanceCb').checked = perms.share_attendance_details === true;
-      } catch (error) { console.error('❌ خطأ في تحميل حالة السنتر:', error); }
-    }
-
-    async function saveCenterSharing() {
-      const permissions = {
-        share_financial_details: document.getElementById('shareFinancialCb').checked,
-        share_academic_details: document.getElementById('shareAcademicCb').checked,
-        share_attendance_details: document.getElementById('shareAttendanceCb').checked,
-      };
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(PROJECT_URL + '/functions/v1/manage-center', {
-          method: 'POST', headers, body: JSON.stringify({ action: 'updateSharingPermissions', permissions })
-        });
-        const result = await response.json();
-        showToast(result.success ? '✅ ' + result.message : '❌ ' + result.message, result.success ? 'success' : 'error');
-      } catch (error) {
-        console.error('❌ خطأ:', error);
-        showToast('❌ فشل الحفظ', 'error');
-      }
-    }
 
     // ============================================
     // بيانات التواصل الخاصة بالمدرس
@@ -1568,11 +1476,10 @@ async function confirmReset() {
     }
   </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="session-refresh.js?v=5"></script>
-<script src="google-link.js?v=8"></script>
+<script src="session-refresh.js?v=6"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
-<script src="webauthn.js?v=5"></script>
-<script src="recovery-email.js?v=1"></script>
+<script src="webauthn.js?v=6"></script>
+<script src="recovery-email.js?v=2"></script>
 <script src="branding.js?v=3"></script>
 <script src="custom-dialogs.js?v=4"></script>
 </body>
