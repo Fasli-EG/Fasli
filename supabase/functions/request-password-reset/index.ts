@@ -82,16 +82,41 @@ Deno.serve(async (req) => {
     if (insertError) return jsonResponse({ success: false, message: "⚠️ حدث خطأ غير متوقع، حاول مرة أخرى" }, 500);
 
     const resetLink = `https://fasli-eg.github.io/Fasli/login.html?resetToken=${rawToken}`;
-    // ✅ الرابط لازم يظهر كنص واضح في الاتنين (مش زرار HTML بس) — عشان النسخة النصية
-    // العادية تفضل فيها الرابط، وعشان يقل احتمال فلاتر السبام (تصميم بسيط بلا تنسيق مبالغ فيه)
     const greeting = row.name ? `مرحباً ${row.name}،` : "مرحباً،";
-    const plainText = `${greeting}\n\nوصلنا طلب لاسترجاع كلمة المرور بتاعة حسابك في فَصلي.\nافتح الرابط ده لتحديد كلمة مرور جديدة (صالح لمدة ساعة واحدة بس):\n\n${resetLink}\n\nلو معملتش الطلب ده، تقدر تتجاهل الإيميل ده بأمان — حسابك في أمان.`;
-    const html = `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1C33;line-height:1.8;">
-      <p>${greeting}</p>
-      <p>وصلنا طلب لاسترجاع كلمة المرور بتاعة حسابك في فَصلي. افتح الرابط ده لتحديد كلمة مرور جديدة (صالح لمدة ساعة واحدة بس):</p>
-      <p><a href="${resetLink}">${resetLink}</a></p>
-      <p style="color:#6B7280;font-size:13px;">لو معملتش الطلب ده، تقدر تتجاهل الإيميل ده بأمان — حسابك في أمان.</p>
-    </div>`;
+    // ✅ الرابط لازم يظهر كنص واضح في نسخة الـplain-text مش بس جوه زرار HTML — أي عميل
+    // إيميل بيعرض النسخة النصية العادية (أو ما بيعرفش يرندر الـHTML) يفضل شايف الرابط كامل
+    const plainText = `${greeting}\n\nوصلنا طلب لاسترجاع كلمة المرور بتاعة حسابك في فَصلي.\nافتح الرابط ده لتحديد كلمة مرور جديدة (صالح لمدة ساعة واحدة بس):\n\n${resetLink}\n\nلو معملتش الطلب ده، تقدر تتجاهل الإيميل ده بأمان — حسابك في أمان.\n\n—\nفَصلي`;
+    const html = `
+<div dir="rtl" style="background:#F3F4F6;padding:32px 16px;font-family:Arial,Tahoma,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E7EB;">
+    <tr>
+      <td style="background:#0B1C33;padding:22px 32px;text-align:center;">
+        <span style="color:#F2B705;font-size:20px;font-weight:800;">فَصلي</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;">
+        <p style="margin:0 0 16px;font-size:16px;color:#0B1C33;font-weight:700;">${greeting}</p>
+        <p style="margin:0 0 24px;font-size:14.5px;color:#374151;line-height:1.8;">وصلنا طلب لاسترجاع كلمة المرور بتاعة حسابك في فَصلي. اضغط على الزرار ده لتحديد كلمة مرور جديدة — الرابط صالح لمدة ساعة واحدة بس.</p>
+        <table role="presentation" align="center" style="margin:0 auto 22px;">
+          <tr>
+            <td style="border-radius:10px;background:#F2B705;">
+              <a href="${resetLink}" style="display:inline-block;padding:14px 34px;font-size:15px;font-weight:700;color:#0B1C33;text-decoration:none;">تحديد كلمة مرور جديدة</a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:0 0 6px;font-size:12px;color:#9CA3AF;">لو الزرار ما اشتغلش، انسخ الرابط ده والصقه في المتصفح:</p>
+        <p style="margin:0 0 24px;font-size:12px;word-break:break-all;"><a href="${resetLink}" style="color:#0E8074;">${resetLink}</a></p>
+        <p style="margin:0;font-size:12.5px;color:#9CA3AF;line-height:1.7;">لو معملتش الطلب ده، تقدر تتجاهل الإيميل ده بأمان — حسابك في أمان ومفيش حاجة اتغيّرت.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#F9FAFB;padding:14px 32px;text-align:center;border-top:1px solid #E5E7EB;">
+        <span style="font-size:11px;color:#9CA3AF;">فَصلي — نظام إدارة السناتر والدروس الخصوصية</span>
+      </td>
+    </tr>
+  </table>
+</div>`;
     try {
       await sendEmail({ to: row.recovery_email, subject: "استرجاع كلمة المرور — فَصلي", text: plainText, html });
     } catch (e) {
