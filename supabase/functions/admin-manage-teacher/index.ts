@@ -202,6 +202,9 @@ async function handleDelete(supabase: any, body: any) {
   await supabase.from("notifications").delete().eq("teacher_id", clientId);
   await supabase.from("push_tokens").delete().eq("recipient_type", "teacher").eq("recipient_id", clientId);
   await supabase.from("activity_logs").delete().eq("teacher_id", clientId);
+  // ✅ conversation_messages مفيهاش أي foreign key خالص (عمود teacher_id نص عادي) — لازم
+  // تُمسح هنا صراحةً، مفيش cascade على مستوى القاعدة يعملها لوحده
+  await supabase.from("conversation_messages").delete().eq("teacher_id", clientId);
 
   const { error } = await supabase.from("teachers").delete().eq("client_id", clientId);
   if (error) {
