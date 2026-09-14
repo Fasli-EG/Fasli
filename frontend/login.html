@@ -323,6 +323,11 @@
         🔒 الدخول بالبصمة أو الوجه
       </button>
 
+      <button type="button" id="googleSignInBtn" onclick="handleGoogleSignIn()" style="width:100%;margin-top:10px;padding:14px;border-radius:12px;border:2px solid #4285F4;background:#fff;color:#4285F4;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        🔵 الدخول بحساب جوجل
+      </button>
+      <p style="text-align:center;font-size:12.5px;color:#6B7280;margin-top:6px;">نسيت كلمة المرور؟ لو حسابك مربوط بجوجل من قبل، تقدر تدخل بيه مباشرة من غير ما تكتبها</p>
+
       <div id="message" class="message"></div>
 
       <p class="foot-note">بتسجيل الدخول أنت توافق على استخدام النظام لإدارة بيانات فصلك</p>
@@ -963,6 +968,48 @@
     } finally {
       setLoading(false);
     }
+  }
+
+  // ============================================
+  // الدخول بحساب جوجل — بديل لنسيان كلمة المرور لمن ربط حسابه بجوجل من قبل من صفحة الإعدادات
+  // ============================================
+  async function handleGoogleSignIn() {
+    hideMessage();
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname },
+    });
+    if (error) showMessage('⚠️ ' + error.message, 'error');
+    // ✅ لو نجح، المتصفح بيتحوّل تلقائياً لجوجل — استكمال الدخول بعد الرجوع بيحصل في
+    // المستمع onAuthStateChange تحت (isOAuthReturn)
+  }
+
+  // ✅ الصفحة دي ممكن ترجع من تحويلة جوجل (بعد الضغط على "الدخول بحساب جوجل" فوق) — لو كده،
+  // supabaseClient (اللي عامل persistSession/detectSessionInUrl افتراضيًا) هيعالج الرابط
+  // بنفسه ويطلق SIGNED_IN؛ إحنا بس محتاجين نكمل التوجيه حسب دور الحساب زي أي دخول عادي.
+  // الفحص ده لازم يحصل قبل ما Supabase ينضّف الرابط، فبنسجّله فورًا من غير ما ننتظر أي حاجة.
+  const isOAuthReturn = window.location.hash.includes('access_token=')
+    || new URLSearchParams(window.location.search).has('code');
+  if (isOAuthReturn) {
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (!(event === 'SIGNED_IN' || event === 'INITIAL_SESSION') || !session) return;
+      const meta = session.user?.app_metadata || {};
+      if (!meta.role) {
+        showMessage('⚠️ حساب جوجل ده مش مربوط بأي حساب في فَصلي بعد — سجّل دخولك بالطريقة العادية الأول واربطه من إعدادات حسابك', 'error');
+        return;
+      }
+      await saveAuth('jwtToken', session.access_token);
+      await saveAuth('refreshToken', session.refresh_token);
+
+      let identifier;
+      if (meta.role === 'parent') identifier = meta.phone;
+      else if (meta.role === 'student') identifier = meta.sub;
+      else if (meta.role === 'teacher') identifier = meta.clientId;
+      else identifier = meta.username || meta.sub;
+
+      showMessage('تم تسجيل الدخول بنجاح', 'success');
+      setTimeout(() => redirectUser(meta.role, identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', ''), 600);
+    });
   }
 
   // ============================================

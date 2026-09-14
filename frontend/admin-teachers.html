@@ -818,6 +818,12 @@
     </div>
 
     <div class="card" style="margin-top:24px;">
+      <h2>🔗 ربط حساب جوجل</h2>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:14px;">اربط حسابك بجوجل عشان تدخل بضغطة واحدة، وتقدر تسترجع حسابك لو نسيت كلمة المرور.</p>
+      <div id="adminGoogleLinkManager"></div>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
       <h2>🔒 الدخول بالبصمة/الوجه</h2>
       <p style="color:var(--muted-text);font-size:13px;margin-bottom:14px;">الأجهزة المسجّلة للدخول ببصمتك أو وجهك بدل كلمة المرور — تقدر تضيف أو تحذف أي جهاز.</p>
       <div id="adminPasskeyManager"></div>
@@ -1409,7 +1415,7 @@
       document.getElementById('tabBtnSettings').classList.toggle('active', tab === 'settings');
       document.getElementById('tabBtnProfile').classList.toggle('active', tab === 'profile');
       if (tab === 'settings') loadSystemSettings();
-      if (tab === 'profile') { loadAdminProfile(); loadSystemSettings(); window.FasliWebauthn?.renderManager('adminPasskeyManager'); }
+      if (tab === 'profile') { loadAdminProfile(); loadSystemSettings(); window.FasliWebauthn?.renderManager('adminPasskeyManager'); window.FasliGoogleLink?.renderManager('adminGoogleLinkManager'); }
       if (tab === 'cards') initCardsTab();
     }
 
@@ -2536,7 +2542,7 @@
   </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="session-refresh.js?v=5"></script>
-<script src="google-link.js?v=6"></script>
+<script src="google-link.js?v=7"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <script src="webauthn.js?v=4"></script>
 <script src="branding.js?v=3"></script>
