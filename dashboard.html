@@ -20,7 +20,7 @@
 
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
-    <script src="layout.js?v=5"></script>
+    <script src="layout.js?v=6"></script>
     <script>renderShell({active:'home'});</script>
 
     <div class="main-area">
@@ -3111,6 +3111,7 @@ function openResetConfirm() {
 
   overlay.innerHTML = `
     <div class="reset-modal-box">
+      <button class="reset-modal-close" onclick="closeResetModal()" aria-label="إغلاق">&times;</button>
       <div class="modal-icon"><i class="fas fa-exclamation-circle"></i></div>
       <h3>⚠️ إعادة تهيئة النظام</h3>
       <p>حدّد البيانات اللي عايز تحذفها بس — مش لازم تحذف كل حاجة (مثلاً لو العام الدراسي انتهى بس الطلاب مكملين سنة جديدة، سيب "الطلاب أنفسهم" من غير تحديد).</p>
