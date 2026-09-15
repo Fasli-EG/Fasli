@@ -333,6 +333,9 @@ Deno.serve(async (req) => {
     }
 
     const forceChange = user.must_change_password || false;
+    // ✅ إيميل الاسترجاع الإجباري للحسابات الجديدة (الحسابات القديمة قبل هذا التحديث اتحسبت
+    // "متوافقة قديمًا" وقت الترحيل، فمش بتتأثر) — بيتطلب في كل تسجيل دخول لحد ما يتأكد
+    const needsRecoveryEmail = user.recovery_email_verified === false;
 
     const responseData: any = { name: user.name };
     if (role === "teacher") {
@@ -400,6 +403,7 @@ Deno.serve(async (req) => {
         message: "✅ تم تسجيل الدخول بنجاح",
         role,
         forceChange,
+        needsRecoveryEmail,
         licenseExpired,
         licenseReason,
         contactWhatsapp,

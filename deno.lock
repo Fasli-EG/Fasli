@@ -1,6 +1,7 @@
 {
   "version": "5",
   "remote": {
+    "https://deno.land/std@0.173.0/encoding/base64.ts": "7de04c2f8aeeb41453b09b186480be90f2ff357613b988e99fabb91d2eeceba1",
     "https://deno.land/std@0.208.0/assert/_constants.ts": "8a9da298c26750b28b326b297316cdde860bc237533b07e1337c021379e6b2a9",
     "https://deno.land/std@0.208.0/assert/_diff.ts": "58e1461cc61d8eb1eacbf2a010932bf6a05b79344b02ca38095f9b805795dc48",
     "https://deno.land/std@0.208.0/assert/_format.ts": "a69126e8a469009adf4cf2a50af889aca364c349797e63174884a52ff75cf4c7",
@@ -32,12 +33,30 @@
     "https://deno.land/std@0.208.0/assert/mod.ts": "37c49a26aae2b254bbe25723434dc28cd7532e444cf0b481a97c045d110ec085",
     "https://deno.land/std@0.208.0/assert/unimplemented.ts": "d56fbeecb1f108331a380f72e3e010a1f161baa6956fd0f7cf3e095ae1a4c75a",
     "https://deno.land/std@0.208.0/assert/unreachable.ts": "4600dc0baf7d9c15a7f7d234f00c23bca8f3eba8b140286aaca7aa998cf9a536",
-    "https://deno.land/std@0.208.0/fmt/colors.ts": "34b3f77432925eb72cf0bfb351616949746768620b8e5ead66da532f93d10ba2"
+    "https://deno.land/std@0.208.0/fmt/colors.ts": "34b3f77432925eb72cf0bfb351616949746768620b8e5ead66da532f93d10ba2",
+    "https://deno.land/x/denomailer@1.6.0/client/basic/QUE.ts": "5af1dfcc5814bf4542f098908ac1fdd8a1a1c2b1597138a121c95eaa791315d0",
+    "https://deno.land/x/denomailer@1.6.0/client/basic/client.ts": "462e4db45ae218647812ceae720d55ea33e0e928f9138fee9da5913cbb1e20f9",
+    "https://deno.land/x/denomailer@1.6.0/client/basic/connection.ts": "68de68d7551d8303629905c2b7581cb09b45646e530ce93a5786ca1aba61055c",
+    "https://deno.land/x/denomailer@1.6.0/client/basic/transforms.ts": "e630a23d24e9b397e231ae8796c0a0080770ac6f5ab9bffc105d3717706e62c9",
+    "https://deno.land/x/denomailer@1.6.0/client/mod.ts": "8ec4c25d9586f83f8629768311a077eaf03b1490dcb872030ba2e27fadb674d8",
+    "https://deno.land/x/denomailer@1.6.0/client/pool.ts": "0466e69ca8959aa85501cc6b30d7f5fd8e43b0a6ac88ecc60dab71081e801bae",
+    "https://deno.land/x/denomailer@1.6.0/client/worker/worker.ts": "a4c3a3e2e1fde0967817ece7c345a565eb44a7312acf8d46ce620d4ff4443b31",
+    "https://deno.land/x/denomailer@1.6.0/config/client.ts": "302f5c18fbb5531b5615613084b86d44120acc210e072f4135e431fa27fc4526",
+    "https://deno.land/x/denomailer@1.6.0/config/mail/attachments.ts": "1f357bddc9d5e813c3f647498db81a165a1a8a7163116c58dc10cf01427fd81e",
+    "https://deno.land/x/denomailer@1.6.0/config/mail/content.ts": "3925d4c3baaabed4e08933159d34b1450e6426b35a5bc323a0666780bef20192",
+    "https://deno.land/x/denomailer@1.6.0/config/mail/email.ts": "bb0ca104bf9cb54af6613a04b3f8cb05290f4fb012e7113f1d050cab10226a7c",
+    "https://deno.land/x/denomailer@1.6.0/config/mail/encoding.ts": "0bc5983ada3b902333925cdca225f8ea5e28fffbc2f1bd2b0ccb9a423f6f7fcc",
+    "https://deno.land/x/denomailer@1.6.0/config/mail/headers.ts": "ce94874beb5a1a7248b5b91bf1ae3b3aed2d4c0541f3f448f2bbfad6c8f570ee",
+    "https://deno.land/x/denomailer@1.6.0/config/mail/mod.ts": "a7fafa3386a45a585d7983d816b09ddc28b2f2b84097a614f1e38685b1f62868",
+    "https://deno.land/x/denomailer@1.6.0/deps.ts": "12bef188bb2a490fedc82ac1889f3d438e8a15887c423b045fee532b31a43102",
+    "https://deno.land/x/denomailer@1.6.0/mod.ts": "71a197dff098194ab53691abd3c9d22a276ef04e1382eb85f5632dbcb5a83bf3",
+    "https://esm.sh/@supabase/supabase-js@2.38.4": "039569070c2e83c292b347c39879a10e76aac6079c166f2e2677453a7799e933"
   },
   "workspace": {
     "packageJson": {
       "dependencies": [
-        "npm:supabase@^2.114.0"
+        "npm:supabase@^2.114.0",
+        "npm:vite@^8.3.0"
       ]
     }
   }
