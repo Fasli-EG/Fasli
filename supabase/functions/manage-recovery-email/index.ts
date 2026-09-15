@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
       if (rateLimit.blocked) return jsonResponse({ success: false, message: rateLimit.message }, 429);
 
       const { data: codeRow } = await supabase.from("recovery_email_codes")
-        .select("id, code_hash, expires_at").eq("role", role).eq("identifier", value)
+        .select("id, email, code_hash, expires_at").eq("role", role).eq("identifier", value)
         .order("created_at", { ascending: false }).limit(1).maybeSingle();
 
       if (!codeRow || new Date(codeRow.expires_at) < new Date()) {
@@ -150,7 +150,11 @@ Deno.serve(async (req) => {
 
       await clearAttempts(rateLimitKey);
       await supabase.from("recovery_email_codes").delete().eq("id", codeRow.id);
-      const { error } = await supabase.from(table).update({ recovery_email_verified: true }).eq(column, value);
+      // ✅ Batch 26: بنفرض الإيميل المحفوظ في الرمز نفسه (مش أي قيمة تانية ممكن تكون اتحطت
+      // في recovery_email بعدين عن طريق action "set") — لو المستخدم غيّر الإيميل بعد ما طلب
+      // الرمز وقبل ما يأكده، الرمز القديم كان ممكن يأكد إيميل تاني لسه معملوش له تحقق فعلي
+      const { error } = await supabase.from(table)
+        .update({ recovery_email: codeRow.email, recovery_email_verified: true }).eq(column, value);
       if (error) return jsonResponse({ success: false, message: error.message }, 500);
 
       return jsonResponse({ success: true, message: "✅ تم تأكيد إيميل الاسترجاع" });

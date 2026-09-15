@@ -27,45 +27,6 @@ function authErrorResponse(error: unknown) {
 }
 
 // ============================================
-// هاش وتحقق كلمات المرور (لازمة لـ restore بس، لكن مفيش ضرر من وجودها في export كمان)
-// ============================================
-const ITERATIONS = 100_000;
-function toHex(bytes: Uint8Array): string { return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join(""); }
-function fromHex(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
-  return bytes;
-}
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, keyMaterial, 256);
-  return new Uint8Array(bits);
-}
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-async function legacySha256(text: string): Promise<string> {
-  const data = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return toHex(new Uint8Array(hashBuffer));
-}
-async function verifyPassword(password: string, storedHash: string): Promise<{ valid: boolean }> {
-  if (storedHash.startsWith("pbkdf2$")) {
-    const parts = storedHash.split("$");
-    if (parts.length !== 4) return { valid: false };
-    const [, iterStr, saltHex, hashHex] = parts;
-    const salt = fromHex(saltHex);
-    const computed = await pbkdf2(password, salt, parseInt(iterStr, 10));
-    return { valid: timingSafeEqual(toHex(computed), hashHex) };
-  }
-  const legacy = await legacySha256(password);
-  return { valid: timingSafeEqual(legacy, storedHash) };
-}
-
-// ============================================
 // حماية من التخمين المتكرر (نفس منطق _shared/rateLimit.ts الأصلي)
 // ============================================
 async function checkRateLimit(supabase: any, key: string): Promise<{ blocked: boolean; message?: string }> {
@@ -111,7 +72,7 @@ async function handleExport(supabase: any, payload: TokenPayload, body: any) {
     attendanceRes, assistantsRes, attendanceSessionsRes, expensesRes, instructorNamesRes,
     educationLevelsRes, paymentTitlesRes, examTitlesRes, onlineExamsRes, studentGroupLinksRes,
     studentTeacherLinksRes, conversationMessagesRes, systemCardsRes, cardActionModeRes, notificationsRes,
-    registrationRequestsRes,
+    registrationRequestsRes, paymentReceiptsRes,
   ] = await Promise.all([
     supabase.from("teachers").select("client_id, name, expiry_date, max_students, permissions, contact_whatsapp, contact_phone, phone_visible, whatsapp_visible, conversations_enabled, brand_logo_url, brand_color, electronic_payment_enabled, payment_instapay, payment_wallet, payment_bank_details").eq("client_id", finalClientId).maybeSingle(),
     supabase.from("students").select("*").eq("teacher_id", finalClientId),
@@ -136,6 +97,10 @@ async function handleExport(supabase: any, payload: TokenPayload, body: any) {
     supabase.from("card_action_mode").select("*").eq("teacher_id", finalClientId),
     supabase.from("notifications").select("*").eq("teacher_id", finalClientId),
     supabase.from("registration_requests").select("*").eq("teacher_id", finalClientId),
+    // ✅ Batch 26: بيانات إيصالات الدفع الإلكتروني نفسها بترجع، لكن الصورة المرفوعة في التخزين
+    // مش بترجع (مش هنحط ملف صورة base64 جوه الـJSON) — لو حصل reset بعدها restore، السجل
+    // بيرجع لكن رابط الصورة (receipt_path) ممكن يبقى مكسور لو الملف اتمسح فعليًا
+    supabase.from("payment_receipts").select("*").eq("teacher_id", finalClientId),
   ]);
 
   // بيانات الاختبارات الإلكترونية بترتبط بـ exam_id/attempt_id مش teacher_id مباشرة
@@ -189,6 +154,7 @@ async function handleExport(supabase: any, payload: TokenPayload, body: any) {
     parents: parentsRes.data || [],
     notifications: notificationsRes.data || [],
     registration_requests: registrationRequestsRes.data || [],
+    payment_receipts: paymentReceiptsRes.data || [],
   };
 
   await supabase.from("activity_logs").insert({
@@ -270,6 +236,7 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
   await supabase.from("conversation_messages").delete().eq("teacher_id", finalClientId);
   await supabase.from("notifications").delete().eq("teacher_id", finalClientId);
   await supabase.from("registration_requests").delete().eq("teacher_id", finalClientId);
+  await supabase.from("payment_receipts").delete().eq("teacher_id", finalClientId);
   await supabase.from("student_teacher_links").delete().eq("teacher_id", finalClientId);
   await supabase.from("system_cards").update({ student_uid: null, linked_at: null }).eq("teacher_id", finalClientId);
   if (currentUids.length > 0) {
@@ -452,6 +419,13 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
     const { error } = await supabase.from("registration_requests").insert(remapped);
     if (error) console.error("⚠️ فشل استعادة طلبات التسجيل:", error.message);
     restoredCounts.registration_requests = backup.registration_requests.length;
+  }
+  if (backup.payment_receipts?.length) {
+    // ⚠️ الصورة نفسها (receipt_path) مش متضمّنة في النسخة الاحتياطية — لو الملف اتمسح فعليًا
+    // من التخزين (مثلاً عن طريق إعادة تهيئة اخترت فيها "إيصالات الدفع")، السجل بيرجع بس بدون صورة
+    const { error } = await supabase.from("payment_receipts").insert(clean(backup.payment_receipts));
+    if (error) console.error("⚠️ فشل استعادة إيصالات الدفع الإلكتروني:", error.message);
+    restoredCounts.payment_receipts = backup.payment_receipts.length;
   }
   // ✅ كروت الـ NFC مش بتتحذف/تتعاد إنشاؤها (مخزون فعلي)، بس بنعيد ربطها بالطلاب حسب النسخة
   if (backup.system_cards?.length) {
