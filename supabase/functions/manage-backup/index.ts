@@ -286,7 +286,15 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
   await supabase.from("education_levels").delete().eq("teacher_id", finalClientId);
 
   // 2) إعادة إدراج بيانات النسخة الاحتياطية
-  const clean = (rows: any[]) => (rows || []).map((r: any) => { const { id, ...rest } = r; return rest; });
+  // ✅ Batch 26 (أمان): backup كله جسم الطلب بيتحكم فيه العميل بالكامل — لو سبنا teacher_id
+  // زي ما هو في كل صف، أي مدرس ممكن يصنع نسخة احتياطية وهمية بـteacher_id مدرس تاني ويحقن بيها
+  // بيانات وهمية (طلاب/مدفوعات/رسائل محادثة...) في حساب مش بتاعه. clean() بتفرض teacher_id
+  // الحساب الحقيقي بتاع صاحب التوكن على أي صف فيه العمود ده، بدل ما تثق بالقيمة المُرسلة
+  const clean = (rows: any[]) => (rows || []).map((r: any) => {
+    const { id, ...rest } = r;
+    if (Object.prototype.hasOwnProperty.call(rest, "teacher_id")) rest.teacher_id = finalClientId;
+    return rest;
+  });
   let restoredCounts: Record<string, number> = {};
 
   // ✅ Batch 24 (بند 5): أسماء المدرسين والمراحل التعليمية بيترجع لهم id جديد عند الإدراج،
@@ -312,6 +320,7 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
       const { id, ...rest } = g;
       return {
         ...rest,
+        teacher_id: finalClientId,
         instructor_name_id: g.instructor_name_id ? (instructorIdMap[String(g.instructor_name_id)] ?? null) : null,
         level_id: g.level_id ? (levelIdMap[String(g.level_id)] ?? null) : null,
       };
@@ -326,6 +335,7 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
       // ✅ Batch 25: عمود id عند students هو "generated always as identity" — إدراج قيمة id صريحة
       // من النسخة القديمة كان بيفشل بصمت لكل طالب (خطأ Postgres)، فيرجع "نجح" بدون ما يستعيد أي طالب فعليًا
       const { id, ...studentRest } = student;
+      studentRest.teacher_id = finalClientId;
       const { error } = await supabase.from("students").insert(studentRest);
       if (error) console.error(`⚠️ فشل استعادة الطالب ${student.name || student.uid}:`, error.message);
       else restored++;
@@ -354,7 +364,7 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
   if (backup.book_payments?.length) {
     const remapped = backup.book_payments.map((bp: any) => {
       const { id, ...rest } = bp;
-      return { ...rest, book_id: bp.book_id ? (bookIdMap[String(bp.book_id)] ?? null) : null };
+      return { ...rest, teacher_id: finalClientId, book_id: bp.book_id ? (bookIdMap[String(bp.book_id)] ?? null) : null };
     });
     const { error } = await supabase.from("book_payments").insert(remapped);
     if (error) console.error("⚠️ فشل استعادة سدادات المذكرات:", error.message);
@@ -363,7 +373,7 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
   if (backup.attendance?.length) {
     const remapped = backup.attendance.map((a: any) => {
       const { id, ...rest } = a;
-      return { ...rest, instructor_name_id: a.instructor_name_id ? (instructorIdMap[String(a.instructor_name_id)] ?? null) : null };
+      return { ...rest, teacher_id: finalClientId, instructor_name_id: a.instructor_name_id ? (instructorIdMap[String(a.instructor_name_id)] ?? null) : null };
     });
     const { error } = await supabase.from("attendance").insert(remapped);
     if (error) console.error("⚠️ فشل استعادة الحضور:", error.message);
@@ -372,7 +382,7 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
   if (backup.attendance_sessions?.length) {
     const remapped = backup.attendance_sessions.map((s: any) => {
       const { id, ...rest } = s;
-      return { ...rest, instructor_name_id: s.instructor_name_id ? (instructorIdMap[String(s.instructor_name_id)] ?? null) : null };
+      return { ...rest, teacher_id: finalClientId, instructor_name_id: s.instructor_name_id ? (instructorIdMap[String(s.instructor_name_id)] ?? null) : null };
     });
     const { error } = await supabase.from("attendance_sessions").insert(remapped);
     if (error) console.error("⚠️ فشل استعادة حصص اليوم:", error.message);
@@ -414,9 +424,17 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
     restoredCounts.student_teacher_links = backup.student_teacher_links.length;
   }
   if (backup.parents?.length) {
+    // ✅ Batch 26 (أمان): parents مالهاش teacher_id (المفتاح phone بس) — لازم نتأكد إن الرقم ده
+    // فعلاً بتاع حد من طلاب المدرس اللي بيستعيد النسخة (نفس منطق التصدير الأصلي)، وإلا أي مدرس
+    // كان يقدر يبعت رقم أي حد في النظام ويعدّل حالة حسابه (is_active/must_change_password) أو
+    // حتى auth_user_id/recovery_email لو حطهم في الـJSON. بنقصر التحديث على الحقول دي بالظبط،
+    // نفس الحقول اللي التصدير بيصدّرها أصلاً، من غير أي حقل حساس زيادة
+    const ownedPhones = new Set((backup.students || []).map((s: any) => s.parent_phone).filter(Boolean));
     let restored = 0;
     for (const parent of backup.parents) {
-      const { error } = await supabase.from("parents").upsert(parent, { onConflict: "phone" });
+      if (!parent.phone || !ownedPhones.has(parent.phone)) continue;
+      const safeParent = { phone: parent.phone, name: parent.name, is_active: parent.is_active, must_change_password: parent.must_change_password };
+      const { error } = await supabase.from("parents").upsert(safeParent, { onConflict: "phone" });
       if (!error) restored++;
     }
     restoredCounts.parents = restored;
@@ -429,7 +447,7 @@ async function handleRestore(supabase: any, payload: TokenPayload, body: any) {
   if (backup.registration_requests?.length) {
     const remapped = backup.registration_requests.map((r: any) => {
       const { id, ...rest } = r;
-      return { ...rest, instructor_name_id: r.instructor_name_id ? (instructorIdMap[String(r.instructor_name_id)] ?? null) : null };
+      return { ...rest, teacher_id: finalClientId, instructor_name_id: r.instructor_name_id ? (instructorIdMap[String(r.instructor_name_id)] ?? null) : null };
     });
     const { error } = await supabase.from("registration_requests").insert(remapped);
     if (error) console.error("⚠️ فشل استعادة طلبات التسجيل:", error.message);
