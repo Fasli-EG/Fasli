@@ -17,47 +17,20 @@
     .wifi-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
     .wifi-card { background: white; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); padding: 24px; margin-bottom: 24px; transition: var(--transition); }
     .wifi-card:hover { box-shadow: var(--shadow); }
-    .wifi-card .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-    .wifi-card .card-header .icon { font-size: 32px; }
-    .wifi-card .card-header h3 { font-size: 18px; font-weight: 700; color: var(--gray-800); margin: 0; }
-    .wifi-card .card-header h3 span { color: var(--primary); }
-    .connection-status { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--gray-50); border-radius: var(--radius); margin-bottom: 16px; border: 1px solid var(--gray-200); }
-    .connection-status .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-    .connection-status .dot.connected { background: var(--success); box-shadow: 0 0 12px rgba(34,197,94,0.4); }
-    .connection-status .dot.disconnected { background: var(--danger); box-shadow: 0 0 12px rgba(239,68,68,0.4); }
-    .connection-status .dot.connecting { background: var(--warning); animation: pulse 1s infinite; }
-    .connection-status .status-text { color: var(--gray-600); font-size: 14px; }
-    .config-display { background: var(--gray-50); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; border: 1px solid var(--gray-200); }
-    .config-display .row { display: flex; justify-content: space-between; padding: 6px 0; color: var(--gray-600); font-size: 14px; border-bottom: 1px solid var(--gray-100); }
-    .config-display .row:last-child { border-bottom: none; }
-    .config-display .row .label { color: var(--gray-500); }
-    .config-display .row .value { color: var(--gray-800); font-weight: 500; }
-    .config-display .row .value.empty { color: var(--gray-400); }
     .wifi-form .field { margin-bottom: 16px; }
     .wifi-form .field label { display: block; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; font-size: 13px; }
-    .wifi-form .field label .required { color: var(--danger); }
     .wifi-form .field input, .wifi-form .field textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 14px; font-family: inherit; transition: var(--transition); background: white; color: var(--gray-800); resize: vertical; }
     .wifi-form .field input:focus, .wifi-form .field textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),0.1); }
     .wifi-form .field input::placeholder, .wifi-form .field textarea::placeholder { color: var(--gray-400); }
     .wifi-form .field input:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-group { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-    .btn-group .btn { flex: 1; min-width: 120px; justify-content: center; }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2); border-top: 2px solid white; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-left: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
     .message { margin-top: 16px; padding: 12px 16px; border-radius: var(--radius); font-size: 13px; display: none; text-align: center; }
     .message.success { display: block; background: var(--success-light); color: #166534; border: 1px solid #86efac; }
     .message.error { display: block; background: var(--danger-light); color: #991b1b; border: 1px solid #fca5a5; }
     .message.info { display: block; background: var(--info-light); color: #1e40af; border: 1px solid #93c5fd; }
     .message.warning { display: block; background: var(--warning-light); color: #92400e; border: 1px solid #fcd34d; }
     [data-theme="dark"] .wifi-card { background: var(--gray-100) !important; border-color: var(--gray-200) !important; }
-    [data-theme="dark"] .connection-status { background: var(--gray-200); border-color: var(--gray-300); }
-    [data-theme="dark"] .connection-status .status-text { color: var(--gray-600); }
-    [data-theme="dark"] .config-display { background: var(--gray-200); border-color: var(--gray-300); }
-    [data-theme="dark"] .config-display .row { color: var(--gray-600); border-color: var(--gray-300); }
-    [data-theme="dark"] .config-display .row .label { color: var(--gray-500); }
-    [data-theme="dark"] .config-display .row .value { color: var(--gray-800); }
-    [data-theme="dark"] .config-display .row .value.empty { color: var(--gray-400); }
     [data-theme="dark"] .wifi-form .field input, [data-theme="dark"] .wifi-form .field textarea { background: var(--gray-200); color: var(--gray-800); border-color: var(--gray-300); }
     [data-theme="dark"] .wifi-form .field input::placeholder, [data-theme="dark"] .wifi-form .field textarea::placeholder { color: var(--gray-400); }
     [data-theme="dark"] .wifi-form .field input:focus, [data-theme="dark"] .wifi-form .field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),0.2); }
@@ -65,7 +38,7 @@
     [data-theme="dark"] .message.error { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
     [data-theme="dark"] .message.info { background: rgba(59,130,246,0.15); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
     [data-theme="dark"] .message.warning { background: rgba(245,158,11,0.15); color: #fcd34d; border-color: rgba(245,158,11,0.2); }
-    @media (max-width: 480px) { .wifi-container { padding: 12px; } .wifi-card { padding: 16px; } .btn-group { flex-direction: column; } .btn-group .btn { width: 100%; } }
+    @media (max-width: 480px) { .wifi-container { padding: 12px; } .wifi-card { padding: 16px; } }
   </style>
 </head>
 <body>
@@ -768,6 +741,12 @@ function openResetConfirm() {
         <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
           <input type="checkbox" class="reset-opt" value="conversations"> 💬 المحادثات مع أولياء الأمور
         </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+            <input type="checkbox" class="reset-opt" value="expenses"> 💸 المصروفات
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+            <input type="checkbox" class="reset-opt" value="paymentReceipts"> 🧾 إيصالات الدفع الإلكتروني
+          </label>
       </div>
       <div class="warning-text">
         <i class="fas fa-skull"></i> اللي هتحدده هيتحذف نهائياً، مفيش رجوع بعد كده!
