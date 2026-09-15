@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تأكيد إيميل الاسترجاع - فَصلي</title>
+  <meta name="description" content="تأكيد إيميل الاسترجاع في نظام فَصلي">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B1C33">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+      background: #F7F4EE;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      direction: rtl;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 24px 55px -24px rgba(10,18,32,0.3);
+      max-width: 420px;
+      width: 100%;
+      border-top: 4px solid #F2B705;
+    }
+    .brand-lockup { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 22px; }
+    .brand-lockup img { width: 32px; height: 32px; border-radius: 8px; }
+    .brand-lockup span { font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 19px; color: #0B1C33; }
+    h1 { font-family: 'Cairo', sans-serif; font-weight: 800; text-align: center; color: #0B1C33; margin-bottom: 8px; font-size: 21px; }
+    .subtitle { text-align: center; color: #718096; font-size: 14px; margin-bottom: 24px; line-height: 1.7; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-weight: 500; color: #2d3748; margin-bottom: 6px; font-size: 14px; }
+    .field input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .field input:focus { outline: none; border-color: #F2B705; box-shadow: 0 0 0 3px rgba(242,183,5,0.15); }
+    .field input.code-input {
+      text-align: center;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 10px;
+      font-family: 'Cairo', sans-serif;
+    }
+    .btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(155deg, #F2B705 0%, #B8890A 100%);
+      color: #0B1C33;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: filter 0.15s ease, transform .1s ease;
+      font-family: 'Cairo', sans-serif;
+      box-shadow: 0 14px 30px -14px rgba(184,137,10,0.5);
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-link {
+      width: 100%;
+      background: none;
+      border: none;
+      color: #3D7DD8;
+      font-size: 13.5px;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 10px;
+      text-align: center;
+    }
+    .btn-link:disabled { color: #a0aec0; cursor: not-allowed; }
+    .message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+    .message.success { display: block; background: #E7F8F0; color: #1FAA6D; border: 1px solid #B8DFCB; }
+    .message.error { display: block; background: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; }
+    .message.info { display: block; background: #E7F1FC; color: #3D7DD8; border: 1px solid #cfe3fb; }
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #FEF3E2;
+      color: #B8890A;
+      margin-bottom: 16px;
+    }
+    .step-hint { font-size: 12.5px; color: #a0aec0; margin-bottom: 18px; text-align: center; line-height: 1.7; }
+    .step-hint b { color: #4a5568; }
+    .back-link { text-align: center; margin-top: 10px; }
+    .back-link a { color: #a0aec0; text-decoration: none; font-size: 13px; }
+    .back-link a:hover { text-decoration: underline; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand-lockup"><img src="assets/logo-icon.svg" alt="شعار فَصلي"><span>فَصلي</span></div>
+    <div style="text-align:center;"><span class="badge">🔒 خطوة إجبارية لمرة واحدة</span></div>
+    <h1 id="pageTitle">📧 تأكيد إيميل الاسترجاع</h1>
+    <p class="subtitle">إيميل الاسترجاع بيستخدم لاسترجاع كلمة المرور لو نسيتها، فلازم تسجّله وتأكده قبل ما تكمل استخدام حسابك.</p>
+
+    <!-- الخطوة 1: إدخال الإيميل -->
+    <form id="emailForm" onsubmit="handleSendCode(event)">
+      <div class="field">
+        <label>📧 إيميل الاسترجاع</label>
+        <input type="email" id="recoveryEmailInput" placeholder="example@gmail.com" required autocomplete="email">
+      </div>
+      <button type="submit" class="btn" id="sendCodeBtn">📨 إرسال رمز التأكيد</button>
+    </form>
+
+    <!-- الخطوة 2: إدخال الرمز -->
+    <form id="codeForm" onsubmit="handleVerifyCode(event)" hidden>
+      <p class="step-hint">بعتنا رمز مكوّن من 6 أرقام على <b id="codeEmailLabel"></b></p>
+      <div class="field">
+        <label>🔢 رمز التأكيد</label>
+        <input type="text" id="codeInput" class="code-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="------" required autocomplete="one-time-code">
+      </div>
+      <button type="submit" class="btn" id="verifyBtn">✅ تأكيد</button>
+      <button type="button" class="btn-link" id="resendBtn" onclick="handleResend()">إعادة إرسال الرمز</button>
+      <button type="button" class="btn-link" onclick="showEmailStep()">✏️ تغيير الإيميل</button>
+    </form>
+
+    <div id="message" class="message"></div>
+
+    <div class="back-link"><a href="#" onclick="handleLogout(event)">🚪 تسجيل خروج (مش أنا؟)</a></div>
+  </div>
+
+  <script>
+    const PROJECT_URL = 'https://yxkyxxzcnxpxefodfxnl.supabase.co';
+
+    const messageDiv = document.getElementById('message');
+    const emailForm = document.getElementById('emailForm');
+    const codeForm = document.getElementById('codeForm');
+    let currentEmail = '';
+    let resendCooldownTimer = null;
+
+    function showMessage(text, type = 'info') {
+      messageDiv.textContent = text;
+      messageDiv.className = 'message ' + type;
+    }
+    function hideMessage() {
+      messageDiv.className = 'message';
+      messageDiv.textContent = '';
+    }
+
+    function getToken() { return sessionStorage.getItem('jwtToken'); }
+
+    function handleLogout(event) {
+      event.preventDefault();
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    // ============================================
+    // تجهيز الصفحة
+    // ============================================
+    let pending = null;
+    window.onload = async function () {
+      const token = getToken();
+      const raw = sessionStorage.getItem('tempRecoveryLoginData');
+      if (!token || !raw) {
+        window.location.href = 'login.html';
+        return;
+      }
+      try { pending = JSON.parse(raw); } catch (e) { window.location.href = 'login.html'; return; }
+
+      // ✅ لو الحساب سبق واستخدم "sendCode" وقفل الصفحة قبل ما يأكد، منعاودش نطلب منه
+      // الإيميل تاني — نروح مباشرة لخطوة إدخال الرمز
+      try {
+        const res = await fetch(PROJECT_URL + '/functions/v1/manage-recovery-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ action: 'get' })
+        });
+        const data = await res.json();
+        if (data.success && data.recoveryEmail && !data.recoveryEmailVerified) {
+          currentEmail = data.recoveryEmail;
+          showCodeStep();
+        }
+      } catch (e) { /* تجاهل — يبدأ من خطوة الإيميل عادي */ }
+    };
+
+    function showEmailStep() {
+      hideMessage();
+      codeForm.hidden = true;
+      emailForm.hidden = false;
+      document.getElementById('recoveryEmailInput').value = currentEmail || '';
+    }
+    function showCodeStep() {
+      hideMessage();
+      emailForm.hidden = true;
+      codeForm.hidden = false;
+      document.getElementById('codeEmailLabel').textContent = currentEmail;
+      document.getElementById('codeInput').value = '';
+      document.getElementById('codeInput').focus();
+    }
+
+    function startResendCooldown(seconds) {
+      const btn = document.getElementById('resendBtn');
+      btn.disabled = true;
+      let remaining = seconds;
+      btn.textContent = `إعادة إرسال الرمز (${remaining})`;
+      clearInterval(resendCooldownTimer);
+      resendCooldownTimer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(resendCooldownTimer);
+          btn.disabled = false;
+          btn.textContent = 'إعادة إرسال الرمز';
+        } else {
+          btn.textContent = `إعادة إرسال الرمز (${remaining})`;
+        }
+      }, 1000);
+    }
+
+    // ============================================
+    // الخطوة 1: إرسال رمز التأكيد
+    // ============================================
+    async function handleSendCode(event) {
+      event.preventDefault();
+      hideMessage();
+      const email = document.getElementById('recoveryEmailInput').value.trim();
+      const btn = document.getElementById('sendCodeBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري الإرسال...';
+      try {
+        const res = await fetch(PROJECT_URL + '/functions/v1/manage-recovery-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+          body: JSON.stringify({ action: 'sendCode', recoveryEmail: email })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentEmail = email;
+          showMessage(data.message, 'success');
+          showCodeStep();
+          startResendCooldown(45);
+        } else {
+          showMessage('❌ ' + data.message, 'error');
+        }
+      } catch (error) {
+        showMessage('❌ حدث خطأ في الاتصال بالخادم: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📨 إرسال رمز التأكيد';
+      }
+    }
+
+    async function handleResend() {
+      hideMessage();
+      const btn = document.getElementById('resendBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch(PROJECT_URL + '/functions/v1/manage-recovery-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+          body: JSON.stringify({ action: 'sendCode', recoveryEmail: currentEmail })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showMessage(data.message, 'success');
+          startResendCooldown(45);
+        } else {
+          showMessage('❌ ' + data.message, 'error');
+          btn.disabled = false;
+          btn.textContent = 'إعادة إرسال الرمز';
+        }
+      } catch (error) {
+        showMessage('❌ حدث خطأ في الاتصال بالخادم: ' + error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'إعادة إرسال الرمز';
+      }
+    }
+
+    // ============================================
+    // الخطوة 2: تأكيد الرمز
+    // ============================================
+    async function handleVerifyCode(event) {
+      event.preventDefault();
+      hideMessage();
+      const code = document.getElementById('codeInput').value.trim();
+      const btn = document.getElementById('verifyBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري التأكيد...';
+      try {
+        const res = await fetch(PROJECT_URL + '/functions/v1/manage-recovery-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+          body: JSON.stringify({ action: 'verifyCode', code })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showMessage('✅ تم تأكيد الإيميل، جاري تجهيز حسابك...', 'success');
+          setTimeout(applySessionAndRedirect, 900);
+        } else {
+          showMessage('❌ ' + data.message, 'error');
+        }
+      } catch (error) {
+        showMessage('❌ حدث خطأ في الاتصال بالخادم: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✅ تأكيد';
+      }
+    }
+
+    // ============================================
+    // بعد التأكيد: نطبّق بيانات الجلسة اللي جهّزها login.html/change-password.html
+    // ونوجّه لنفس اللوحة اللي كان المفروض يدخلها لولا الاعتراض المؤقت — نفس منطق
+    // redirectUser() في login.html بالظبط، بس من غير باسورد (مش متاح لنا هنا)
+    // ============================================
+    async function saveAuth(key, value, rememberMe) {
+      value = String(value);
+      sessionStorage.setItem(key, value);
+      if (rememberMe) {
+        localStorage.setItem(key, value);
+        localStorage.setItem('fasliRememberMe', 'true');
+        const Preferences = window.Capacitor?.Plugins?.Preferences;
+        if (Preferences) await Preferences.set({ key, value }).catch(() => {});
+        if (window.electronStore) await window.electronStore.set(key, value).catch(() => {});
+      }
+    }
+
+    async function applySessionAndRedirect() {
+      const { role, username, data, rememberMe } = pending;
+      const d = data || {};
+      sessionStorage.removeItem('tempRecoveryLoginData');
+
+      if (role === 'teacher') {
+        await saveAuth('clientId', username, rememberMe);
+        await saveAuth('teacherName', d.name || 'مدرس', rememberMe);
+        await saveAuth('isAdmin', d.isAdmin ? 'true' : 'false', rememberMe);
+        await saveAuth('userRole', 'teacher', rememberMe);
+        await saveAuth('brandLogoUrl', d.brandLogoUrl || '', rememberMe);
+        await saveAuth('brandColor', d.brandColor || '', rememberMe);
+        await saveAuth('isCenter', d.isCenter ? 'true' : 'false', rememberMe);
+        window.location.href = (username === 'master_admin') ? 'admin-teachers.html' : 'dashboard.html';
+      } else if (role === 'assistant') {
+        await saveAuth('assistantId', String(d.id || username), rememberMe);
+        await saveAuth('assistantName', d.name || 'مساعد', rememberMe);
+        await saveAuth('assistantPermissions', JSON.stringify(d.permissions || {}), rememberMe);
+        await saveAuth('teacherClientId', d.teacherId || '', rememberMe);
+        await saveAuth('teacherName', d.teacherName || 'مدرس', rememberMe);
+        await saveAuth('userRole', 'assistant', rememberMe);
+        await saveAuth('brandLogoUrl', d.brandLogoUrl || '', rememberMe);
+        await saveAuth('brandColor', d.brandColor || '', rememberMe);
+        await saveAuth('isCenter', d.isCenter ? 'true' : 'false', rememberMe);
+        window.location.href = 'assistant-dashboard.html';
+      } else if (role === 'parent') {
+        await saveAuth('parentPhone', username, rememberMe);
+        await saveAuth('parentName', d.name || 'ولي أمر', rememberMe);
+        await saveAuth('userRole', 'parent', rememberMe);
+        window.location.href = 'parent-dashboard.html';
+      } else {
+        await saveAuth('studentUid', username, rememberMe);
+        await saveAuth('studentName', d.name || 'طالب', rememberMe);
+        await saveAuth('studentGroup', d.groupName || '', rememberMe);
+        await saveAuth('studentTeacherId', d.teacherId || '', rememberMe);
+        await saveAuth('userRole', 'student', rememberMe);
+        window.location.href = 'student-portal.html';
+      }
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

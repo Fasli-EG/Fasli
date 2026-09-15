@@ -705,7 +705,7 @@
     } catch (e) { /* تجاهل */ }
   }
 
-  async function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience) {
+  async function redirectUser(role, username, data, forceChange, licenseExpired, licenseReason, contactWhatsapp, contactPhone, contactAudience, needsRecoveryEmail) {
     // ملحوظة: تسجيل جهاز الإشعارات بيحصل في صفحة اللوحة نفسها بعد التنقل (dashboard.html/assistant-dashboard.html/parent-dashboard.html)
     // مش هنا، لأن الصفحة دي هتتنقل فوراً وأي كود async هنا ممكن ينقطع نص الطريق قبل ما يخلص
     if (forceChange) {
@@ -734,6 +734,17 @@
       sessionStorage.setItem('lockPhone', contactPhone || '');
       sessionStorage.setItem('lockAudience', contactAudience || 'admin');
       window.location.href = 'license-locked.html';
+      return;
+    }
+
+    // ✅ إيميل الاسترجاع الإجباري لسه معملوش تأكيد — بنوجّه لصفحة التأكيد قبل أي استخدام عادي
+    // للنظام، وبنحفظ بيانات الدخول اللي جهّزناها عشان الصفحة دي تطبّقها بنفسها بعد التأكيد
+    // (من غير ما نحتاج الباسورد تاني، اللي مش متاح لنا هنا)
+    if (needsRecoveryEmail) {
+      sessionStorage.setItem('tempRecoveryLoginData', JSON.stringify({
+        role, username, data, rememberMe: !!document.getElementById('rememberMe')?.checked,
+      }));
+      window.location.href = 'verify-recovery-email.html?role=' + encodeURIComponent(role);
       return;
     }
 
@@ -827,7 +838,7 @@
         await saveAuth('jwtToken', authData.session.access_token);
         await saveAuth('refreshToken', authData.session.refresh_token);
         showMessage('تم تسجيل الدخول بنجاح', 'success');
-        setTimeout(() => redirectUser(meta.role || 'teacher', meta.clientId || username, { name: meta.name }, false, false, '', '', '', ''), 900);
+        setTimeout(() => redirectUser(meta.role || 'teacher', meta.clientId || username, { name: meta.name }, false, false, '', '', '', '', false), 900);
       } catch (error) {
         console.error('❌ خطأ:', error);
         showMessage('حدث خطأ في الاتصال بالخادم: ' + error.message, 'error');
@@ -849,7 +860,7 @@
         if (data.token) saveAuth('jwtToken', data.token);
         if (data.refreshToken) saveAuth('refreshToken', data.refreshToken);
         showMessage(data.message, 'success');
-        setTimeout(() => redirectUser(data.role, username, data.data, data.forceChange, data.licenseExpired, data.licenseReason, data.contactWhatsapp, data.contactPhone, data.contactAudience), 900);
+        setTimeout(() => redirectUser(data.role, username, data.data, data.forceChange, data.licenseExpired, data.licenseReason, data.contactWhatsapp, data.contactPhone, data.contactAudience, data.needsRecoveryEmail), 900);
       } else {
         const errorMsg = data.message || '';
         if (errorMsg.includes('غير موجود') || errorMsg.includes('لا يوجد') || errorMsg.includes('not found') || errorMsg.includes('غير مسجّل')) {
@@ -914,7 +925,7 @@
       else if (meta.role === 'teacher') identifier = meta.clientId;
       else identifier = meta.username || meta.sub;
 
-      setTimeout(() => redirectUser(meta.role || 'teacher', identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', ''), 900);
+      setTimeout(() => redirectUser(meta.role || 'teacher', identifier, { name: meta.name, id: meta.sub }, false, false, '', '', '', '', false), 900);
     } catch (error) {
       if (!(error && error.name === 'NotAllowedError')) {
         showMessage('⚠️ ' + (error && error.message ? error.message : 'تعذّر الدخول السريع'), 'error');
