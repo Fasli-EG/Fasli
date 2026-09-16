@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=53">
+  <link rel="stylesheet" href="style.css?v=54">
 </head>
 <body>
   <div class="app-shell">
@@ -688,6 +688,7 @@
             if (canEditStudents) menuItems += `<button onclick="closeAllActionMenus();openCardLinkModal('${s.uid}', '${escapeAttr(s.name)}')"><i class="fas fa-id-card"></i> ربط كارت RFID</button>`;
             if (canResetParentPassword) menuItems += `<button onclick="closeAllActionMenus();resetParentPassword('${s.uid}', '${escapeAttr(s.name)}')"><i class="fas fa-key"></i> كلمة مرور ولي الأمر</button>`;
             if (canResetParentPassword) menuItems += `<button onclick="closeAllActionMenus();resetStudentPassword('${s.uid}', '${escapeAttr(s.name)}')"><i class="fas fa-key"></i> كلمة مرور الطالب</button>`;
+            if (canDeleteStudents) menuItems += `<button class="danger" onclick="closeAllActionMenus();deleteStudentDirectly('${s.id}', '${escapeAttr(s.name)}')"><i class="fas fa-trash"></i> حذف نهائي</button>`;
             if (canDeleteStudents) menuItems += `<button class="danger" onclick="closeAllActionMenus();archiveStudent('${s.id}', '${escapeAttr(s.name)}')"><i class="fas fa-box-archive"></i> أرشفة</button>`;
 
             let actionsHtml = `<div class="row-actions">${primaryHtml}`;
@@ -1166,6 +1167,22 @@
         console.error('❌ خطأ في إعادة تعيين كلمة مرور الطالب:', error);
         showToast('❌ فشل إعادة تعيين كلمة المرور: ' + error.message, 'error');
       }
+    }
+
+    async function deleteStudentDirectly(studentId, studentName) {
+      if (!canDeleteStudents) { showToast('⛔ ليس لديك صلاحية لحذف الطلاب', 'error'); return; }
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف الطالب "${studentName}" نهائياً؟ ده هيمسح بياناته بالكامل (درجات، حضور، مدفوعات) ومفيش رجوع بعد كده! لو عايز تحتفظ ببياناته، استخدم "أرشفة" بدل كده.`))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-student', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'delete', studentId, assistantId, assistantName })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) { showToast('✅ ' + result.message, 'success'); loadStudents(); }
+        else { showToast('❌ ' + result.message, 'error'); }
+      } catch (error) { console.error('❌ خطأ:', error); showToast('❌ فشل حذف الطالب', 'error'); }
     }
 
     async function archiveStudent(studentId, studentName) {
@@ -1905,8 +1922,8 @@ async function markAllRead() {
 <script src="session-refresh.js?v=6"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <script src="webauthn.js?v=6"></script>
-<script src="recovery-email.js?v=2"></script>
-<script src="branding.js?v=3"></script>
+<script src="recovery-email.js?v=3"></script>
+<script src="branding.js?v=4"></script>
 <script src="custom-dialogs.js?v=4"></script>
 </body>
 </html>

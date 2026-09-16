@@ -2,7 +2,7 @@
 // بيخزّن "هيكل" التطبيق (CSS/JS/الأيقونات) للسرعة والعمل الجزئي بدون إنترنت
 // لكن **مايخزّنش** أي طلب لـ Supabase (بيانات الطلاب/الدرجات/المدفوعات) — دي المفروض دايماً تيجي من الإنترنت مباشرة
 
-const CACHE_VERSION = 'fasli-shell-v2';
+const CACHE_VERSION = 'fasli-shell-v3';
 const SHELL_ASSETS = [
   './style.css',
   './activity-format.js',
