@@ -135,10 +135,13 @@ async function processTeacherAbsences(
     for (const student of groupStudents) {
       if (presentUids.has(student.uid) || alreadyMarkedUids.has(student.uid)) continue;
 
+      // ✅ Batch 27: status مكنش بيتحط خالص هنا، فكان بياخد القيمة الافتراضية 'present' رغم
+      // إن is_absent:true — تناقض بيكسر أي منطق بيعتمد على status بدل is_absent (زي حساب
+      // نسبة الحضور في check-at-risk-alerts، اللي كان بيعتبر الغياب التلقائي ده "حضور" فعلي)
       absentRowsForSession.push({
         student_uid: student.uid, student_name: student.name, teacher_id: teacherId, group_name: session.group_name,
         session_id: session.id, session_label: session.session_label,
-        date: todayDateStr, is_absent: true, created_at: new Date().toISOString(),
+        date: todayDateStr, status: "absent", is_absent: true, created_at: new Date().toISOString(),
       });
       absentMarked++;
 

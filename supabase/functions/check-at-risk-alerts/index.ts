@@ -138,12 +138,20 @@ async function alertTeacherForAtRiskStudents(supabase: any, teacherId: string): 
   const newlyAtRisk = atRiskStudents.filter((s: any) => !alreadyAlertedUids.has(s.studentUid));
   if (newlyAtRisk.length === 0) return 0;
 
+  // ✅ Batch 27: notifications مفهاش عمود student_name خالص (زي كل الإشعارات التانية في النظام،
+  // اسم الطالب بيتحط جوه details بس) — والإدراج كمان كان بيترفض من قاعدة البيانات نفسها
+  // (notifications_recipient_check كانت بتسمح بإشعار موجّه للمدرس بس لنوع "center_teacher_message"
+  // تحديداً — عمّمناها في migration منفصلة عشان أي نوع إشعار موجّه للمدرس يتقبل). الاتنين مع
+  // بعض كانوا بيخلّوا الإدراج يفشل بالكامل من غير أي error handling، فمفيش إشعار بيتسجّل أبداً،
+  // ومعناها إعادة التنبيه بعد 7 أيام (RENOTIFY_AFTER_DAYS) مستحيل تشتغل لأنها بتدوّر على تنبيهات
+  // سابقة مسجّلة مش موجودة أصلاً — يعني تنبيه مكرر لنفس الطالب كل تشغيلة
   const notifRows = newlyAtRisk.map((s: any) => ({
-    teacher_id: teacherId, student_uid: s.studentUid, student_name: s.studentName, audience: "teacher",
+    teacher_id: teacherId, student_uid: s.studentUid, audience: "teacher",
     type: ALERT_TYPE, title: "⚠️ طالب معرّض للخطر", message: `${s.studentName} (${s.groupName || "بدون مجموعة"}) — ${s.reasons[0] || "نمط حضور/سداد غير منتظم"}`,
-    details: { riskScore: s.riskScore, reasons: s.reasons },
+    details: { studentName: s.studentName, riskScore: s.riskScore, reasons: s.reasons },
   }));
-  await supabase.from("notifications").insert(notifRows);
+  const { error: notifError } = await supabase.from("notifications").insert(notifRows);
+  if (notifError) { console.error("⚠️ فشل تسجيل إنذارات الطلاب المعرّضين للخطر:", notifError.message); return 0; }
 
   const pushBody = newlyAtRisk.length === 1
     ? `${newlyAtRisk[0].studentName} بقى معرّض للخطر — ${newlyAtRisk[0].reasons[0]}`

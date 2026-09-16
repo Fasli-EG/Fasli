@@ -587,9 +587,15 @@ serve(async (req) => {
       performerName = notifyTeacherInfo?.name || "مدرس";
     }
 
-    await supabase.from("activity_logs").insert({
+    // ✅ Batch 27: كان الإدراج ده ناقص teacher_id وentity_type — الاتنين NOT NULL في الجدول،
+    // فالإدراج كان بيفشل بصمت (من غير أي error handling هنا على عكس باقي إدراجات الملف)، ومعنى
+    // كده إن تسجيل الحضور — أهم عملية يومية في النظام — مالوش أي أثر في سجل النشاطات خالص
+    const { error: activityLogError } = await supabase.from("activity_logs").insert({
       client_id: clientId,
+      teacher_id: clientId,
       action_type: "record_attendance",
+      entity_type: "attendance",
+      entity_id: uid,
       details: {
         student_name: student.name,
         student_uid: uid,
@@ -600,6 +606,7 @@ serve(async (req) => {
       performer_role: assistantId ? "assistant" : "teacher",
       performer_name: performerName,
     });
+    if (activityLogError) console.error("⚠️ فشل تسجيل نشاط تسجيل الحضور:", activityLogError.message);
 
     const finalMessage = extraActionMessages.length > 0
       ? `✅ تم تسجيل الحضور بنجاح — ${extraActionMessages.join(" — ")}`
