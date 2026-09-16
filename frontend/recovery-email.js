@@ -41,7 +41,7 @@
   async function renderManagerContent(container, token, currentEmail) {
     container.innerHTML = `
       <p style="font-size:12.5px;color:var(--muted-text,#6B7280);margin-bottom:10px;">لو نسيت كلمة المرور، هنبعتلك رابط لتحديد واحدة جديدة على الإيميل ده.</p>
-      ${currentEmail ? `<p style="font-size:13.5px;font-weight:600;margin-bottom:10px;">📧 مسجّل حاليًا: ${currentEmail}</p>` : ''}
+      ${currentEmail ? `<p style="font-size:13.5px;font-weight:600;margin-bottom:10px;color:var(--gray-900);">📧 مسجّل حاليًا: ${currentEmail}</p>` : ''}
       <input type="email" id="recoveryEmailInput" placeholder="example@email.com" value="${currentEmail || ''}" style="width:100%;padding:10px 14px;border:1.5px solid #E1E4E9;border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
       <div style="display:flex;gap:8px;">
         <button type="button" id="recoveryEmailSaveBtn" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--primary,#F2B705);color:#0B1C33;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">💾 حفظ</button>

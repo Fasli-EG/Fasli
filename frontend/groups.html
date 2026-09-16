@@ -20,7 +20,7 @@
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
     <script src="layout.js?v=6"></script>
-    <script>renderShell({active:'groups'});</script>
+    <script>renderShell({active:'groups', isAssistant: sessionStorage.getItem('userRole') === 'assistant'});</script>
 
     <div class="main-area">
       <div class="topbar">
@@ -116,7 +116,7 @@
           </div>
         </div>
         <div class="form-actions" id="formActions">
-          <button class="btn btn-success" id="addGroupBtn" onclick="addGroup()">
+          <button class="btn btn-primary" id="addGroupBtn" onclick="addGroup()">
             <i class="fas fa-save"></i> إضافة مجموعة
           </button>
           <button class="btn btn-outline" onclick="document.getElementById('newGroupName').value = '';">
@@ -147,7 +147,7 @@
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn-success" onclick="addEducationLevel()">
+          <button class="btn btn-primary" onclick="addEducationLevel()">
             <i class="fas fa-save"></i> إضافة مرحلة
           </button>
         </div>

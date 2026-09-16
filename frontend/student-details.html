@@ -18,7 +18,7 @@
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
     <script src="layout.js?v=6"></script>
-    <script>renderShell({active:'students'});</script>
+    <script>renderShell({active:'students', isAssistant: sessionStorage.getItem('userRole') === 'assistant'});</script>
 
     <div class="main-area">
       <div class="topbar">
@@ -41,13 +41,16 @@
         <div class="card-body" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
           <div style="width:60px;height:60px;border-radius:50%;background:var(--primary);color:var(--primary-contrast);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;" id="studentAvatar">؟</div>
           <div style="flex:1;min-width:200px;">
-            <h2 style="margin:0 0 4px;" id="studentNameHeader">—</h2>
+            <h2 style="margin:0 0 4px;color:var(--gray-900);" id="studentNameHeader">—</h2>
             <div style="font-size:13px;color:var(--gray-500);">
               <span id="studentGroupHeader">—</span> · UID: <span dir="ltr" id="studentUidHeader">—</span>
             </div>
           </div>
           <button class="btn btn-outline btn-sm" onclick="printStudentReport()" id="printReportBtn" title="طباعة أو حفظ تقرير الطالب PDF">
             <i class="fas fa-print"></i> طباعة التقرير
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCurrentStudent()" id="deleteStudentActionBtn" title="حذف الطالب نهائيًا" style="display:none;">
+            <i class="fas fa-trash"></i> حذف الطالب
           </button>
         </div>
       </div>
@@ -404,6 +407,35 @@
     function applyPermissions() {
       const addCard = document.getElementById('addStudentCard');
       if (!canAddStudents) addCard.style.display = 'none';
+    }
+
+    if (canDeleteStudents) document.getElementById('deleteStudentActionBtn').style.display = 'inline-flex';
+
+    async function deleteCurrentStudent() {
+      if (!canDeleteStudents) { showToast('⛔ ليس لديك صلاحية لحذف الطلاب', 'error'); return; }
+      const studentId = studentInfoCache.id;
+      const studentName = studentInfoCache.name || 'الطالب';
+      if (!studentId) { showToast('⚠️ لسه بيانات الطالب مبتحملتش', 'error'); return; }
+      if (!(await customConfirm(`⚠️ هل أنت متأكد من حذف الطالب "${studentName}"؟ هذا الإجراء لا يمكن التراجع عنه!`))) return;
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-student', {
+          method: 'POST', headers,
+          body: JSON.stringify({ action: 'delete', studentId, assistantId, assistantName })
+        });
+        if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
+        const result = await response.json();
+        if (result.success) {
+          showToast('✅ ' + result.message, 'success');
+          setTimeout(() => window.location.href = 'students.html', 1200);
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('❌ خطأ في حذف الطالب:', error);
+        showToast('❌ فشل حذف الطالب', 'error');
+      }
     }
 
     function goBackToDashboard() {

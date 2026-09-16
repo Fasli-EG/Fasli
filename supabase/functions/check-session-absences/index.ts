@@ -126,6 +126,10 @@ async function processTeacherAbsences(
       .eq("session_id", session.id);
 
     const presentUids = new Set((existingAttendance || []).filter((a: any) => !a.is_absent).map((a: any) => a.student_uid));
+    // ✅ (طلب) طالب ميتحسبش غايب إلا لو زمايله في نفس الحصة حضروا وهو لأ — لو محدش من
+    // المجموعة كلها سجّل حضور للحصة دي (عطل في القارئ، الحصة اتلغت فعلياً، إلخ)، معندناش دليل
+    // إن الحصة "حصلت" أصلاً، فمش هننزّل غياب جماعي وهمي على كل المجموعة
+    if (presentUids.size === 0) continue;
     // ✅ هل سبق اتسجّل غياب لنفس الحصة دي؟ (منع تكرار الإشعار لو الدالة اتنادت أكتر من مرة)
     const alreadyMarkedUids = new Set((existingAttendance || []).filter((a: any) => a.is_absent).map((a: any) => a.student_uid));
 

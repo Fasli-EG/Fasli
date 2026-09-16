@@ -73,7 +73,7 @@
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
     <script src="layout.js?v=6"></script>
-    <script>renderShell({active:'messages'});</script>
+    <script>renderShell({active:'messages', isAssistant: sessionStorage.getItem('userRole') === 'assistant'});</script>
 
     <div class="main-area">
       <div class="topbar">
@@ -149,11 +149,11 @@
                 <div class="t-desc">كل أولياء أمور طلاب المجموعة</div>
               </div>
             </label>
-            <label class="target-card" data-target="absent_today">
-              <input type="radio" name="target" value="absent_today" onchange="onTargetChange('absent_today')">
+            <label class="target-card" data-target="absent_session">
+              <input type="radio" name="target" value="absent_session" onchange="onTargetChange('absent_session')">
               <div>
-                <div class="t-title">الغايبين النهاردة بس</div>
-                <div class="t-desc">أولياء أمور اللي مسجلوش حضور اليوم</div>
+                <div class="t-title">الغايبين عن حصة معينة</div>
+                <div class="t-desc">اختر الحصة بعد ما وقتها يخلص، وهيتحدد الغايبين تلقائيًا</div>
               </div>
             </label>
             <label class="target-card" data-target="students">
@@ -179,6 +179,13 @@
             </label>
           </div>
 
+          <div class="field" id="absentSessionField" style="display:none;">
+            <label>اختر الحصة</label>
+            <select id="absentSessionSelect">
+              <option value="">-- اختر الحصة --</option>
+            </select>
+            <div id="absentSessionHint" style="font-size:12px;color:var(--gray-500);margin-top:6px;"></div>
+          </div>
           <div class="field" id="unpaidPaymentField" style="display:none;">
             <label>اختر بند السداد</label>
             <select id="unpaidPaymentTitleSelect">
@@ -1098,6 +1105,7 @@ async function markAllRead() {
           currentGroupStudents = (result.data || []).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
         }
         renderStudentsPicker();
+        if (selectedTarget === 'absent_session') loadSessionsForMessages();
         updateRecipientsNote();
       } catch (error) {
         console.error('❌ خطأ في تحميل الطلاب:', error);
@@ -1111,10 +1119,49 @@ async function markAllRead() {
       document.getElementById('studentsSearchField').style.display = (target === 'students') ? 'block' : 'none';
       document.getElementById('unpaidPaymentField').style.display = (target === 'unpaid_payment') ? 'block' : 'none';
       document.getElementById('unpaidBookField').style.display = (target === 'unpaid_book') ? 'block' : 'none';
+      document.getElementById('absentSessionField').style.display = (target === 'absent_session') ? 'block' : 'none';
       if (target === 'students') renderStudentsPicker();
       if (target === 'unpaid_payment' && document.getElementById('unpaidPaymentTitleSelect').options.length <= 1) loadPaymentTitlesForMessages();
       if (target === 'unpaid_book' && document.getElementById('unpaidBookSelect').options.length <= 1) loadBooksForMessages();
+      if (target === 'absent_session') loadSessionsForMessages();
       updateRecipientsNote();
+    }
+
+    // ✅ (طلب) الحصص المتاحة النهاردة لمجموعة الرسالة — بنحسب محليًا هل وقت كل حصة خلص (نفس
+    // منطق check-session-absences: duration_minutes لو محددة، وإلا عتبة احتساب الغياب) عشان
+    // نمنع اختيار حصة لسه شغالة، لكن السيرفر بيتأكد من نفس الشرط تاني قبل الإرسال فعليًا
+    async function loadSessionsForMessages() {
+      const select = document.getElementById('absentSessionSelect');
+      const hint = document.getElementById('absentSessionHint');
+      const group = document.getElementById('groupSelect').value;
+      select.innerHTML = '<option value="">-- اختر الحصة --</option>';
+      hint.textContent = '';
+      if (!group) { hint.textContent = 'اختر مجموعة الأول'; return; }
+      try {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(PROJECT_URL + '/functions/v1/manage-group-sessions', {
+          method: 'POST', headers, body: JSON.stringify({ action: 'listToday', groupName: group })
+        });
+        const result = await response.json();
+        if (!result.success) { hint.textContent = '⚠️ تعذر تحميل حصص اليوم'; return; }
+        const sessions = result.data || [];
+        if (sessions.length === 0) { hint.textContent = 'لا يوجد حصص لهذه المجموعة النهاردة'; return; }
+        const now = Date.now();
+        sessions.forEach(s => {
+          const gateMinutes = Number(s.duration_minutes) > 0 ? Number(s.duration_minutes) : (s.absence_threshold_minutes || 30);
+          const elapsedMinutes = (now - new Date(s.created_at).getTime()) / 60000;
+          const ended = elapsedMinutes >= gateMinutes;
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.session_label + (ended ? '' : ' — لسه شغالة');
+          if (!ended) opt.disabled = true;
+          select.appendChild(opt);
+        });
+      } catch (error) {
+        console.error('❌ خطأ في تحميل الحصص:', error);
+        hint.textContent = '⚠️ تعذر تحميل حصص اليوم';
+      }
     }
 
     async function loadPaymentTitlesForMessages() {
@@ -1208,8 +1255,8 @@ async function markAllRead() {
       let count = 0;
       if (selectedTarget === 'group') {
         count = currentGroupStudents.filter(s => s.parent_phone).length;
-      } else if (selectedTarget === 'absent_today') {
-        note.textContent = 'هيتحدد عدد المستلمين الفعلي وقت الإرسال (حسب الغايبين النهاردة)';
+      } else if (selectedTarget === 'absent_session') {
+        note.textContent = 'هيتحدد عدد المستلمين الفعلي وقت الإرسال (حسب الغايبين عن الحصة المختارة)';
         return;
       } else if (selectedTarget === 'unpaid_payment' || selectedTarget === 'unpaid_book') {
         note.textContent = 'هيتحدد عدد المستلمين الفعلي وقت الإرسال (حسب اللي لسه مدفعوش بالكامل)';
@@ -1251,8 +1298,11 @@ async function markAllRead() {
           const group = document.getElementById('groupSelect').value;
           if (!group) { showToast('⚠️ اختر مجموعة الأول', 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الرسالة'; return; }
           let studentUids = [];
-          let paymentTitle, bookId;
-          if (selectedTarget === 'students') {
+          let paymentTitle, bookId, sessionId;
+          if (selectedTarget === 'absent_session') {
+            sessionId = document.getElementById('absentSessionSelect').value;
+            if (!sessionId) { showToast('⚠️ اختر الحصة أولاً', 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الرسالة'; return; }
+          } else if (selectedTarget === 'students') {
             // ✅ نتأكد الاختيارات الظاهرة دلوقتي متسجّلة في القايمة المحفوظة قبل ما نجمع الإرسال،
             // عشان طالب متحدد ومختفي بسبب البحث ميضيعش من الإرسال
             document.querySelectorAll('.student-checkbox').forEach(cb => {
@@ -1267,7 +1317,7 @@ async function markAllRead() {
             bookId = document.getElementById('unpaidBookSelect').value;
             if (!bookId) { showToast('⚠️ اختر المذكرة', 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الرسالة'; return; }
           }
-          body = { clientId, groupName: group, target: selectedTarget, studentUids, paymentTitle, bookId, title: title || undefined, message };
+          body = { clientId, groupName: group, target: selectedTarget, studentUids, paymentTitle, bookId, sessionId, title: title || undefined, message };
         }
 
         const response = await fetch(PROJECT_URL + '/functions/v1/send-bulk-message', {

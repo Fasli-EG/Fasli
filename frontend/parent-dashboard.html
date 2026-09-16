@@ -20,6 +20,7 @@
     .student-card .student-status { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     .student-card .student-status.present { background: var(--success-light); color: var(--success); }
     .student-card .student-status.absent { background: var(--danger-light); color: var(--danger); }
+    .student-card .student-status.no-session { background: var(--gray-100); color: var(--gray-500); }
     .student-card .student-details .detail { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--gray-600); padding: 4px 0; }
     .student-card .student-details .detail .icon { width: 24px; text-align: center; font-size: 16px; }
     /* ✅ Batch 23 (بند 2): بقى 5 عناصر (زيادة الاختبارات الإلكترونية) — 3 أعمدة بدل 4 عشان
@@ -308,7 +309,7 @@
           document.getElementById('childrenCount').textContent = children.length + ' طالب';
 
           const presentCount = children.filter(c => c.today_attendance === 'present').length;
-          const absentCount = children.filter(c => c.today_attendance !== 'present').length;
+          const absentCount = children.filter(c => c.today_attendance === 'absent').length;
           document.getElementById('statPresent').textContent = presentCount;
           document.getElementById('statAbsent').textContent = absentCount;
 
@@ -338,6 +339,7 @@
           const cardAccents = [brandPrimary, '#5FBF9A', '#7FA8E8', '#E88AC4', '#E89B5F'];
           children.forEach((student, idx) => {
             const isPresent = student.today_attendance === 'present';
+            const isAbsent = student.today_attendance === 'absent';
             const avg = student.avg_grade !== undefined && student.avg_grade !== null ? Math.round(student.avg_grade) : '—';
             const avgClass = avg !== '—' && avg >= 70 ? 'green' : (avg !== '—' && avg >= 50 ? 'orange' : 'orange');
             const accent = cardAccents[idx % cardAccents.length];
@@ -353,8 +355,8 @@
                     </div>
                   </div>
 
-                  <span class="student-status ${isPresent ? 'present' : 'absent'}">
-                    ${isPresent ? '✅ حاضر اليوم' : '❌ غائب اليوم'}
+                  <span class="student-status ${isPresent ? 'present' : (isAbsent ? 'absent' : 'no-session')}">
+                    ${isPresent ? '✅ حاضر اليوم' : (isAbsent ? '❌ غائب اليوم' : '— لسه معملش حصة النهاردة')}
                   </span>
                 </div>
                 <div class="student-details">

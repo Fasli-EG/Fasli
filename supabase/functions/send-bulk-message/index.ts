@@ -545,7 +545,7 @@ serve(async (req) => {
     // إرسال لأولياء أمور مجموعة (زي ما كانت)
     // ============================================
     await requireAssistantPermission(payload, "send_messages");
-    const { groupName, target, studentUids, message, title, paymentTitle, bookId } = body;
+    const { groupName, target, studentUids, message, title, paymentTitle, bookId, sessionId } = body;
 
     if (!groupName || !message) {
       return new Response(JSON.stringify({ success: false, message: "⚠️ groupName و message مطلوبين" }),
@@ -569,16 +569,38 @@ serve(async (req) => {
 
     let targetStudents = groupStudents;
 
-    if (target === "absent_today") {
-      const today = new Date().toISOString().split("T")[0];
+    if (target === "absent_session") {
+      // ✅ (طلب) بدل "الغايبين النهاردة" (كان بيعتمد على تاريخ اليوم بس، من غير ربط بحصة أو مجموعة
+      // أو تأكيد إن وقتها خلص) — دلوقتي لازم تحديد حصة فعلية من حصص المجموعة دي النهاردة، ونتأكد
+      // إن وقتها المحدد (duration_minutes لو موجودة، وإلا عتبة احتساب الغياب) فعلاً عدى قبل الإرسال
+      if (!sessionId) {
+        return new Response(JSON.stringify({ success: false, message: "⚠️ اختر الحصة أولاً" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: session } = await supabase.from("attendance_sessions").select("*").eq("id", sessionId).maybeSingle();
+      if (!session || session.teacher_id !== finalClientId || session.group_name !== groupName) {
+        return new Response(JSON.stringify({ success: false, message: "⛔ حصة غير صالحة لهذه المجموعة" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const gateMinutes = Number(session.duration_minutes) > 0 ? Number(session.duration_minutes) : (session.absence_threshold_minutes ?? 30);
+      const elapsedMinutes = (Date.now() - new Date(session.created_at).getTime()) / 60000;
+      if (elapsedMinutes < gateMinutes) {
+        return new Response(JSON.stringify({ success: false, message: "⏳ الحصة لسه شغالة، استنى لحد ما وقتها يخلص قبل تحديد الغايبين" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       const uids = groupStudents.map((s: any) => s.uid);
-      const { data: presentToday } = await supabase
+      const { data: sessionAttendance } = await supabase
         .from("attendance")
-        .select("student_uid")
+        .select("student_uid, is_absent")
         .in("student_uid", uids)
-        .eq("date", today)
-        .eq("status", "present");
-      const presentSet = new Set((presentToday || []).map((a: any) => a.student_uid));
+        .eq("session_id", sessionId);
+      const presentSet = new Set((sessionAttendance || []).filter((a: any) => !a.is_absent).map((a: any) => a.student_uid));
+      // ✅ نفس منطق دفعة الغياب التلقائي: لو محدش من المجموعة أصلاً سجّل حضور للحصة دي، معندناش
+      // دليل إن الحصة حصلت فعلياً، فمش هنعتبر كل المجموعة غايبة
+      if (presentSet.size === 0) {
+        return new Response(JSON.stringify({ success: false, message: "⚠️ لا يوجد أي حضور مسجّل لهذه الحصة حتى الآن" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       targetStudents = groupStudents.filter((s: any) => !presentSet.has(s.uid));
     } else if (target === "students" && Array.isArray(studentUids) && studentUids.length > 0) {
       const uidSet = new Set(studentUids);

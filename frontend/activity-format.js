@@ -258,7 +258,7 @@ function formatActivity(log) {
       break;
     case 'bulk_message':
       if (det.recipients !== undefined) parts.push(`المستلمين: ${det.recipients}`);
-      if (det.target) parts.push(`النوع: ${det.target === 'absent_today' ? 'الغايبين' : det.target === 'assistants' ? 'مساعدين' : 'مجموعة'}`);
+      if (det.target) parts.push(`النوع: ${(det.target === 'absent_session' || det.target === 'absent_today') ? 'الغايبين' : det.target === 'assistants' ? 'مساعدين' : 'مجموعة'}`);
       break;
     default:
       if (det.student_name) parts.push(`الطالب: ${det.student_name}`);

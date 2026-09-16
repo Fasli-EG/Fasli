@@ -70,8 +70,11 @@
       document.documentElement.style.setProperty('--accent', accent);
       // ✅ إطار الكروت: درجة فاتحة جداً من نفس اللون (يفضل هادي وواضح، مش لون قوي يبوّظ القراءة)
       document.documentElement.style.setProperty('--card-border', shadeColor(color, 0.55));
-      // ✅ خلفية القائمة الجانبية: درجة غامقة جداً من نفس اللون (تفضل غامقة كفاية إن النص الأبيض فوقها يتقرا بوضوح)
-      document.documentElement.style.setProperty('--sidebar-bg', shadeColor(color, -0.82));
+      // ✅ (طلب) خلفية القائمة الجانبية: كانت بتتعتّم لدرجة -0.82 (قريبة جداً من الأسود)، فأي لون
+      // كان بيختاره المدرس كان بيبان تقريباً نفس الكحلي الافتراضي جوه السايدبار، وكأن اللون
+      // الجديد "بيتحط فوق" القديم بدل ما يبان فعلاً — قلّلناها لـ-0.55 عشان اللون المختار يفضل
+      // واضح مع الحفاظ على تباين كافي للنص الأبيض فوقه
+      document.documentElement.style.setProperty('--sidebar-bg', shadeColor(color, -0.55));
     } catch (e) { /* تجاهل — التخصيص اختياري */ }
   }
   window.applyBrandColor = applyBrandColor;

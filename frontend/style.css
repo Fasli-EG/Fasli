@@ -750,6 +750,8 @@ tr:hover td { background: var(--gray-50); }
 }
 body.dark-mode .modal-box { box-shadow: 0 24px 60px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06); }
 
+.password-display { background: var(--gray-100); border: 1.5px dashed var(--gray-300); border-radius: 10px; padding: 14px; text-align: center; font-size: 20px; font-weight: 800; letter-spacing: 2px; color: var(--gray-900); margin-bottom: 12px; }
+
 /* ✅ (طلب) مراجعة شاملة للتنسيقات — نافذة "تفعيل الإشعارات" (permissionDialog) كانت بألوان
    ثابتة (أبيض/كحلي) في dashboard.html وassistant-dashboard.html وparent-dashboard.html،
    فكانت بتظهر كارت أبيض صريح فوق صفحة غامقة في الوضع الليلي. نقلتها لكلاسات بتستجيب للثيم. */

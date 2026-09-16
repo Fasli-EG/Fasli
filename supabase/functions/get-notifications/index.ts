@@ -111,7 +111,10 @@ serve(async (req) => {
       // مش كل حركة النظام (عمود teacher_id مستخدم أصلاً كـ"المدرس المالك" في كل الإشعارات التانية،
       // فلازم نقيّد بـ type كمان عشان منرجّعش لمدرس إشعارات كل أولياء أمور/مساعدين طلابه بالغلط)
       const finalClientId = ownerClientId(payload);
-      query = query.eq("teacher_id", finalClientId).in("type", ["center_teacher_message", "parent_message"]);
+      // ✅ صف "parent_message" بيتبعت مرتين لكل رسالة: نسخة للمدرس (assistant_id فاضي) ونسخة
+      // لكل مساعد عنده صلاحية manage_conversations (assistant_id مليان) — الاتنين بنفس الـ
+      // teacher_id، فمن غير الفلتر ده كانت نسخة المساعد بتترجع في صندوق المدرس كمان
+      query = query.eq("teacher_id", finalClientId).in("type", ["center_teacher_message", "parent_message"]).is("assistant_id", null);
     } else {
       throw new AuthError("⛔ غير مصرح بهذه العملية", 403);
     }

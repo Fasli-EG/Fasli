@@ -148,7 +148,11 @@ serve(async (req) => {
         // ودلوقتي بقى المدرس يقدر يخفيه عن أولياء الأمور برضه (phone_visible)
         teacher_phone: (teacher?.phone_visible !== false) ? (teacher?.contact_phone || null) : null,
         conversations_enabled: teacher?.conversations_enabled !== false,
-        today_attendance: todayAttendanceMap.get(student.uid) || "absent",
+        // ✅ (طلب) طالب ميتحسبش غايب النهاردة إلا لو زمايله في مجموعته حضروا فعلاً وهو لأ —
+        // قبل كده أي طالب مفيهوش صف حضور اليوم كان بيتحط "absent" تلقائي حتى لو أصلاً معملتش
+        // حصة للمجموعة دي خالص النهاردة. workingDaysSet(group) بيحتوي كل تاريخ فيه حاضر واحد
+        // على الأقل من المجموعة، فلو النهاردة مش موجودة فيه يبقى معندناش دليل إن حصة حصلت أصلاً
+        today_attendance: todayAttendanceMap.get(student.uid) || (workingDaysSet.has(today) ? "absent" : "no_session"),
         grades_count: gradesCount, avg_grade: Math.round(avgGrade),
         attendance_percent: attendancePercent, present_days: presentDays,
         total_working_days: totalWorkingDays, absent_days: absentDays,

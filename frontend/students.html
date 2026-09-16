@@ -18,7 +18,7 @@
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
     <script src="layout.js?v=6"></script>
-    <script>renderShell({active:'students'});</script>
+    <script>renderShell({active:'students', isAssistant: sessionStorage.getItem('userRole') === 'assistant'});</script>
 
     <div class="main-area">
       <div class="topbar">
@@ -82,7 +82,7 @@
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn-success" id="addStudentBtn" onclick="submitStudent()"><i class="fas fa-save"></i> تسجيل الطالب</button>
+          <button class="btn btn-primary" id="addStudentBtn" onclick="submitStudent()"><i class="fas fa-save"></i> تسجيل الطالب</button>
           <button class="btn btn-outline" onclick="resetForm()"><i class="fas fa-undo"></i> تفريغ</button>
         </div>
       </div>
