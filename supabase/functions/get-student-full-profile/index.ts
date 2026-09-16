@@ -89,7 +89,37 @@ Deno.serve(async (req) => {
       ...((groupLinksRes.data || []).map((l: any) => l.group_name)),
     ].filter(Boolean)));
 
-    // ✅ (طلب) group_name بيتضاف هنا عشان صفحات تفاصيل الطالب (مدرس/طالب/ولي أمر) تقدر تفصل
+    // ✅ (طلب) امتحان زميله في المجموعة اتمتحنه (يدوي أو إلكتروني — الاتنين بيسجّلوا في نفس جدول
+    // grades، آخرها submit-exam-attempt بيعمل insert تلقائي للاختبارات الإلكترونية المحتسبة) وهو
+    // معملوش، وكمان مذكرة زميله في المجموعة اشتراها وهو لأ — نفس فكرة .missed اللي اتعملت
+    // للمدفوعات بالظبط، بس هنا الأساس هو صفوف فعلية للمجموعة (مفيش جدول "عناوين" منفصل للمذكرات
+    // مربوط بمجموعة، وexam_titles مالوش ضمان إن كل عنوان فيه فعلاً امتحان اتسجّل)
+    const [groupGradesRes, groupBookPaymentsRes] = await Promise.all([
+      allGroups.length > 0
+        ? supabase.from("grades").select("exam_name, group_name, max_score").eq("teacher_id", student.teacher_id).in("group_name", allGroups)
+        : Promise.resolve({ data: [] as any[] }),
+      allGroups.length > 0
+        ? supabase.from("book_payments").select("book_id, group_name, books:book_id(name, price)").eq("teacher_id", student.teacher_id).in("group_name", allGroups)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const existingExamNames = new Set((gradesRes.data || []).map((g: any) => g.exam_name));
+    const seenMissedExams = new Set<string>();
+    const missedGrades = (groupGradesRes.data || [])
+      .filter((g: any) => g.exam_name && !existingExamNames.has(g.exam_name))
+      .filter((g: any) => {
+        const key = g.exam_name + "|" + g.group_name;
+        if (seenMissedExams.has(key)) return false;
+        seenMissedExams.add(key);
+        return true;
+      })
+      .map((g: any) => ({
+        exam_name: g.exam_name, group_name: g.group_name, score: 0, max_score: g.max_score || 100,
+        student_uid: studentUid, teacher_id: student.teacher_id, missed: true,
+      }));
+    const gradesWithMissed = [...(gradesRes.data || []), ...missedGrades];
+
+    // ✅ group_name بيتضاف هنا عشان صفحات تفاصيل الطالب (مدرس/طالب/ولي أمر) تقدر تفصل
     // بيانات المذكرات حسب المجموعة برضه، زي الدرجات والحضور والمدفوعات — لطالب مرتبط بأكتر من مجموعة
     const books = (bookPaymentsRes.data || []).map((item: any) => ({
       id: item.id, book_name: item.books?.name || "مذكرة غير معروفة", price: item.books?.price || 0,
@@ -98,14 +128,30 @@ Deno.serve(async (req) => {
       status: item.amount >= (item.books?.price || 0) ? "مدفوع بالكامل" : "دفعة جزئية",
     }));
 
+    const existingBookIds = new Set((bookPaymentsRes.data || []).map((bp: any) => bp.book_id));
+    const seenMissedBooks = new Set<number>();
+    const missedBooks = (groupBookPaymentsRes.data || [])
+      .filter((bp: any) => bp.book_id && !existingBookIds.has(bp.book_id))
+      .filter((bp: any) => {
+        if (seenMissedBooks.has(bp.book_id)) return false;
+        seenMissedBooks.add(bp.book_id);
+        return true;
+      })
+      .map((bp: any) => ({
+        id: null, book_name: bp.books?.name || "مذكرة غير معروفة", price: bp.books?.price || 0,
+        amount: 0, paid_at: null, file_url: null, group_name: bp.group_name || null,
+        status: "غير مسدد", missed: true,
+      }));
+    const booksWithMissed = [...books, ...missedBooks];
+
     return new Response(JSON.stringify({
       success: true,
       data: {
         info: { id: student.id, uid: student.uid, name: student.name, phone: student.phone, group_name: student.group_name, groups: allGroups, teacher_name: student.teachers?.name || "غير محدد", conversations_enabled: student.teachers?.conversations_enabled !== false, electronic_payment_enabled: student.teachers?.electronic_payment_enabled === true, payment_instapay: student.teachers?.payment_instapay || null, payment_wallet: student.teachers?.payment_wallet || null, payment_bank_details: student.teachers?.payment_bank_details || null },
-        grades: gradesRes.data || [],
+        grades: gradesWithMissed,
         payments: paymentsWithMissed,
         attendance: attendanceRes.data || [],
-        books,
+        books: booksWithMissed,
       },
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {

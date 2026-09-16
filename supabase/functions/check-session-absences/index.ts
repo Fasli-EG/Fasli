@@ -79,10 +79,16 @@ async function sendPushToRecipient(supabase: any, recipientType: "parent" | "ass
 // مرة واحدة (نداء توكن عادي من لوحة التحكم) أو في حلقة على كل المدرسين (نداء الجدولة
 // الدورية اللي بتغطي كل الحسابات مرة واحدة، من غير ما حد يكون فاتح أي صفحة أصلاً)
 async function processTeacherAbsences(
-  supabase: any, teacherId: string, todayDateStr: string, nowMs: number
+  supabase: any, teacherId: string, todayDateStr: string, windowStartStr: string, nowMs: number
 ): Promise<{ absentMarked: number; notifRows: any[] }> {
+  // ✅ (طلب) كان بيفحص حصص "النهاردة" بس (session_date = اليوم) — لو حصة اتعملت آخر اليوم
+  // ومحدش فتح لوحة التحكم تاني ولا الجدولة الدورية شغّالة في اللحظة المناسبة قبل ما اليوم يخلص،
+  // الحصة دي كانت بتتنسى للأبد (تاني يوم todayDateStr بيتغيّر وهي بره الفلتر خالص). بنوسّع
+  // النافذة لآخر 3 أيام بدل يوم واحد بس — آمن ومتكرر بدون تأثير جانبي (alreadyMarkedUids تحت
+  // بيمنع تكرار أي غياب اتسجّل قبل كده)
   const { data: sessions } = await supabase
-    .from("attendance_sessions").select("*").eq("teacher_id", teacherId).eq("session_date", todayDateStr);
+    .from("attendance_sessions").select("*").eq("teacher_id", teacherId)
+    .gte("session_date", windowStartStr).lte("session_date", todayDateStr);
 
   if (!sessions || sessions.length === 0) return { absentMarked: 0, notifRows: [] };
 
@@ -136,6 +142,9 @@ async function processTeacherAbsences(
     // ✅ (مراجعة أداء) كان في INSERT منفصل جوه الحلقة لكل طالب غايب (لغاية 30+ نداء لقاعدة
     // البيانات لمجموعة واحدة كبيرة) — دلوقتي بنجمع كل صفوف الحصة دي ونعملها INSERT واحد مجمّع
     const absentRowsForSession: any[] = [];
+    // ✅ دلوقتي ممكن نعالج حصة من يوم فات (نافذة الـ3 أيام فوق)، فمش نقدر نفترض "النهاردة" في
+    // تاريخ الصف ولا في نص الإشعار زي ما كان مفروض قبل كده (لما كل حاجة كانت مضمونة إنها اليوم الحالي)
+    const dayPhrase = session.session_date === todayDateStr ? "النهاردة" : `يوم ${session.session_date}`;
     for (const student of groupStudents) {
       if (presentUids.has(student.uid) || alreadyMarkedUids.has(student.uid)) continue;
 
@@ -145,7 +154,7 @@ async function processTeacherAbsences(
       absentRowsForSession.push({
         student_uid: student.uid, student_name: student.name, teacher_id: teacherId, group_name: session.group_name,
         session_id: session.id, session_label: session.session_label,
-        date: todayDateStr, status: "absent", is_absent: true, created_at: new Date().toISOString(),
+        date: session.session_date, status: "absent", is_absent: true, created_at: new Date().toISOString(),
       });
       absentMarked++;
 
@@ -153,7 +162,7 @@ async function processTeacherAbsences(
         notifRows.push({
           teacher_id: teacherId, parent_phone: student.parent_phone, student_uid: student.uid,
           type: "absence", title: "تسجيل غياب", audience: "parent",
-          message: `${student.name} محضرش ${session.session_label || "حصة"} النهاردة`,
+          message: `${student.name} محضرش ${session.session_label || "حصة"} ${dayPhrase}`,
           details: { student_name: student.name, group_name: session.group_name, session_label: session.session_label },
         });
       }
@@ -162,7 +171,7 @@ async function processTeacherAbsences(
       notifRows.push({
         teacher_id: teacherId, student_uid: student.uid,
         type: "absence", title: "تسجيل غياب", audience: "student",
-        message: `اتسجّلت غايب في ${session.session_label || "حصة"} النهاردة`,
+        message: `اتسجّلت غايب في ${session.session_label || "حصة"} ${dayPhrase}`,
         details: { group_name: session.group_name, session_label: session.session_label },
       });
     }
@@ -196,15 +205,17 @@ Deno.serve(async (req) => {
     const now = new Date();
     const cairoNow = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
     const todayDateStr = cairoNow.toISOString().split("T")[0];
+    const windowStartDate = new Date(cairoNow); windowStartDate.setDate(windowStartDate.getDate() - 2);
+    const windowStartStr = windowStartDate.toISOString().split("T")[0];
     const nowMs = now.getTime();
 
     let teacherIds: string[] = [];
     if (isSystemRun) {
       // ✅ (طلب) الفحص لازم يشتغل في الخلفية لوحده حتى لو كل الصفحات مقفولة — بنجيب كل
-      // المدرسين اللي عندهم حصص النهاردة (بغض النظر عن مين فاتح إيه)، ونفحص غيابهم كلهم
-      // في نفس النداء الدوري ده
+      // المدرسين اللي عندهم حصص في آخر 3 أيام (مش النهاردة بس، عشان نلحق أي حصة اتعملت
+      // آخر يوم وماتفحصتش قبل ما اليوم يعدي)، ونفحص غيابهم كلهم في نفس النداء الدوري ده
       const { data: teacherRows } = await supabase
-        .from("attendance_sessions").select("teacher_id").eq("session_date", todayDateStr);
+        .from("attendance_sessions").select("teacher_id").gte("session_date", windowStartStr).lte("session_date", todayDateStr);
       teacherIds = Array.from(new Set((teacherRows || []).map((r: any) => r.teacher_id).filter(Boolean)));
     } else {
       const payload = await verifyToken(req);
@@ -222,7 +233,7 @@ Deno.serve(async (req) => {
     const allNotifRows: any[] = [];
 
     for (const teacherId of teacherIds) {
-      const { absentMarked, notifRows } = await processTeacherAbsences(supabase, teacherId, todayDateStr, nowMs);
+      const { absentMarked, notifRows } = await processTeacherAbsences(supabase, teacherId, todayDateStr, windowStartStr, nowMs);
       totalAbsentMarked += absentMarked;
       allNotifRows.push(...notifRows);
     }
