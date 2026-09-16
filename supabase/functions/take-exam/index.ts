@@ -72,6 +72,14 @@ Deno.serve(async (req) => {
         }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
+      // ✅ (طلب) لو الاختبار مش محتسب في الدرجات، مايجيش رسمي خالص — تدريب حر بس، عشان
+      // "رسمي" معناها دايماً: محاولة واحدة + محسوبة في الدرجات، مفيش حالة نص-نص. بيمنع نداء
+      // مباشر لـ start بـ mode:"official" على اختبار الواجهة أصلاً مابتعرضش زرار رسمي ليه
+      if (exam.counts_toward_grade !== true) {
+        return new Response(JSON.stringify({ success: false, message: "⚠️ الاختبار ده تدريب فقط، مينفعش يتاخد كمحاولة رسمية" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       // ✅ لو عنده محاولة رسمية سابقة (مكتملة أو منتهي وقتها)، مايقدرش يبدأ تاني
       const { data: existing } = await supabase.from("exam_attempts").select("*").eq("exam_id", examId).eq("student_uid", studentUid).eq("mode", "official").maybeSingle();
       if (existing) {
@@ -161,11 +169,17 @@ Deno.serve(async (req) => {
       // الرسمية بتتسجّل تلقائياً في نفس جدول grades — عشان تدخل في متوسط الطالب ومخطط نمو مستواه
       // زي أي درجة تانية بيرصدها المدرس يدوي. التدريب الحر (mode: practice) مابيتحسبش أبداً.
       if (attempt.mode === "official" && exam?.counts_toward_grade && totalPossible > 0) {
-        const { data: studentRow } = await supabase.from("students").select("name").eq("uid", studentUid).maybeSingle();
-        await supabase.from("grades").insert({
-          student_uid: studentUid, student_name: studentRow?.name || "طالب", teacher_id: exam.teacher_id,
-          group_name: exam.group_name, exam_name: exam.title, score: totalScore, max_score: totalPossible,
-        });
+        // ✅ حماية إضافية ضد أي تسابق نادر (نداءين start متزامنين قبل ما أولهم يتسجّل) يخلّق أكتر
+        // من محاولة رسمية لنفس الاختبار — منمنعش الدرجة تتضاعف في جدول grades حتى لو حصل
+        const { data: existingGrade } = await supabase.from("grades")
+          .select("id").eq("student_uid", studentUid).eq("exam_name", exam.title).eq("group_name", exam.group_name).maybeSingle();
+        if (!existingGrade) {
+          const { data: studentRow } = await supabase.from("students").select("name").eq("uid", studentUid).maybeSingle();
+          await supabase.from("grades").insert({
+            student_uid: studentUid, student_name: studentRow?.name || "طالب", teacher_id: exam.teacher_id,
+            group_name: exam.group_name, exam_name: exam.title, score: totalScore, max_score: totalPossible,
+          });
+        }
       }
 
       return new Response(JSON.stringify({
