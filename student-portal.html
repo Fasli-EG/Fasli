@@ -501,15 +501,15 @@
           return;
         }
 
-        const grades = (result.data.grades || []).filter(g => !g.missed);
-        grades.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const grades = (result.data.grades || []);
+        grades.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
 
         lastLoadedGrades = grades;
         lastLoadedPayments = result.data.payments || [];
         lastLoadedAttendance = result.data.attendance || [];
         lastLoadedBooks = result.data.books || [];
 
-        renderStudentHeader(grades);
+        renderStudentHeader(grades.filter(g => !g.missed));
         setupStudentGroupFilter(result.data.info || {});
         applyStudentGroupFilter();
 
@@ -648,8 +648,9 @@
       const byGroup = r => r.group_name === currentStudentGroupFilter;
 
       const grades = lastLoadedGrades.filter(byGroup);
-      renderStudentHeader(grades);
-      renderGrowthChart(grades);
+      const takenGrades = grades.filter(g => !g.missed);
+      renderStudentHeader(takenGrades);
+      renderGrowthChart(takenGrades);
       renderGradesTable(grades);
       renderPaymentsTable(lastLoadedPayments.filter(byGroup));
       renderAttendanceTable(lastLoadedAttendance.filter(byGroup));
@@ -687,6 +688,16 @@
       }
       const sorted = [...grades].reverse();
       const rowTpl = g => {
+        if (g.missed) {
+          return `
+            <tr class="report-row-alert">
+              <td><strong>${escapeHtml(g.exam_name)}</strong></td>
+              <td>—</td>
+              <td><span class="status-badge status-unpaid">❌ غياب عن الامتحان</span></td>
+              <td>—</td>
+            </tr>
+          `;
+        }
         const percent = g.max_score > 0 ? Math.round((g.score / g.max_score) * 100) : 0;
         const date = g.created_at ? new Date(g.created_at).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo' }) : '—';
         return `
