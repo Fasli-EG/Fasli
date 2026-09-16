@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { corsHeaders, AuthError, verifyToken, authErrorResponse } from "../_shared/auth.ts";
+import { corsHeaders, AuthError, verifyToken, requireAssistantPermission, authErrorResponse } from "../_shared/auth.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,6 +11,9 @@ serve(async (req) => {
 
   try {
     const payload = await verifyToken(req);
+    // ✅ Batch 27: كانت الدالة دي بترجع كل الطلاب لأي مساعد مسجّل دخول من غير ما تتحقق من
+    // view_students خالص — لو المدرس مانع مساعد الصلاحية دي، كان لسه بيقدر يجيب القائمة كاملة
+    await requireAssistantPermission(payload, "view_students");
     const tokenClientId = payload.clientId || payload.teacherId;
     if (!tokenClientId) {
       return new Response(

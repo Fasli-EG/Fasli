@@ -255,8 +255,11 @@ serve(async (req) => {
         // الأساس ("رسالة جديدة بخصوص [اسم الطالب]") بدل اسم ولي الأمر
         const parentSenderName = payload.name || "ولي أمر";
         const notifTitle = student.name ? `رسالة جديدة من ولي أمر ${student.name}` : `رسالة جديدة من ${parentSenderName}`;
+        // ✅ Batch 27: من غير audience، get-notifications للوالد كان بيقرا الصف ده كمان
+        // (parent_phone بيتطابق + audience.is.null بيندرج في شرط "قديم/لولي الأمر")، فرسالة
+        // ولي الأمر كانت بترجع تظهر تاني في صندوق إشعاراته هو نفسه، وكمان بتتكرر مع صف المساعدين تحت
         await supabase.from("notifications").insert({
-          teacher_id: student.teacher_id, type: "parent_message", title: notifTitle,
+          teacher_id: student.teacher_id, type: "parent_message", title: notifTitle, audience: "teacher",
           message: convMessage, student_uid: studentUid, parent_phone: parentPhone,
           details: { sender_name: parentSenderName, sender_role: "parent", student_name: student.name, parent_phone: parentPhone },
         }).then(({ error }: any) => { if (error) console.error("⚠️ فشل إشعار المدرس بالرسالة:", error.message); });
@@ -274,7 +277,7 @@ serve(async (req) => {
           const eligible = assistants.filter((a: any) => a.permissions?.manage_conversations === true);
           if (eligible.length > 0) {
             const assistantNotifRows = eligible.map((a: any) => ({
-              teacher_id: student.teacher_id, assistant_id: a.id, type: "parent_message", title: notifTitle,
+              teacher_id: student.teacher_id, assistant_id: a.id, type: "parent_message", title: notifTitle, audience: "assistant",
               message: convMessage, student_uid: studentUid, parent_phone: parentPhone,
               details: { sender_name: parentSenderName, sender_role: "parent", student_name: student.name, parent_phone: parentPhone },
             }));

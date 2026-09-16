@@ -1,4 +1,4 @@
-import { corsHeaders, verifyToken, authErrorResponse } from "../_shared/auth.ts";
+import { corsHeaders, verifyToken, authErrorResponse, requireAssistantPermission } from "../_shared/auth.ts";
 // supabase/functions/manage-group-sessions/index.ts
 // ✅ Aug 2026 (Phase I follow-up 10): إدارة "الحصص اليومية" الجديدة — بديل نظام
 // الحصص الأسبوعي المتكرر القديم (group_sessions) اللي اتلغى بالكامل.
@@ -17,6 +17,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const payload = await verifyToken(req);
+    // ✅ Batch 27: الدالة دي (إنشاء/حذف/تعديل/عرض حصص الحضور اليومية) كانت من غير أي فحص صلاحية
+    // مساعد خالص — أي مساعد مسجّل دخول يقدر ينشئ/يحذف حصص حتى لو معندوش manage_attendance
+    await requireAssistantPermission(payload, "manage_attendance");
     const tokenClientId = payload.clientId || payload.teacherId;
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""

@@ -120,6 +120,20 @@ export async function verifyToken(req: Request, opts?: { skipLicenseCheck?: bool
     exp: decodeJwtExpUnsafe(token),
   };
 
+  // ✅ Batch 27 (أمان حرج): لو المدرس عطّل/فصل مساعد، التوكن بتاعه كان يفضل شغال بالكامل لحد
+  // ما ينتهي بطبيعته (~ساعة، وممكن يتجدد لو معاه refresh token) — محدش كان بيتحقق أبداً من
+  // assistants.is_active في أي مكان (لا هنا ولا في requireAssistantPermission، واللي أصلاً
+  // مش كل الدوال بتنادي عليها زي get-students). التحقق ده لازم يبقى هنا، نقطة العبور الوحيدة
+  // لكل الدوال، وغير مرتبط بـskipLicenseCheck (فصل المساعد أخطر وأشمل من مجرد انتهاء ترخيص)
+  if (payload.role === "assistant") {
+    const supabaseForAssistant = await licenseCheckClient();
+    const { data: assistantRow } = await supabaseForAssistant
+      .from("assistants").select("is_active").eq("id", payload.sub).maybeSingle();
+    if (!assistantRow || assistantRow.is_active === false) {
+      throw new AuthError("⛔ تم إلغاء تفعيل حسابك، تواصل مع المدرس", 403);
+    }
+  }
+
   if (!opts?.skipLicenseCheck && (payload.role === "teacher" || payload.role === "assistant")) {
     const ownerId = payload.clientId || payload.teacherId;
     if (ownerId) {

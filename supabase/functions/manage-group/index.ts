@@ -181,6 +181,11 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
     }
   }
 
+  // ✅ Batch 27: كان بيحذف الطلاب الأساسيين للمجموعة بس، ومش بيلمس student_group_links (عضوية
+  // ثانوية — تعدد مواد/مدرسين) — فالمجموعة كانت "ترجع تاني" كـ"مجموعة وهمية" (id: null) في
+  // listDetailed لمجرد وجود روابط ثانوية باسمها، حتى بعد حذفها فعليًا من جدول groups
+  await supabase.from("student_group_links").delete().eq("teacher_id", clientId).eq("group_name", groupName);
+
   const { error: deleteGroupError } = await supabase.from("groups").delete().eq("teacher_id", clientId).eq("name", groupName);
   if (deleteGroupError) console.error("❌ فشل حذف المجموعة من groups:", deleteGroupError);
 

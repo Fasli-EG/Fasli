@@ -1,7 +1,7 @@
 // supabase/functions/manage-expense/index.ts
 // ✅ إدارة المصروفات — action: add | delete | list
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, verifyToken, authErrorResponse } from "../_shared/auth.ts";
+import { corsHeaders, verifyToken, authErrorResponse, requireAssistantPermission } from "../_shared/auth.ts";
 
 const VALID_CATEGORIES = ["rent", "salaries", "utilities", "supplies", "marketing", "other"];
 
@@ -13,6 +13,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // ✅ Batch 27: كانت الدالة دي مفتوحة لأي مساعد مسجّل دخول من غير أي فحص صلاحية خالص — لا
+    // add ولا delete ولا حتى list. الواجهة (financial.html) بتقفل الصفحة كلها للمساعد إلا لو
+    // معاه view_financial، فده نفس الصلاحية اللي المفروض تتحقق هنا (الميزة مالهاش تقسيم أدق
+    // زي باقي الوحدات المالية — نفس الصلاحية بتغطي العرض والتسجيل والحذف)
+    await requireAssistantPermission(payload, "view_financial");
+
     const tokenClientId = payload.clientId || payload.teacherId;
     const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
 

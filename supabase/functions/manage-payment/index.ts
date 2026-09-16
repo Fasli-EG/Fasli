@@ -80,6 +80,12 @@ async function handleAdd(supabase: any, payload: TokenPayload, body: any) {
     return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح لك بهذه العملية" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  // ✅ Batch 27: كان بيتحقق بس إن المبلغ مايتخطاش الإجمالي — من غير أي حد أدنى، فمبلغ سالب كان
+  // بيتقبل ويسجّل عادي، وده بيكسر رصيد "المتبقي على الطالب" وأي تقرير نسبة تحصيل
+  if (isNaN(Number(amount)) || Number(amount) < 0 || isNaN(Number(totalAmount)) || Number(totalAmount) <= 0) {
+    return new Response(JSON.stringify({ success: false, message: "⚠️ أدخل مبلغاً ومبلغاً إجمالياً صحيحين" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
   if (Number(amount) > Number(totalAmount)) {
     return new Response(JSON.stringify({ success: false, message: `⚠️ المبلغ (${amount} ج.م) يتجاوز المبلغ الكامل (${totalAmount} ج.م)` }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -140,7 +146,11 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
     return new Response(JSON.stringify({ success: false, message: "الدفعة غير موجودة" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  if (payment.students?.teacher_id !== tokenClientId) {
+  // ✅ Batch 27: نفس غلطة manage-grade بالظبط — كان بيتحقق من teacher_id بتاع الطالب الأساسي
+  // بدل teacher_id بتاع الدفعة نفسها، فمدرس رصد دفعة لطالب مشترك (student_teacher_links) مكانش
+  // يقدر يحذفها تاني أبداً. _shared/payments.ts's updatePaymentAmount كانت صح من الأول
+  // (بتستخدم oldPayment.teacher_id) — هنا بس كانت الغلطة
+  if (payment.teacher_id !== tokenClientId) {
     return new Response(JSON.stringify({ success: false, message: "⛔ هذه الدفعة ليست تابعاً لك" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
@@ -153,17 +163,17 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
   }
 
   let teacherName = "مدرس";
-  if (payment.students?.teacher_id) {
-    const { data: teacher, error: teacherError } = await supabase.from("teachers").select("name").eq("client_id", payment.students.teacher_id).maybeSingle();
+  if (payment.teacher_id) {
+    const { data: teacher, error: teacherError } = await supabase.from("teachers").select("name").eq("client_id", payment.teacher_id).maybeSingle();
     if (!teacherError && teacher) teacherName = teacher.name || "مدرس";
   }
 
-  const performerId = assistantId || payment.students?.teacher_id;
+  const performerId = assistantId || payment.teacher_id;
   const performerRole = assistantId ? "assistant" : "teacher";
   const performerName = assistantId ? (assistantName || "مساعد") : teacherName;
 
   await supabase.from("activity_logs").insert({
-    client_id: payment.students?.teacher_id, teacher_id: payment.students?.teacher_id, assistant_id: assistantId ? parseInt(assistantId) : null,
+    client_id: payment.teacher_id, teacher_id: payment.teacher_id, assistant_id: assistantId ? parseInt(assistantId) : null,
     action_type: "delete_payment", entity_type: "payment", entity_id: String(paymentId),
     details: {
       student_name: payment.students?.name, student_uid: payment.students?.uid, title: payment.title, total_amount: payment.total_amount,
@@ -178,12 +188,12 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
     const statusText = payment.amount >= payment.total_amount ? "مدفوع بالكامل" : (payment.amount > 0 ? "دفعة جزئية" : "غير مدفوع");
     const deleteNotifRows = [
       ...(payment.students?.parent_phone ? [{
-        teacher_id: payment.students.teacher_id, parent_phone: payment.students.parent_phone, student_uid: payment.students.uid, type: "payment", title: "حذف دفعة", audience: "parent",
+        teacher_id: payment.teacher_id, parent_phone: payment.students.parent_phone, student_uid: payment.students.uid, type: "payment", title: "حذف دفعة", audience: "parent",
         message: `تم حذف دفعة "${payment.title}" لـ ${payment.students.name} (${payment.amount} ج.م، ${statusText})`,
         details: { student_name: payment.students.name, title: payment.title, amount: payment.amount, total_amount: payment.total_amount, status: statusText },
       }] : []),
       {
-        teacher_id: payment.students.teacher_id, student_uid: payment.students.uid, type: "payment", title: "حذف دفعة", audience: "student",
+        teacher_id: payment.teacher_id, student_uid: payment.students.uid, type: "payment", title: "حذف دفعة", audience: "student",
         message: `تم حذف دفعتك "${payment.title}" (${payment.amount} ج.م، ${statusText})`,
         details: { title: payment.title, amount: payment.amount, total_amount: payment.total_amount, status: statusText },
       },

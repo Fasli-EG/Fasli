@@ -83,6 +83,11 @@ async function handlePay(supabase: any, payload: TokenPayload, body: any) {
   }
 
   const newAmount = Number(amount);
+  // ✅ Batch 27: نفس غلطة manage-payment — كان بيتحقق بس من الحد الأعلى، مبلغ سالب كان بيتسجّل عادي
+  if (isNaN(newAmount) || newAmount < 0) {
+    return new Response(JSON.stringify({ success: false, message: "⚠️ أدخل مبلغاً صحيحاً" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
   if (newAmount > book.price) {
     return new Response(JSON.stringify({ success: false, message: `⚠️ المبلغ (${newAmount} ج.م) يتجاوز سعر المذكرة (${book.price} ج.م)` }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });

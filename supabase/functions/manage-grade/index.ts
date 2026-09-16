@@ -220,7 +220,12 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
     return new Response(JSON.stringify({ success: false, message: "الدرجة غير موجودة" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  if (oldGrade.students?.teacher_id !== tokenClientId) {
+  // ✅ Batch 27: كان بيتحقق من teacher_id بتاع الطالب الأساسي (oldGrade.students.teacher_id)
+  // بدل teacher_id بتاع الدرجة نفسها (oldGrade.teacher_id) — للطالب المشترك (student_teacher_links)
+  // الاتنين مختلفين (الدرجة بتتسجّل بـteacher_id المدرس اللي رصدها فعليًا، مش مدرس الطالب الأساسي)،
+  // فكان أي مدرس يرصد درجة لطالب مشترك عنده مينفعش يعدّلها أو يحذفها تاني أبداً — نفس الغلطة
+  // في handleDelete تحت
+  if (oldGrade.teacher_id !== tokenClientId) {
     return new Response(JSON.stringify({ success: false, message: "⛔ هذه الدرجة ليست تابعاً لك" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
@@ -243,7 +248,7 @@ async function handleUpdate(supabase: any, payload: TokenPayload, body: any) {
   const { data: updatedGrade, error: updateError } = await supabase.from("grades").update({ score: newScore }).eq("id", gradeId).select().single();
   if (updateError) throw new Error(updateError.message);
 
-  const teacherId = oldGrade.students?.teacher_id;
+  const teacherId = oldGrade.teacher_id;
   const performerId = assistantId || teacherId;
   const performerRole = assistantId ? "assistant" : "teacher";
   let performerName = assistantId ? (assistantName || "مساعد") : "مدرس";
@@ -305,7 +310,7 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
     return new Response(JSON.stringify({ success: false, message: "الدرجة غير موجودة" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  if (grade.students?.teacher_id !== tokenClientId) {
+  if (grade.teacher_id !== tokenClientId) {
     return new Response(JSON.stringify({ success: false, message: "⛔ هذه الدرجة ليست تابعاً لك" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
@@ -313,7 +318,7 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
   const { error: deleteError } = await supabase.from("grades").delete().eq("id", parseInt(gradeId));
   if (deleteError) throw new Error(deleteError.message);
 
-  const teacherId = grade.students?.teacher_id;
+  const teacherId = grade.teacher_id;
   const performerId = assistantId || teacherId;
   const performerRole = assistantId ? "assistant" : "teacher";
   let performerName = assistantId ? (assistantName || "مساعد") : "مدرس";
