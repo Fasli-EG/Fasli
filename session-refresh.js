@@ -68,13 +68,24 @@
     }
   }
 
-  // ✅ أي سكريبت تاني محتاج window.__fasliSessionClient لازم يستنى الـpromise ده الأول،
-  // عشان يتأكد إنه اتجهّز قبل ما يعمل GoTrueClient تاني على نفس مفتاح التخزين
+  // ✅ (طلب) session-restore.js (محمّل مبكرًا في الصفحة) بيعمل window.__fasliSessionReady
+  // بنفسه قبل ما الملف ده يتحمّل خالص — عشان أي fetch بيحصله 401 على توكن قديم من "تذكرني"
+  // يقدر يستنى محاولة التجديد دي قبل ما يستسلم ويسجّل خروج المستخدم. هنا بس بنحلّ نفس
+  // الـpromise ده (مش بننشئ واحد جديد يبوّظ اللي already منتظرين عليه)، وبنضمن إنه بيتحلّ
+  // في كل الحالات حتى لو init() رجعت بدري (مفيش توكن أصلاً، فشل الشبكة، إلخ)
+  function resolveSessionReady() {
+    if (window.__fasliSessionReadyResolve) { window.__fasliSessionReadyResolve(); window.__fasliSessionReadyResolve = null; }
+  }
+  async function runInit() {
+    try { await init(); } finally { resolveSessionReady(); }
+  }
+  if (!window.__fasliSessionReady) {
+    // ✅ احتياطي لو الصفحة دي مش محمّلة معاها session-restore.js لأي سبب
+    window.__fasliSessionReady = new Promise((resolve) => { window.__fasliSessionReadyResolve = resolve; });
+  }
   if (document.readyState === 'loading') {
-    window.__fasliSessionReady = new Promise((resolve) => {
-      document.addEventListener('DOMContentLoaded', () => init().then(resolve));
-    });
+    document.addEventListener('DOMContentLoaded', runInit);
   } else {
-    window.__fasliSessionReady = init();
+    runInit();
   }
 })();

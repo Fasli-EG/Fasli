@@ -2,7 +2,7 @@
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
-<script src="session-restore.js?v=1"></script>
+<script src="session-restore.js?v=2"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>لوحة تحكم المساعد - فَصلي</title>
   <meta name="description" content="لوحة تحكم المساعد في نظام فَصلي لإدارة الدروس الخصوصية">
@@ -2155,6 +2155,9 @@ async function saveCardMode() {
 async function refreshCardModeStatus() {
   const cardEl = document.getElementById('cardModeCard');
   if (cardEl && cardEl.style.display === 'none') return;
+  // ✅ (طلب) نفس إصلاح dashboard.html — منسيبش التحديث الدوري يلمس حقول المودال وهو مفتوح
+  // ومعدّل عليه المستخدم، عشان ميرجعش يعرض القيمة القديمة المحفوظة كأن المودال "اتقفل" لوحده
+  if (document.getElementById('cardModeModal')?.classList.contains('open')) return;
   try {
     const headers = getAuthHeaders();
     if (!headers) return;
@@ -3164,7 +3167,7 @@ function openAttendanceModal() {
     </div>
   </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="session-refresh.js?v=6"></script>
+<script src="session-refresh.js?v=7"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <script src="webauthn.js?v=6"></script>
 <script src="recovery-email.js?v=3"></script>

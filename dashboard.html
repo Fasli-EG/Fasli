@@ -2,7 +2,7 @@
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
-<script src="session-restore.js?v=1"></script>
+<script src="session-restore.js?v=2"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>لوحة التحكم - فَصلي</title>
   <meta name="description" content="لوحة تحكم المدرس في نظام فَصلي لإدارة الدروس الخصوصية">
@@ -2626,6 +2626,11 @@ async function checkScheduledExams() {
 
 async function refreshCardModeStatus() {
   try {
+    // ✅ (طلب) المودال ده كان بيتعمله overwrite من التحديث الدوري وهو لسه مفتوح ومعدّل عليه
+    // المستخدم (مثلاً بيفعّل القارئ ولسه ماحفظش) — القيم بتاعته بترجع للحالة المحفوظة فعليًا
+    // على السيرفر (لسه من غير التعديل) فيبان وكأن المودال "اتقفل" أو رجع لحالته الأصلية من
+    // تحته. طول ما المودال مفتوح، منسيبش التحديث الدوري يلمس حقوله خالص
+    if (document.getElementById('cardModeModal')?.classList.contains('open')) return;
     const headers = getAuthHeaders();
     if (!headers) return;
     const response = await fetch(PROJECT_URL + '/functions/v1/card-action-mode', {
@@ -3558,7 +3563,7 @@ async function confirmReset() {
     </div>
   </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="session-refresh.js?v=6"></script>
+<script src="session-refresh.js?v=7"></script>
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <script src="webauthn.js?v=6"></script>
 <script src="recovery-email.js?v=3"></script>
