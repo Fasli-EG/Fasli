@@ -46,7 +46,7 @@
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
     <script src="layout.js?v=6"></script>
-    <script>renderShell({active:'settings'});</script>
+    <script>renderShell({active:'settings', isAssistant: sessionStorage.getItem('userRole') === 'assistant'});</script>
 
     <div class="main-area">
       <div class="topbar">
@@ -200,14 +200,14 @@
     <div class="wifi-card">
       <div class="page-header" style="margin-bottom:16px;">
         <div>
-          <h2 style="font-size:18px;">🧾 استقبال إيصالات الدفع الإلكتروني</h2>
-          <span class="sub">لما تكون مفعّلة، يقدر ولي الأمر يرفع صورة إيصال تحويل يدوي (InstaPay/محفظة) عن أي بند مش مدفوع بالكامل، وتراجعها أنت من تبويب "إيصالات بانتظار المراجعة" في صفحة المدفوعات. الإيصال لازم يغطي المبلغ المتبقي بالكامل — مفيش دفعات جزئية عن طريق الإيصال.</span>
+          <h2 style="font-size:18px;">🧾 الدفع الإلكتروني</h2>
+          <span class="sub">لما يكون مفعّل، يقدر ولي الأمر يشوف بيانات الدفع بتاعتك ويرفع صورة إيصال تحويل يدوي (InstaPay/محفظة) عن أي بند مش مدفوع بالكامل، وتراجعها أنت من تبويب "إيصالات بانتظار المراجعة" في صفحة المدفوعات. الإيصال لازم يغطي المبلغ المتبقي بالكامل — مفيش دفعات جزئية عن طريق الإيصال. لو مش مفعّل، ولي الأمر مش هيشوف أي بيانات دفع خالص.</span>
         </div>
       </div>
       <div class="wifi-form">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
           <input type="checkbox" id="electronicPaymentEnabledToggle" onchange="saveElectronicPaymentToggle()" style="width:20px;height:20px;">
-          <span>تفعيل استقبال إيصالات الدفع الإلكتروني</span>
+          <span>تفعيل الدفع الإلكتروني</span>
         </label>
       </div>
       <div id="electronicPaymentToggleMessage" class="message"></div>

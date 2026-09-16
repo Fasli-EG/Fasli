@@ -18,7 +18,7 @@
   <div class="app-shell">
     <div id="app-shell-sidebar-slot"></div>
     <script src="layout.js?v=6"></script>
-    <script>renderShell({active:'payments'});</script>
+    <script>renderShell({active:'payments', isAssistant: sessionStorage.getItem('userRole') === 'assistant'});</script>
 
     <div class="main-area">
       <div class="topbar">
@@ -177,7 +177,7 @@
           </div>
         </div>
         <div class="form-actions" id="formActions">
-          <button class="btn btn-success" id="addPaymentBtn" onclick="submitPayment()">
+          <button class="btn btn-primary" id="addPaymentBtn" onclick="submitPayment()">
             <i class="fas fa-save"></i> تسجيل السداد
           </button>
           <button class="btn btn-outline" onclick="resetForm()">
@@ -307,7 +307,7 @@
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn-success" onclick="addBook()">
+          <button class="btn btn-primary" onclick="addBook()">
             <i class="fas fa-save"></i> إضافة مذكرة
           </button>
           <button class="btn btn-outline" onclick="resetBookForm()">
