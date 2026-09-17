@@ -5,7 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
 
 function requireAdmin(payload: TokenPayload) {
-  if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
+  if (payload.role !== "teacher" || payload.clientId !== "Fasli-admin") {
     throw new AuthError("⛔ غير مصرح بهذه العملية", 403);
   }
 }

@@ -12,7 +12,7 @@ function requireOwnClientId(payload: TokenPayload, requestedClientId?: string | 
 }
 
 async function requireTeacherPlanPermission(supabase: any, clientId: string, permKey: string): Promise<void> {
-  if (clientId === "master_admin") return;
+  if (clientId === "Fasli-admin") return;
   const { data: teacher } = await supabase.from("teachers").select("permissions").eq("client_id", clientId).maybeSingle();
   const perms = teacher?.permissions || {};
   if (perms[permKey] === false) throw new AuthError("⛔ هذه الميزة غير متاحة في باقتك الحالية، تواصل مع الإدارة لتفعيلها", 403, "PLAN_RESTRICTED");

@@ -47,7 +47,7 @@ serve(async (req) => {
     let calculatedStatus = "active";
     let daysRemaining = null;
 
-    if (teacher.client_id === "master_admin") calculatedStatus = "admin";
+    if (teacher.client_id === "Fasli-admin") calculatedStatus = "admin";
     else if (teacher.is_active === false) calculatedStatus = "inactive";
     else if (teacher.expiry_date && teacher.expiry_date < today) calculatedStatus = "expired";
 

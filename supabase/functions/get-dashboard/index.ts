@@ -73,7 +73,7 @@ serve(async (req) => {
         .eq("client_id", finalClientId)
         .gte("created_at", oneHourAgoPre)
         .or("performer_role.is.null,performer_role.neq.admin")
-        .or("performer_id.is.null,performer_id.neq.master_admin")
+        .or("performer_id.is.null,performer_id.neq.Fasli-admin")
         .order("created_at", { ascending: false })
         .limit(50),
     ]);

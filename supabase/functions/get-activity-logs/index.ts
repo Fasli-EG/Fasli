@@ -36,7 +36,7 @@ serve(async (req) => {
       // ✅ طبقة حماية إضافية: أي نشاط منسوب للماستر ميظهرش للمدرس خالص، حتى لو اتسجّل بالغلط من أي دالة تانية مستقبلاً
       // (or بدل neq عشان مانستبعدش بالغلط سجلات قديمة مفيهاش performer_role خالص)
       .or("performer_role.is.null,performer_role.neq.admin")
-      .or("performer_id.is.null,performer_id.neq.master_admin")
+      .or("performer_id.is.null,performer_id.neq.Fasli-admin")
       .order("created_at", { ascending: false })
       .limit(500);
 

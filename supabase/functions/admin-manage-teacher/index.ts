@@ -14,7 +14,7 @@ async function handleAdd(supabase: any, body: any) {
     return new Response(JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  if (clientId === "master_admin") {
+  if (clientId === "Fasli-admin") {
     return new Response(JSON.stringify({ success: false, message: "⛔ لا يمكن إضافة حساب المشرف الرئيسي" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
@@ -88,7 +88,7 @@ async function handleUpdate(supabase: any, body: any) {
     return new Response(JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  if (clientId === "master_admin") {
+  if (clientId === "Fasli-admin") {
     return new Response(JSON.stringify({ success: false, message: "⛔ لا يمكن تعديل حساب المشرف الرئيسي" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
@@ -150,7 +150,7 @@ async function handleDelete(supabase: any, body: any) {
     return new Response(JSON.stringify({ success: false, message: "⚠️ clientId مطلوب" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  if (clientId === "master_admin") {
+  if (clientId === "Fasli-admin") {
     return new Response(JSON.stringify({ success: false, message: "⛔ لا يمكن حذف حساب المشرف الرئيسي" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }

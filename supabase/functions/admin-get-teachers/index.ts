@@ -54,7 +54,7 @@ serve(async (req) => {
       // (زي "2026-08-09T00:00:00.000Z") المقارنة النصية ممكن تدّي نتيجة غلط في حالات معيّنة
       const expiryTime = teacher.expiry_date ? new Date(teacher.expiry_date).getTime() : null;
 
-      if (teacher.client_id === "master_admin") calculatedStatus = "admin";
+      if (teacher.client_id === "Fasli-admin") calculatedStatus = "admin";
       else if (teacher.is_active === false) calculatedStatus = "inactive";
       else if (expiryTime !== null && expiryTime < now) calculatedStatus = "expired";
 

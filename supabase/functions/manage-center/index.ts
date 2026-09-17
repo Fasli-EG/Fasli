@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     // ✅ الأدمن يشوف كل السنترات الموجودة، عشان يقدر يضم مدرس لأي واحد فيهم
     if (action === "listCenters") {
-      if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
+      if (payload.role !== "teacher" || payload.clientId !== "Fasli-admin") {
         return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح بهذه العملية" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
@@ -54,11 +54,11 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ✅ إنشاء سنتر جديد — بس المشرف الرئيسي (master_admin) يقدر يعمل ده، زي إضافة مدرس بالظبط
+    // ✅ إنشاء سنتر جديد — بس المشرف الرئيسي (Fasli-admin) يقدر يعمل ده، زي إضافة مدرس بالظبط
     // ✅ Aug 2026: السنتر بقى بيتعامل زي المدرس تماماً وقت الإنشاء — حدود تشغيلية بس (بدون نظام صلاحيات خاص بيه):
     // عدد طلاب أقصى (موزّع لاحقاً على مدرسيه)، عدد مدرسين أقصى، تاريخ انتهاء ترخيص.
     if (action === "create") {
-      if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
+      if (payload.role !== "teacher" || payload.clientId !== "Fasli-admin") {
         return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح بهذه العملية" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
 
     // ✅ Aug 2026: تعديل حدود السنتر التشغيلية من الماستر أدمن (اسم/مالك/سقف طلاب/سقف مدرسين/تاريخ انتهاء/تفعيل)
     if (action === "update") {
-      if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
+      if (payload.role !== "teacher" || payload.clientId !== "Fasli-admin") {
         return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح بهذه العملية" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     // ✅ حذف سنتر نهائياً — بس الأدمن الرئيسي، وبس لو السنتر مفيهوش أي مدرسين لسه (حماية من حذف عرضي
     // لسنتر شغال بمدرسين وطلاب حقيقيين — لازم الماستر يشيل/يحذف مدرسيه الأول لو عايز يحذف السنتر)
     if (action === "delete") {
-      if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
+      if (payload.role !== "teacher" || payload.clientId !== "Fasli-admin") {
         return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح بهذه العملية" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
 
     // ✅ ضم مدرس لسنتر — بس الأدمن الرئيسي يقدر يعمل الربط ده حالياً (حماية من ضم نفسك لسنتر غلط)
     if (action === "assignTeacher") {
-      if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
+      if (payload.role !== "teacher" || payload.clientId !== "Fasli-admin") {
         return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح بهذه العملية" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }

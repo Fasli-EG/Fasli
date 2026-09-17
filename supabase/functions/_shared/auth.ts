@@ -64,7 +64,7 @@ function decodeJwtExpUnsafe(token: string): number {
  * (توكن المساعد بيتحقق من ترخيص المدرس بتاعه نفسه).
  */
 async function checkLicenseActive(teacherClientId: string): Promise<{ active: boolean; reason?: string }> {
-  if (teacherClientId === "master_admin") return { active: true };
+  if (teacherClientId === "Fasli-admin") return { active: true };
 
   const supabase = await licenseCheckClient();
   const { data: teacher, error } = await supabase
@@ -167,9 +167,9 @@ export function requireOwnClientId(payload: TokenPayload, requestedClientId?: st
   return tokenClientId;
 }
 
-/** يتأكد إن التوكن ده لحساب المشرف الرئيسي (master_admin) */
+/** يتأكد إن التوكن ده لحساب المشرف الرئيسي (Fasli-admin) */
 export function requireAdmin(payload: TokenPayload) {
-  if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
+  if (payload.role !== "teacher" || payload.clientId !== "Fasli-admin") {
     throw new AuthError("⛔ غير مصرح بهذه العملية", 403);
   }
 }
@@ -188,10 +188,10 @@ export function requireParentPhone(payload: TokenPayload, requestedPhone?: strin
 /**
  * يتأكد إن باقة المدرس (المُحدّدة من الأدمن) فيها الميزة المطلوبة.
  * لو المفتاح مش موجود في permissions (مدرس قديم قبل إضافة الميزة دي) بنسمح افتراضياً (توافق مع الحسابات القديمة).
- * لا تُستدعى لحساب master_admin.
+ * لا تُستدعى لحساب Fasli-admin.
  */
 export async function requireTeacherPlanPermission(clientId: string, permKey: string): Promise<void> {
-  if (clientId === "master_admin") return;
+  if (clientId === "Fasli-admin") return;
   const supabase = await licenseCheckClient();
   const { data: teacher } = await supabase
     .from("teachers").select("permissions").eq("client_id", clientId).maybeSingle();

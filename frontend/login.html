@@ -741,7 +741,7 @@
 
     // ✅ مهم جداً: كل استدعاءات saveAuth هنا لازم تُستنى (await) بالترتيب قبل أي تنقل،
     // لأن الكتابة في التخزين الدائم (Preferences) عملية async، ولو الصفحة اتنقلت قبل ما تخلص، البيانات ممكن تضيع جزئياً
-    if (role === 'teacher' && username === 'master_admin') {
+    if (role === 'teacher' && username === 'Fasli-admin') {
       await saveAuth('clientId', username);
       await saveAuth('teacherName', 'المشرف الرئيسي');
       await saveAuth('isAdmin', 'true');
@@ -814,31 +814,9 @@
 
     setLoading(true);
 
-    // ✅ (هجرة Supabase Auth) حسابات بإيميل حقيقي (الماستر أدمن حاليًا) بتدخل مباشرة عن طريق
-    // Supabase Auth من غير المرور بفانكشن /login. باقي الأدوار (كود مدرس/اسم مستخدم مساعد/رقم
-    // هاتف ولي أمر) بتفضل تنادي /login زي ما هي — الفانكشن نفسها بقت بتتحقق عن طريق Supabase
-    // Auth من جوّه (login/index.ts)، فمفيش داعي الفرونت إند يتغيّر خالص لباقي الأدوار.
-    if (username.includes('@')) {
-      try {
-        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email: username, password });
-        if (authError || !authData?.session) {
-          showMessage('بيانات الدخول غير صحيحة', 'error');
-          return;
-        }
-        const meta = authData.user?.app_metadata || {};
-        await saveAuth('jwtToken', authData.session.access_token);
-        await saveAuth('refreshToken', authData.session.refresh_token);
-        showMessage('تم تسجيل الدخول بنجاح', 'success');
-        setTimeout(() => redirectUser(meta.role || 'teacher', meta.clientId || username, { name: meta.name }, false, false, '', '', '', '', false), 900);
-      } catch (error) {
-        console.error('❌ خطأ:', error);
-        showMessage('حدث خطأ في الاتصال بالخادم: ' + error.message, 'error');
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
+    // ✅ (توحيد الدخول) الماستر بقى بيدخل بنفس منطق كل الأدوار التانية بالظبط (كود حساب +
+    // باسورد عن طريق /login، مبني على حساب Supabase Auth بإيميل داخلي مش إيميل حقيقي) — مفيش
+    // فرع دخول مباشر بإيميل حقيقي منفصل بعد كده لأي حساب في النظام
     try {
       const response = await fetch(PROJECT_URL + '/functions/v1/login', {
         method: 'POST',
@@ -959,7 +937,7 @@
 
         <div style="background:var(--surface-soft);border-radius:12px;padding:14px;margin-bottom:12px;">
           <p style="font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:8px;">📧 استرجع بإيميل الاسترجاع بتاعك</p>
-          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">اكتب كود حسابك (كود المدرس / اسم مستخدم المساعد / رقم تليفون ولي الأمر / كود الطالب — أو master_admin لو حساب المشرف) — لو مسجّل إيميل استرجاع بحسابك، هيوصلك رابط لتحديد كلمة مرور جديدة عليه.</p>
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">اكتب كود حسابك (كود المدرس / اسم مستخدم المساعد / رقم تليفون ولي الأمر / كود الطالب — أو Fasli-admin لو حساب المشرف) — لو مسجّل إيميل استرجاع بحسابك، هيوصلك رابط لتحديد كلمة مرور جديدة عليه.</p>
           <input type="text" id="forgotPwIdentifier" placeholder="كود حسابك" value="${typedUsername.replace(/"/g, '&quot;')}" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;margin-bottom:10px;">
           <button type="button" onclick="sendPasswordReset()" id="forgotPwSendBtn" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--gradient-gold);color:var(--indigo);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;">إرسال رابط إعادة التعيين</button>
           <p id="forgotPwFeedback" style="font-size:12px;margin-top:8px;"></p>
@@ -973,7 +951,7 @@
     document.body.appendChild(overlay);
   }
 
-  // ✅ استرجاع موحّد لكل الأدوار بما فيهم الماستر (اللي حسابه client_id='master_admin' في
+  // ✅ استرجاع موحّد لكل الأدوار بما فيهم الماستر (اللي حسابه client_id='Fasli-admin' في
   // نفس جدول teachers) — بيدوّر على إيميل استرجاع اختياري مسجّل بالحساب ويبعت عليه رابط
   async function sendPasswordReset() {
     const identifier = document.getElementById('forgotPwIdentifier').value.trim();
@@ -1166,7 +1144,7 @@
       const parentPhone = sessionStorage.getItem('parentPhone');
 
       if (role === 'teacher') {
-        if (clientId === 'master_admin') { window.location.href = 'admin-teachers.html'; return; }
+        if (clientId === 'Fasli-admin') { window.location.href = 'admin-teachers.html'; return; }
         else if (clientId) { window.location.href = 'dashboard.html'; return; }
       } else if (role === 'assistant' && assistantId) {
         window.location.href = 'assistant-dashboard.html'; return;

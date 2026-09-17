@@ -31,7 +31,7 @@ async function requireAssistantPermission(payload: TokenPayload, permKey: string
 }
 
 async function requireTeacherPlanPermission(clientId: string, permKey: string): Promise<void> {
-  if (clientId === "master_admin") return;
+  if (clientId === "Fasli-admin") return;
   const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
   const { data: teacher } = await supabase.from("teachers").select("permissions").eq("client_id", clientId).maybeSingle();
   const perms = teacher?.permissions || {};

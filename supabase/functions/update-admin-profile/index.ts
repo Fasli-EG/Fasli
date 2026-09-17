@@ -26,7 +26,7 @@ serve(async (req) => {
     }
 
     const { error } = await supabase
-      .from("teachers").update({ name: name.trim() }).eq("client_id", "master_admin");
+      .from("teachers").update({ name: name.trim() }).eq("client_id", "Fasli-admin");
 
     if (error) {
       return new Response(JSON.stringify({ success: false, message: error.message }),

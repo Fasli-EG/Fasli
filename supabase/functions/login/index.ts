@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
       responseData.expiryDate = user.expiry_date;
       responseData.isActive = user.is_active;
       responseData.studentCount = user.student_count || 0;
-      responseData.isAdmin = user.client_id === "master_admin";
+      responseData.isAdmin = user.client_id === "Fasli-admin";
 
       // ✅ لو المدرس عنده شعار/لون خاص بيه بيتقدّم على شعار السنتر (لو تابع لسنتر)
       let brandLogoUrl = user.brand_logo_url || null;

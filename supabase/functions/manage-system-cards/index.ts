@@ -5,7 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, TokenPayload, AuthError, verifyToken } from "../_shared/auth.ts";
 
 function requireAdmin(payload: TokenPayload) {
-  if (payload.role !== "teacher" || payload.clientId !== "master_admin") {
+  if (payload.role !== "teacher" || payload.clientId !== "Fasli-admin") {
     throw new AuthError("⛔ غير مصرح بهذه العملية", 403);
   }
 }
@@ -19,7 +19,7 @@ function requireAdmin(payload: TokenPayload) {
  * بيرفضوا (404 "السنتر غير موجود") أي مدرس عادي مالوش صف في centers، فده الحد الحقيقي للصلاحية.
  */
 function requireAdminOrCenterOwner(payload: TokenPayload): boolean {
-  if (payload.role === "teacher" && payload.clientId === "master_admin") return false; // false = أدمن كامل الصلاحية
+  if (payload.role === "teacher" && payload.clientId === "Fasli-admin") return false; // false = أدمن كامل الصلاحية
   if (payload.role === "teacher" && payload.clientId) return true; // true = يُفترض صاحب سنتر — هيتأكد فعليًا من جدول centers تحت
   throw new AuthError("⛔ غير مصرح بهذه العملية", 403);
 }
