@@ -553,7 +553,7 @@
     try {
       const parts = token.split('.');
       if (parts.length !== 3) return false;
-      const payload = JSON.parse(atob(parts[1]));
+      const payload = JSON.parse(atob((parts[1] + '==='.slice((parts[1].length + 3) % 4)).replace(/-/g, '+').replace(/_/g, '/')));
       const exp = payload.exp;
       if (exp) {
         const now = Math.floor(Date.now() / 1000);
@@ -1113,13 +1113,55 @@
       }
     }
 
+    // ✅ (أمان/وظيفي حرج) التوكن المسترجع (من أي مصدر فوق) بينتهي بعد ساعة تقريباً — قفل
+    // التطبيق (خصوصاً الموبايل/سطح المكتب، اللي بيدخلوا الصفحة دي بالذات في كل مرة يتفتحوا فيها)
+    // وفتحه تاني بعد غيبة أطول من كده كان معناه توكن منتهي، وصفحة الدخول دي مكانش فيها أي محاولة
+    // تجديد خالص (session-refresh.js اللي بيعمل كده لباقي الصفحات مش محمّل هنا) — فكانت بترجع
+    // تعرض فورم الدخول العادي وكأن "تذكرني" مالهاش أي تأثير، رغم إن الـrefresh token لسه صالح
+    // (صلاحيته أطول بكتير) وكان يقدر يجدد الجلسة عادي. نجرب نجدد قبل ما نستسلم.
+    if (!isTokenValid() && sessionStorage.getItem('jwtToken') && sessionStorage.getItem('refreshToken')) {
+      try {
+        const { data, error } = await supabaseClient.auth.setSession({
+          access_token: sessionStorage.getItem('jwtToken'),
+          refresh_token: sessionStorage.getItem('refreshToken'),
+        });
+        if (!error && data?.session) {
+          const isRemembered = localStorage.getItem('fasliRememberMe') === 'true';
+          const persistRefreshed = async (key, value) => {
+            value = String(value);
+            sessionStorage.setItem(key, value);
+            if (!isRemembered) return;
+            localStorage.setItem(key, value);
+            if (Preferences) await Preferences.set({ key, value }).catch(() => {});
+            if (window.electronStore) await window.electronStore.set(key, value).catch(() => {});
+          };
+          await persistRefreshed('jwtToken', data.session.access_token);
+          await persistRefreshed('refreshToken', data.session.refresh_token);
+        }
+      } catch (e) { /* فشل التجديد — هيفضل التعامل مع التوكن القديم زي ما هو تحت، وهيوصّل الفورم العادي */ }
+    }
+
     if (isTokenValid()) {
       const token = getToken();
       let payload = null;
-      try { payload = JSON.parse(atob(token.split('.')[1])); } catch (e) {}
+      try {
+        // ✅ (أمان/وظيفي حرج) atob() العادية بترفض base64url (اللي فيه - و_ بدل + و/، وده
+        // اللي Supabase بيرجّعه فعليًا لأي توكن اتجدد عن طريق setSession) — كانت بترمي استثناء
+        // صامت ويفضل payload=null، فيرجع الكود يعتمد بس على sessionStorage
+        let b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        payload = JSON.parse(atob(b64));
+      } catch (e) {}
 
-      const role = payload?.role || sessionStorage.getItem('userRole');
-      const clientId = payload?.clientId || sessionStorage.getItem('clientId');
+      // ✅ (أمان/وظيفي حرج) دور المستخدم الحقيقي (مدرس/مساعد/ولي أمر) محفوظ جوه
+      // app_metadata.role — مش payload.role العلوي، ده دايماً "authenticated" (دور Postgres
+      // العام بتاع Supabase نفسه لأي توكن، بغض النظر عن نوع الحساب). كان بيرجع "authenticated"
+      // دايماً (قيمة صحيحة مش undefined)، فمعادلة || كانت مستحيل توصل لـsessionStorage كـfallback
+      // — يعني إعادة التوجيه التلقائي بعد استرجاع "تذكرني" هنا كانت معطّلة تمامًا من الأساس، لأي
+      // دور غير الماستر، في كل مرة الصفحة دي تتفتح (وهي بالظبط الصفحة اللي تطبيقي الموبايل/سطح
+      // المكتب بيدخلوا بيها كل مرة يتفتحوا فيها — مش صفحة عادية بيزورها المستخدم أحياناً بس)
+      const role = payload?.app_metadata?.role || sessionStorage.getItem('userRole');
+      const clientId = payload?.app_metadata?.clientId || sessionStorage.getItem('clientId');
       const assistantId = sessionStorage.getItem('assistantId');
       const parentPhone = sessionStorage.getItem('parentPhone');
 
