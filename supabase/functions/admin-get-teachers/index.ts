@@ -30,10 +30,12 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { data: allStudents } = await supabase.from("students").select("teacher_id");
+    // ✅ (أداء) كان بيجيب عمود teacher_id من جدول students كله (كل مدرسي المنصة، من غير حد
+    // أقصى) بس عشان يعدّ الطلاب لكل مدرس في الكود — بقى العدّ نفسه جاهز من قاعدة البيانات
+    const { data: studentCounts } = await supabase.rpc("get_student_counts_by_teacher");
     const countByTeacher = new Map<string, number>();
-    (allStudents || []).forEach((s: any) => {
-      countByTeacher.set(s.teacher_id, (countByTeacher.get(s.teacher_id) || 0) + 1);
+    (studentCounts || []).forEach((row: any) => {
+      countByTeacher.set(row.teacher_id, Number(row.student_count));
     });
 
     const staleUpdates: Promise<any>[] = [];

@@ -178,21 +178,28 @@ async function handleDelete(supabase: any, body: any) {
 
   const { data: students } = await supabase.from("students").select("uid, parent_phone, auth_user_id").eq("teacher_id", clientId);
   await supabase.from("students").delete().eq("teacher_id", clientId);
-  for (const s of students || []) await deleteAuthUser(s.auth_user_id);
+  // ✅ (أداء) نداءات حذف حساب Auth (Admin API خارجي) كانت متسلسلة واحد ورا التاني — بقت متوازية
+  await Promise.all((students || []).map((s: any) => deleteAuthUser(s.auth_user_id)));
 
+  // ✅ (أداء) نفس إصلاح manage-group/reset-system — استعلام واحد لكل الأرقام بدل واحد لكل رقم
   const parentPhones = [...new Set((students || []).map((s: any) => s.parent_phone).filter(Boolean))];
-  for (const phone of parentPhones) {
-    const { count } = await supabase.from("students").select("id", { count: "exact", head: true }).eq("parent_phone", phone);
-    if (!count || count === 0) {
-      const { data: parent } = await supabase.from("parents").select("auth_user_id").eq("phone", phone).maybeSingle();
-      await supabase.from("parents").delete().eq("phone", phone);
-      await deleteAuthUser(parent?.auth_user_id);
+  if (parentPhones.length > 0) {
+    const [{ data: remainingRows }, { data: parentsToCheck }] = await Promise.all([
+      supabase.from("students").select("parent_phone").in("parent_phone", parentPhones),
+      supabase.from("parents").select("phone, auth_user_id").in("phone", parentPhones),
+    ]);
+    const stillHasStudents = new Set((remainingRows || []).map((r: any) => r.parent_phone));
+    const phonesToDelete = parentPhones.filter((p) => !stillHasStudents.has(p));
+    if (phonesToDelete.length > 0) {
+      await supabase.from("parents").delete().in("phone", phonesToDelete);
+      const authIdsToDelete = (parentsToCheck || []).filter((p: any) => phonesToDelete.includes(p.phone)).map((p: any) => p.auth_user_id);
+      await Promise.all(authIdsToDelete.map((id: string) => deleteAuthUser(id)));
     }
   }
 
   const { data: assistants } = await supabase.from("assistants").select("auth_user_id").eq("teacher_id", clientId);
   await supabase.from("assistants").delete().eq("teacher_id", clientId);
-  for (const a of assistants || []) await deleteAuthUser(a.auth_user_id);
+  await Promise.all((assistants || []).map((a: any) => deleteAuthUser(a.auth_user_id)));
 
   await supabase.from("groups").delete().eq("teacher_id", clientId);
   await supabase.from("books").delete().eq("teacher_id", clientId);

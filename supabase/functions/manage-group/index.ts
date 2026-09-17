@@ -174,10 +174,14 @@ async function handleDelete(supabase: any, payload: TokenPayload, body: any) {
       await supabase.from("system_cards").update({ student_uid: null, linked_at: null }).in("student_uid", studentUids);
     }
 
+    // ✅ (أداء) كان بيعمل استعلام "هل فاضل طلاب لنفس الرقم؟" منفصل لكل رقم ولي أمر على حدة —
+    // بقى استعلام واحد بس لكل الأرقام مع بعض، بغض النظر عن عددهم
     const parentPhones = [...new Set(students.map((s: any) => s.parent_phone).filter(Boolean))];
-    for (const phone of parentPhones) {
-      const { count: remainingCount } = await supabase.from("students").select("id", { count: "exact", head: true }).eq("parent_phone", phone);
-      if (!remainingCount || remainingCount === 0) await supabase.from("parents").delete().eq("phone", phone);
+    if (parentPhones.length > 0) {
+      const { data: remainingRows } = await supabase.from("students").select("parent_phone").in("parent_phone", parentPhones);
+      const stillHasStudents = new Set((remainingRows || []).map((r: any) => r.parent_phone));
+      const phonesToDelete = parentPhones.filter((p) => !stillHasStudents.has(p));
+      if (phonesToDelete.length > 0) await supabase.from("parents").delete().in("phone", phonesToDelete);
     }
   }
 

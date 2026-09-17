@@ -131,10 +131,19 @@ Deno.serve(async (req) => {
       .not("scheduled_at", "is", null)
       .lte("scheduled_at", new Date().toISOString());
 
+    // ✅ (أداء) كان بيعمل استعلام عدّ أسئلة منفصل لكل اختبار مستحق على حدة — بقى استعلام واحد
+    // لكل الاختبارات مع بعض، والعدّ بيتحسب في الكود بدل ما يتكرر لكل اختبار
+    const examIds = (dueExams || []).map((e: any) => e.id);
+    const questionCountByExam = new Map<number, number>();
+    if (examIds.length > 0) {
+      const { data: allQuestions } = await supabase.from("exam_questions").select("exam_id").in("exam_id", examIds);
+      (allQuestions || []).forEach((q: any) => questionCountByExam.set(q.exam_id, (questionCountByExam.get(q.exam_id) || 0) + 1));
+    }
+
     let publishedCount = 0;
     for (const exam of dueExams || []) {
-      const { count: qCount } = await supabase.from("exam_questions").select("id", { count: "exact", head: true }).eq("exam_id", exam.id);
-      if (!qCount || qCount === 0) continue; // اختبار فاضي من الأسئلة، منشرهوش لحد ما يتضاف له أسئلة
+      const qCount = questionCountByExam.get(exam.id) || 0;
+      if (qCount === 0) continue; // اختبار فاضي من الأسئلة، منشرهوش لحد ما يتضاف له أسئلة
       await publishExamAndNotify(supabase, exam);
       publishedCount++;
     }

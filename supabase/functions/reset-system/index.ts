@@ -163,12 +163,13 @@ serve(async (req) => {
 
       // ✅ الطلاب أنفسهم
       await supabase.from("students").delete().eq("teacher_id", finalClientId).select("parent_phone").then(async ({ data: deletedStudents }) => {
+        // ✅ (أداء) نفس إصلاح manage-group — استعلام واحد لكل الأرقام بدل واحد لكل رقم على حدة
         const parentPhones = [...new Set((deletedStudents || []).map((s: any) => s.parent_phone).filter(Boolean))];
-        for (const phone of parentPhones) {
-          const { count } = await supabase.from("students").select("id", { count: "exact", head: true }).eq("parent_phone", phone);
-          if (!count || count === 0) {
-            await supabase.from("parents").delete().eq("phone", phone);
-          }
+        if (parentPhones.length > 0) {
+          const { data: remainingRows } = await supabase.from("students").select("parent_phone").in("parent_phone", parentPhones);
+          const stillHasStudents = new Set((remainingRows || []).map((r: any) => r.parent_phone));
+          const phonesToDelete = parentPhones.filter((p) => !stillHasStudents.has(p));
+          if (phonesToDelete.length > 0) await supabase.from("parents").delete().in("phone", phonesToDelete);
         }
       });
 
