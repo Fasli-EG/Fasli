@@ -354,7 +354,7 @@
         await saveAuth('brandLogoUrl', d.brandLogoUrl || '', rememberMe);
         await saveAuth('brandColor', d.brandColor || '', rememberMe);
         await saveAuth('isCenter', d.isCenter ? 'true' : 'false', rememberMe);
-        window.location.href = (username === 'master_admin') ? 'admin-teachers.html' : 'dashboard.html';
+        window.location.href = (username === 'Fasli-admin') ? 'admin-teachers.html' : 'dashboard.html';
       } else if (role === 'assistant') {
         await saveAuth('assistantId', String(d.id || username), rememberMe);
         await saveAuth('assistantName', d.name || 'مساعد', rememberMe);

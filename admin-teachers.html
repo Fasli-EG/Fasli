@@ -827,7 +827,7 @@
 
     <div class="card" style="margin-top:24px;">
       <h2>📧 إيميل الاسترجاع</h2>
-      <p style="color:var(--muted-text);font-size:13px;margin-bottom:14px;">لو نسيت كلمة المرور، هنبعتلك رابط لتحديد واحدة جديدة على الإيميل ده — من صفحة الدخول، اكتب <strong>master_admin</strong> كمعرّف حسابك.</p>
+      <p style="color:var(--muted-text);font-size:13px;margin-bottom:14px;">لو نسيت كلمة المرور، هنبعتلك رابط لتحديد واحدة جديدة على الإيميل ده — من صفحة الدخول، اكتب <strong>Fasli-admin</strong> كمعرّف حسابك.</p>
       <div id="adminRecoveryEmailManager"></div>
     </div>
 
@@ -1001,7 +1001,7 @@
     const clientId = sessionStorage.getItem('clientId');
     const isAdmin = sessionStorage.getItem('isAdmin');
 
-    if (clientId !== 'master_admin' || isAdmin !== 'true') {
+    if (clientId !== 'Fasli-admin' || isAdmin !== 'true') {
       window.location.href = LOGIN_URL;
     }
 
@@ -1055,7 +1055,7 @@
             let statusClass = '';
             let daysRemaining = '—';
 
-            if (t.client_id === 'master_admin') {
+            if (t.client_id === 'Fasli-admin') {
               status = '👑 مشرف';
               statusClass = 'status-active';
               daysRemaining = 'غير محدود';
@@ -1080,7 +1080,7 @@
               <td>${daysRemaining}</td>
               <td>${t.student_count || 0}</td>
               <td class="actions-cell">
-                ${t.client_id !== 'master_admin' ? `
+                ${t.client_id !== 'Fasli-admin' ? `
                   <button class="btn btn-warning btn-sm" onclick="openEditModal('${t.client_id}')"><i class="fas fa-edit"></i> تعديل</button>
                   <button class="btn btn-danger btn-sm" onclick="deleteTeacher('${t.client_id}', '${escapeAttr(t.name)}')"><i class="fas fa-trash"></i> حذف</button>
                   <button class="btn btn-reset-password btn-sm" onclick="resetTeacherPassword('${t.client_id}', '${escapeAttr(t.name)}')" title="إعادة تعيين كلمة المرور"><i class="fas fa-key"></i>🔑إعادة تعيين<span class="btn-label">كلمة مرور</span></button>
@@ -1132,7 +1132,7 @@
           headers: headers,
           body: JSON.stringify({
             action: 'add',
-            adminId: 'master_admin',
+            adminId: 'Fasli-admin',
             clientId: newClientId,
             name: name,
             expiryDate: expiryDate || null,
@@ -1182,7 +1182,7 @@
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
-            adminId: 'master_admin',
+            adminId: 'Fasli-admin',
             clientId: teacherClientId
           })
         });
@@ -1280,7 +1280,7 @@
           headers: headers,
           body: JSON.stringify({
             action: 'update',
-            adminId: 'master_admin',
+            adminId: 'Fasli-admin',
             clientId: teacherClientId,
             name: name,
             isActive: isActiveParam,
@@ -1326,7 +1326,7 @@
           headers: headers,
           body: JSON.stringify({
             action: 'delete',
-            adminId: 'master_admin',
+            adminId: 'Fasli-admin',
             clientId: teacherClientId
           })
         });
@@ -1932,7 +1932,7 @@
         if (!headers) return;
         const response = await fetch(PROJECT_URL + '/functions/v1/admin-get-teacher', {
           method: 'POST', headers,
-          body: JSON.stringify({ adminId: 'master_admin', clientId: 'master_admin' })
+          body: JSON.stringify({ adminId: 'Fasli-admin', clientId: 'Fasli-admin' })
         });
         if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
         const result = await response.json();
@@ -1983,7 +1983,7 @@
         if (!headers) return;
         const response = await fetch(PROJECT_URL + '/functions/v1/change-password', {
           method: 'POST', headers,
-          body: JSON.stringify({ username: 'master_admin', newPassword, role: 'teacher' })
+          body: JSON.stringify({ username: 'Fasli-admin', newPassword, role: 'teacher' })
         });
         if (response.status === 401) { handleUnauthorized('انتهت صلاحية الجلسة'); return; }
         const result = await response.json();
@@ -2003,7 +2003,7 @@
     // ============================================
     // الوضع الليلي
     // ============================================
-    function getAdminThemeKey() { return 'theme_master_admin'; }
+    function getAdminThemeKey() { return 'theme_Fasli-admin'; }
     (function() {
       const savedTheme = localStorage.getItem(getAdminThemeKey());
       if (savedTheme === 'dark') document.body.classList.add('dark-mode');
