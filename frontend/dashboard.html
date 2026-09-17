@@ -574,7 +574,7 @@
       try {
         const parts = token.split('.');
         if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
+          const payload = JSON.parse(atob((parts[1] + '==='.slice((parts[1].length + 3) % 4)).replace(/-/g, '+').replace(/_/g, '/')));
           const exp = payload.exp;
           if (exp) {
             const now = Math.floor(Date.now() / 1000);
@@ -603,7 +603,7 @@
       try {
         const parts = token.split('.');
         if (parts.length !== 3) return false;
-        const payload = JSON.parse(atob(parts[1]));
+        const payload = JSON.parse(atob((parts[1] + '==='.slice((parts[1].length + 3) % 4)).replace(/-/g, '+').replace(/_/g, '/')));
         const exp = payload.exp;
         if (exp) {
           const now = Math.floor(Date.now() / 1000);
