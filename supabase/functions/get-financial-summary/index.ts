@@ -51,12 +51,6 @@ serve(async (req) => {
     if (!isAllMonths) {
       paymentsQuery = paymentsQuery.gte("created_at", rangeStart).lt("created_at", rangeEnd);
     }
-    const { data: payments, error: paymentsError } = await paymentsQuery;
-
-    if (paymentsError) {
-      return new Response(JSON.stringify({ success: false, message: paymentsError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
 
     let bookPaymentsQuery = supabase
       .from("book_payments")
@@ -65,15 +59,6 @@ serve(async (req) => {
     if (!isAllMonths) {
       bookPaymentsQuery = bookPaymentsQuery.gte("paid_at", rangeStart).lt("paid_at", rangeEnd);
     }
-    const { data: bookPayments, error: bookError } = await bookPaymentsQuery;
-
-    if (bookError) {
-      return new Response(JSON.stringify({ success: false, message: bookError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const subsTotal = (payments || []).reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-    const booksTotal = (bookPayments || []).reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
 
     // ✅ نجيب مصروفات نفس الشهر (أو كل الشهور) عشان نحسب صافي الربح الحقيقي، مش الإيراد الخام بس
     let expensesQuery = supabase
@@ -82,7 +67,26 @@ serve(async (req) => {
     if (!isAllMonths) {
       expensesQuery = expensesQuery.gte("expense_date", rangeStart.split("T")[0]).lt("expense_date", rangeEnd.split("T")[0]);
     }
-    const { data: expenses } = await expensesQuery;
+
+    // ✅ (أداء) الثلاث استعلامات دي كانت متسلسلة (await منفصل لكل واحدة) رغم إنها مستقلة
+    // تمامًا عن بعضها — بقت متوازية
+    const [
+      { data: payments, error: paymentsError },
+      { data: bookPayments, error: bookError },
+      { data: expenses },
+    ] = await Promise.all([paymentsQuery, bookPaymentsQuery, expensesQuery]);
+
+    if (paymentsError) {
+      return new Response(JSON.stringify({ success: false, message: paymentsError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (bookError) {
+      return new Response(JSON.stringify({ success: false, message: bookError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const subsTotal = (payments || []).reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const booksTotal = (bookPayments || []).reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
 
     const expensesTotal = (expenses || []).reduce((sum: number, e: any) => sum + Number(e.amount), 0);
     const expensesByCategory: Record<string, number> = {};

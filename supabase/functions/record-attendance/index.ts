@@ -224,8 +224,13 @@ serve(async (req) => {
 
       // ✅ لو الكارت ده معطّل رسمياً من الأدمن، نرفض تسجيل الحضور بيه فوراً
       // (البورد بيبعت لدالة submit-rfid-scan ودالة تسجيل الحضور دي كل مرة بشكل مستقل، فلازم نفس التحقق هنا كمان)
-      const { data: knownCard } = await supabase
-        .from("system_cards").select("id, is_active, teacher_id, center_id, student_uid").eq("card_uid", uid).maybeSingle();
+      // ✅ (أداء) الثلاث قراءات دي (الكارت/إعدادات النظام/وضع الكارت الحالي) مستقلة تمامًا عن
+      // بعضها — كانت متسلسلة رغم كده، وده أكتر جزء بيتكرر في النظام كله (كل مسحة كارت)
+      const [{ data: knownCard }, { data: cardSettings }, { data: cardMode }] = await Promise.all([
+        supabase.from("system_cards").select("id, is_active, teacher_id, center_id, student_uid").eq("card_uid", uid).maybeSingle(),
+        supabase.from("system_settings").select("require_registered_cards").eq("id", 1).maybeSingle(),
+        supabase.from("card_action_mode").select("*").eq("teacher_id", clientId).maybeSingle(),
+      ]);
 
       // ✅ (أمان/وظيفي حرج) uid هنا هو الكود المطبوع على الكارت الفيزيائي (card_uid)، مش بالضرورة
       // نفس uid الطالب — الاتنين بيتصادفوا بس في حالة "تسجيل طالب جديد" (الواجهة بتنسخ الكود
@@ -248,7 +253,6 @@ serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      const { data: cardSettings } = await supabase.from("system_settings").select("require_registered_cards").eq("id", 1).maybeSingle();
       if (cardSettings?.require_registered_cards) {
         const isRegisteredAndActive = knownCard && cardBelongsToTeacher && knownCard.is_active;
         if (!isRegisteredAndActive) {
@@ -259,7 +263,7 @@ serve(async (req) => {
 
       // ✅ وضع الكارت: دلوقتي بيدعم أكتر من عملية في نفس الوقت (حضور + دفع اشتراك + سداد مذكرة مع بعض)
       // بدل ما يكون وضع واحد بس شغال — كل عملية مفعّلة بتتنفّذ لوحدها، وبعدين نكمّل لتسجيل الحضور العادي
-      const { data: cardMode } = await supabase.from("card_action_mode").select("*").eq("teacher_id", clientId).maybeSingle();
+      // (cardMode اتجاب فوق مع knownCard/cardSettings بالتوازي)
 
       // ✅ القارئ متعطّل تماماً بمعرفة المدرس نفسه — مايسجّلش أي حاجة خالص، حتى الحضور العادي
       if (!cardMode || !cardMode.is_enabled) {

@@ -97,49 +97,112 @@ async function handleStats(supabase: any, payload: TokenPayload) {
   const clientId = ownerClientId(payload);
   await requireIsCenter(supabase, clientId);
 
-  const { data: names } = await supabase.from("instructor_names").select("*").eq("teacher_id", clientId);
-  const list = names || [];
-
-  const { data: attendance } = await supabase.from("attendance").select("instructor_name_id, student_uid").eq("teacher_id", clientId);
-
-  // ✅ Aug 2026 (Phase I follow-up): تفاصيل أكتر لكل مدرس — مجموعاته المربوطة بيه (groups.instructor_name_id)
-  // وعدد الطلاب الفعلي في المجموعات دي (المجموعة الأساسية + المربوطين بيها كمجموعة إضافية عن طريق
-  // student_group_links)، مش بس إحصائيات الحضور القديمة — عشان تظهر تفاصيل أوضح في لوحة تحكم السنتر
-  const { data: groups } = await supabase.from("groups").select("name, instructor_name_id").eq("teacher_id", clientId);
-  const { data: allStudents } = await supabase.from("students").select("uid, group_name").eq("teacher_id", clientId).is("archived_at", null);
-  const { data: allLinks } = await supabase.from("student_group_links").select("student_uid, group_name").eq("teacher_id", clientId);
-
-  // ✅ Aug 2026 (Phase I follow-up): نظرة مالية وأكاديمية ونسبة حضور لكل مدرس — بيوصلوا كلهم عن طريق
-  // group_name (المدفوعات والدرجات بتاخده وقت التسجيل)، فمش لازم كل صف يكون فيه instructor_name_id
-  const { data: allPayments } = await supabase.from("payments").select("group_name, amount, total_amount").eq("teacher_id", clientId);
-  const { data: allGrades } = await supabase.from("grades").select("group_name, score, max_score").eq("teacher_id", clientId);
   const attendanceLookbackDays = 14;
   const cutoffDate = new Date(Date.now() - attendanceLookbackDays * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const { data: recentAttendance } = await supabase
-    .from("attendance").select("group_name, is_absent, date").eq("teacher_id", clientId).gte("date", cutoffDate);
+
+  // ✅ (أداء) الاستعلامات السبعة دي كانت متسلسلة (await واحد ورا التاني) رغم إنها مستقلة تمامًا
+  // عن بعضها — بقت متوازية عن طريق Promise.all
+  const [
+    { data: names }, { data: attendance },
+    // ✅ Aug 2026 (Phase I follow-up): تفاصيل أكتر لكل مدرس — مجموعاته المربوطة بيه (groups.instructor_name_id)
+    // وعدد الطلاب الفعلي في المجموعات دي (المجموعة الأساسية + المربوطين بيها كمجموعة إضافية عن طريق
+    // student_group_links)، مش بس إحصائيات الحضور القديمة — عشان تظهر تفاصيل أوضح في لوحة تحكم السنتر
+    { data: groups }, { data: allStudents }, { data: allLinks },
+    // ✅ Aug 2026 (Phase I follow-up): نظرة مالية وأكاديمية ونسبة حضور لكل مدرس — بيوصلوا كلهم عن طريق
+    // group_name (المدفوعات والدرجات بتاخده وقت التسجيل)، فمش لازم كل صف يكون فيه instructor_name_id
+    { data: allPayments }, { data: allGrades }, { data: recentAttendance },
+  ] = await Promise.all([
+    supabase.from("instructor_names").select("*").eq("teacher_id", clientId),
+    supabase.from("attendance").select("instructor_name_id, student_uid").eq("teacher_id", clientId),
+    supabase.from("groups").select("name, instructor_name_id").eq("teacher_id", clientId),
+    supabase.from("students").select("uid, group_name").eq("teacher_id", clientId).is("archived_at", null),
+    supabase.from("student_group_links").select("student_uid, group_name").eq("teacher_id", clientId),
+    supabase.from("payments").select("group_name, amount, total_amount").eq("teacher_id", clientId),
+    supabase.from("grades").select("group_name, score, max_score").eq("teacher_id", clientId),
+    supabase.from("attendance").select("group_name, is_absent, date").eq("teacher_id", clientId).gte("date", cutoffDate),
+  ]);
+
+  const list = names || [];
+
+  // ✅ (أداء حرج) كانت بتعمل .filter() على المصفوفات الكاملة دي لكل اسم مدرس على حدة —
+  // يعني O(عدد المدرسين × عدد كل صفوف السنتر) في مركز فيه سنين من البيانات. بدل كده، بنجمّع
+  // كل حاجة في خرائط حسب اسم المجموعة مرة واحدة بس (O(عدد الصفوف))، وكل مدرس بعد كده بيقرا
+  // بس من مجموعاته هو (O(مجموعات المدرس))
+  const attendanceByInstructor = new Map<number, { student_uid: string }[]>();
+  (attendance || []).forEach((a: any) => {
+    if (a.instructor_name_id == null) return;
+    if (!attendanceByInstructor.has(a.instructor_name_id)) attendanceByInstructor.set(a.instructor_name_id, []);
+    attendanceByInstructor.get(a.instructor_name_id)!.push(a);
+  });
+
+  const groupsByInstructor = new Map<number, string[]>();
+  (groups || []).forEach((g: any) => {
+    if (g.instructor_name_id == null) return;
+    if (!groupsByInstructor.has(g.instructor_name_id)) groupsByInstructor.set(g.instructor_name_id, []);
+    groupsByInstructor.get(g.instructor_name_id)!.push(g.name);
+  });
+
+  const rosterUidsByGroup = new Map<string, Set<string>>();
+  (allStudents || []).forEach((s: any) => {
+    if (!rosterUidsByGroup.has(s.group_name)) rosterUidsByGroup.set(s.group_name, new Set());
+    rosterUidsByGroup.get(s.group_name)!.add(s.uid);
+  });
+  (allLinks || []).forEach((l: any) => {
+    if (!rosterUidsByGroup.has(l.group_name)) rosterUidsByGroup.set(l.group_name, new Set());
+    rosterUidsByGroup.get(l.group_name)!.add(l.student_uid);
+  });
+
+  const paymentsByGroup = new Map<string, { collected: number; expected: number }>();
+  (allPayments || []).forEach((p: any) => {
+    const cur = paymentsByGroup.get(p.group_name) || { collected: 0, expected: 0 };
+    cur.collected += Number(p.amount || 0);
+    cur.expected += Number(p.total_amount || 0);
+    paymentsByGroup.set(p.group_name, cur);
+  });
+
+  const gradesByGroup = new Map<string, { sumPercent: number; count: number }>();
+  (allGrades || []).forEach((g: any) => {
+    if (!(Number(g.max_score) > 0)) return;
+    const cur = gradesByGroup.get(g.group_name) || { sumPercent: 0, count: 0 };
+    cur.sumPercent += (Number(g.score) / Number(g.max_score)) * 100;
+    cur.count += 1;
+    gradesByGroup.set(g.group_name, cur);
+  });
+
+  const attendanceRateByGroup = new Map<string, { present: number; absent: number }>();
+  (recentAttendance || []).forEach((a: any) => {
+    const cur = attendanceRateByGroup.get(a.group_name) || { present: 0, absent: 0 };
+    if (a.is_absent === true) cur.absent += 1; else cur.present += 1;
+    attendanceRateByGroup.set(a.group_name, cur);
+  });
 
   const stats = list.map((n: any) => {
-    const related = (attendance || []).filter((a: any) => a.instructor_name_id === n.id);
+    const related = attendanceByInstructor.get(n.id) || [];
     const uniqueStudents = new Set(related.map((a: any) => a.student_uid)).size;
 
-    const groupNames = (groups || []).filter((g: any) => g.instructor_name_id === n.id).map((g: any) => g.name);
+    const groupNames = groupsByInstructor.get(n.id) || [];
     const rosterUids = new Set<string>();
-    (allStudents || []).forEach((s: any) => { if (groupNames.includes(s.group_name)) rosterUids.add(s.uid); });
-    (allLinks || []).forEach((l: any) => { if (groupNames.includes(l.group_name)) rosterUids.add(l.student_uid); });
+    groupNames.forEach((g: string) => { (rosterUidsByGroup.get(g) || new Set<string>()).forEach((uid) => rosterUids.add(uid)); });
 
-    const instructorPayments = (allPayments || []).filter((p: any) => groupNames.includes(p.group_name));
-    const paymentsCollected = instructorPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
-    const paymentsExpected = instructorPayments.reduce((sum: number, p: any) => sum + Number(p.total_amount || 0), 0);
+    let paymentsCollected = 0, paymentsExpected = 0;
+    groupNames.forEach((g: string) => {
+      const p = paymentsByGroup.get(g);
+      if (p) { paymentsCollected += p.collected; paymentsExpected += p.expected; }
+    });
     const collectionRate = paymentsExpected > 0 ? Math.round((paymentsCollected / paymentsExpected) * 100) : null;
 
-    const instructorGrades = (allGrades || []).filter((g: any) => groupNames.includes(g.group_name) && Number(g.max_score) > 0);
-    const avgGradePercent = instructorGrades.length > 0
-      ? Math.round(instructorGrades.reduce((sum: number, g: any) => sum + (Number(g.score) / Number(g.max_score)) * 100, 0) / instructorGrades.length)
-      : null;
+    let gradeSum = 0, gradeCount = 0;
+    groupNames.forEach((g: string) => {
+      const gr = gradesByGroup.get(g);
+      if (gr) { gradeSum += gr.sumPercent; gradeCount += gr.count; }
+    });
+    const avgGradePercent = gradeCount > 0 ? Math.round(gradeSum / gradeCount) : null;
 
-    const instructorAttendance = (recentAttendance || []).filter((a: any) => groupNames.includes(a.group_name));
-    const presentCount = instructorAttendance.filter((a: any) => a.is_absent !== true).length;
-    const absentCount = instructorAttendance.filter((a: any) => a.is_absent === true).length;
+    let presentCount = 0, absentCount = 0;
+    groupNames.forEach((g: string) => {
+      const ar = attendanceRateByGroup.get(g);
+      if (ar) { presentCount += ar.present; absentCount += ar.absent; }
+    });
     const attendanceRatePercent = (presentCount + absentCount) > 0 ? Math.round((presentCount / (presentCount + absentCount)) * 100) : null;
 
     return {
