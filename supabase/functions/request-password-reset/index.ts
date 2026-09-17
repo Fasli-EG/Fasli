@@ -62,16 +62,14 @@ Deno.serve(async (req) => {
       row = student ?? null;
     }
 
-    if (!row) return jsonResponse({ success: false, message: "❌ الحساب غير موجود" }, 404);
-    if (!row.auth_user_id) {
-      return jsonResponse({ success: false, message: "⚠️ الحساب ده من النظام القديم ولسه معملوش حساب دخول جديد — تواصل مع الشخص المسؤول عن حسابك" }, 400);
-    }
-    if (!row.recovery_email) {
-      return jsonResponse({
-        success: false,
-        code: "NO_RECOVERY_EMAIL",
-        message: "لا يوجد إيميل استرجاع مسجّل لهذا الحساب — تقدر تضيفه من إعدادات حسابك بعد ما تدخل، أو تواصل مع الشخص المسؤول عن حسابك عشان يعمل لك إعادة تعيين لكلمة المرور",
-      }, 200);
+    // ✅ (أمان) الثلاث حالات دي (حساب مش موجود / حساب قديم من غير auth_user_id / حساب موجود
+    // بس من غير إيميل استرجاع) كانت بترجع status code ورسالة مختلفة لكل حالة — ده بيسرّب معلومة
+    // "الحساب ده موجود ولا لأ" لأي حد بيجرّب أكواد/أرقام عشوائية (enumeration)، بالظبط زي المنطق
+    // اللي login نفسها بتتجنبه عمداً برسالة فشل موحّدة. بنرجّع نفس الرسالة العامة في الحالات
+    // التلاتة، وترجع نجاح فعلي بس لو فعلاً هيتبعت إيميل
+    const genericResponse = { success: true, message: "لو الحساب ده موجود ومسجّل له إيميل استرجاع، هيوصله رابط لتحديد كلمة مرور جديدة خلال دقايق. لو معملتش إيميل استرجاع لسه، تواصل مع الشخص المسؤول عن حسابك." };
+    if (!row || !row.auth_user_id || !row.recovery_email) {
+      return jsonResponse(genericResponse, 200);
     }
 
     const rawToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");

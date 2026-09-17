@@ -140,6 +140,23 @@ Deno.serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const { teacherClientId, centerId } = body;
+      // ✅ (طلب) مفيش تحقق خالص من حد أقصى عدد المدرسين (centers.max_teachers) قبل الضم — كان
+      // ممكن ينضم عدد مدرسين أكتر من الحد المسموح بيه للسنتر من غير أي رفض أو تحذير
+      if (centerId) {
+        const { data: center } = await supabase.from("centers").select("max_teachers").eq("id", centerId).maybeSingle();
+        if (!center) {
+          return new Response(JSON.stringify({ success: false, message: "❌ السنتر غير موجود" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (center.max_teachers > 0) {
+          const { count } = await supabase.from("teachers").select("client_id", { count: "exact", head: true })
+            .eq("center_id", centerId).neq("client_id", teacherClientId);
+          if ((count || 0) >= center.max_teachers) {
+            return new Response(JSON.stringify({ success: false, message: `⚠️ السنتر وصل للحد الأقصى المسموح به من المدرسين (${center.max_teachers})` }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+        }
+      }
       const { error } = await supabase.from("teachers").update({ center_id: centerId || null }).eq("client_id", teacherClientId);
       if (error) throw new Error(error.message);
       return new Response(JSON.stringify({ success: true, message: centerId ? "✅ تم ضم المدرس للسنتر" : "✅ تم فصل المدرس عن السنتر" }),

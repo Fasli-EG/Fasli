@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
       // فيزيائية قديمة مثلاً)، فبنحشوه لحد 6 حروف داخليًا بس. الطالب نفسه بيكتب الـUID الحقيقي
       // زي ما هو دايماً (المقارنة password !== username فوق بتتم عليه هو، مش على النسخة المحشوة)
       const internalPassword = ensureMinPasswordLength(username);
-      let authUserId: string;
+      let authUserId: string | null = null;
       try {
         authUserId = await provisionAuthUser({
           email,
@@ -199,9 +199,27 @@ Deno.serve(async (req) => {
         });
       } catch (provisionErr) {
         const msg = provisionErr instanceof Error ? provisionErr.message : "⚠️ فشل إنشاء حساب الدخول";
-        return new Response(JSON.stringify({ success: false, message: msg }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        // ✅ (أمان حرج) خطوة إنشاء حساب Auth وخطوة ربطه بصف الطالب (تحت) مش عملية واحدة ذرية —
+        // لو نداءين "أول دخول" حصلوا في نفس اللحظة بالظبط (نفس UID)، أولهم بينجح ويعمل الحساب،
+        // وتاني واحد كان بيوصله "already been registered" ويفشل نهائيًا، ويسيب صف الطالب
+        // auth_user_id=null للأبد رغم إن الحساب الحقيقي موجود فعلاً — يبقى مفيش أي طريقة تاني
+        // يدخل بيها. بدل ما نستسلم، لو الرسالة تحديدًا إن الإيميل مسجّل بالفعل، نجرب نسجّل دخول
+        // بنفس الإيميل/الباسورد المحسوبين (اللي المفروض النداء التاني اللي فاز استخدمهم بالظبط)،
+        // ولو نجح نكمّل ربط الصف بيه بدل ما نرمي خطأ
+        let recovered = false;
+        if (msg.includes("already been registered") || msg.includes("already registered")) {
+          const { data: recoverData } = await signInAuthUser({ email, password: internalPassword });
+          if (recoverData?.session) {
+            authUserId = recoverData.session.user.id;
+            recovered = true;
+          }
+        }
+        if (!recovered) {
+          return new Response(JSON.stringify({ success: false, message: msg }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
       }
+      if (!authUserId) return await genericFailResponse();
       await supabase.from("students").update({ auth_user_id: authUserId, must_change_password: true }).eq("uid", username);
       user.auth_user_id = authUserId;
       user.must_change_password = true;

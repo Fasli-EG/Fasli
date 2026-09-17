@@ -400,9 +400,13 @@
           // نص مخصص من الماستر — بيتحط كنص خام (مش HTML) تفاديًا لأي خطر حقن كود
           creditEl.textContent = systemContactInfo.login_credit_text;
         } else if (systemContactInfo.admin_name) {
+          // ✅ (أمان) admin_name كان بيتحط جوه innerHTML مباشرة من غير تنظيف — لو الماستر (أو أي
+          // حد وصل لإعدادات النظام) حط تاج HTML/سكريبت فيه، كان هيتنفذ على صفحة الدخول العامة
+          // لكل زوار الموقع. نفس المعاملة اللي login_credit_text بتاخدها فوق بالظبط
+          const safeAdminName = escapeHtml(systemContactInfo.admin_name);
           const adminLink = systemContactInfo.admin_whatsapp
-            ? `<a href="https://wa.me/${systemContactInfo.admin_whatsapp}" target="_blank" rel="noopener">${systemContactInfo.admin_name}</a>`
-            : systemContactInfo.admin_name;
+            ? `<a href="https://wa.me/${encodeURIComponent(systemContactInfo.admin_whatsapp)}" target="_blank" rel="noopener">${safeAdminName}</a>`
+            : safeAdminName;
           creditEl.innerHTML = `تم تصميم هذه المنصة بكل حب من ${adminLink}`;
         }
       }

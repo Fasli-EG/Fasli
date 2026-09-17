@@ -170,6 +170,10 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ success: false, message: "⚠️ جميع الحقول مطلوبة" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      if (!(Number(durationMinutes) > 0)) {
+        return new Response(JSON.stringify({ success: false, message: "⚠️ مدة الاختبار لازم تكون رقم أكبر من صفر" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       if (scheduledAt && new Date(scheduledAt).getTime() < Date.now()) {
         return new Response(JSON.stringify({ success: false, message: "⚠️ وقت الجدولة لازم يكون في المستقبل" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });

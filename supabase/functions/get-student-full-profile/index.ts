@@ -50,8 +50,15 @@ Deno.serve(async (req) => {
     } else if (payload.role === "teacher" || payload.role === "assistant") {
       const tokenClientId = payload.clientId || payload.teacherId;
       if (student.teacher_id !== tokenClientId) {
-        return new Response(JSON.stringify({ success: false, message: "⛔ هذا الطالب ليس تابعاً لك" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        // ✅ (طلب) الطالب المشترك بين مدرسين (student_teacher_links) كان بيترفض هنا تمامًا حتى
+        // لو المدرس الثانوي فعلاً بيرصدله درجات/مدفوعات عادي عن طريق manage-grade — الفحص هنا
+        // كان بيقارن teacher_id الأساسي بس، من غير ما يشوف الروابط الثانوية زي باقي الدوال
+        const { data: sharedLink } = await supabase
+          .from("student_teacher_links").select("id").eq("student_uid", studentUid).eq("teacher_id", tokenClientId).maybeSingle();
+        if (!sharedLink) {
+          return new Response(JSON.stringify({ success: false, message: "⛔ هذا الطالب ليس تابعاً لك" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
       }
     } else {
       return new Response(JSON.stringify({ success: false, message: "⛔ غير مصرح" }),

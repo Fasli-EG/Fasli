@@ -44,22 +44,31 @@ serve(async (req) => {
     const today = new Date().toISOString().split("T")[0];
     const result: any[] = [];
 
-    const groupsMap = new Map<string, any[]>();
+    // ✅ (طلب) كان بيحسب "هل حصل يوم عمل فعلي؟" من حضور أبناء نفس ولي الأمر بس، مش زمايلهم
+    // الحقيقيين في نفس المجموعة (اللي غالبًا أولاد لأولياء أمور تانيين) — فولي أمر عنده طفل واحد
+    // بس في مجموعة كان دايمًا بيشوف "لا يوجد حصة" بدل الغياب الحقيقي، حتى لو المجموعة كلها فعلاً
+    // حضرت وابنه هو بس اللي غاب. لازم نجيب فعليًا كل طلاب المجموعة (نفس المدرس + نفس الاسم) —
+    // مش بس أبناء ولي الأمر ده — عشان "زمايله حضروا" يتحسب صح
+    const groupKeys = new Map<string, { teacherId: string; groupName: string }>();
     students.forEach((s: any) => {
-      const group = s.group_name || "بدون مجموعة";
-      if (!groupsMap.has(group)) groupsMap.set(group, []);
-      groupsMap.get(group)!.push(s);
+      if (!s.teacher_id || !s.group_name) return;
+      const key = s.teacher_id + "|" + s.group_name;
+      if (!groupKeys.has(key)) groupKeys.set(key, { teacherId: s.teacher_id, groupName: s.group_name });
     });
 
     const workingDaysCache = new Map<string, Set<string>>();
     const presentDatesByStudent = new Map<string, Set<string>>();
 
-    for (const [groupName, groupStudents] of groupsMap) {
-      const uids = groupStudents.map((s: any) => s.uid);
-      const { data: attendanceData, error: attError } = await supabase
-        .from("attendance").select("date, student_uid").in("student_uid", uids).eq("status", "present").not("date", "is", null);
+    await Promise.all(Array.from(groupKeys.entries()).map(async ([key, { teacherId, groupName }]) => {
+      const { data: classmates } = await supabase
+        .from("students").select("uid").eq("teacher_id", teacherId).eq("group_name", groupName);
+      const classmateUids = (classmates || []).map((c: any) => c.uid);
+      if (classmateUids.length === 0) { workingDaysCache.set(key, new Set()); return; }
 
-      if (attError) { console.error(`خطأ في جلب أيام العمل للمجموعة ${groupName}:`, attError); continue; }
+      const { data: attendanceData, error: attError } = await supabase
+        .from("attendance").select("date, student_uid").in("student_uid", classmateUids).eq("status", "present").not("date", "is", null);
+
+      if (attError) { console.error(`خطأ في جلب أيام العمل للمجموعة ${groupName}:`, attError); workingDaysCache.set(key, new Set()); return; }
 
       const workingDaysSet = new Set<string>();
       attendanceData?.forEach((record: any) => {
@@ -68,8 +77,8 @@ serve(async (req) => {
         if (!presentDatesByStudent.has(record.student_uid)) presentDatesByStudent.set(record.student_uid, new Set());
         presentDatesByStudent.get(record.student_uid)!.add(record.date);
       });
-      workingDaysCache.set(groupName, workingDaysSet);
-    }
+      workingDaysCache.set(key, workingDaysSet);
+    }));
 
     // ✅ دفعة واحدة بدل استعلام منفصل لكل طالب: المدرسين، درجات كل الطلاب، وحضور اليوم لكل الطلاب
     const allUids = students.map((s: any) => s.uid);
@@ -116,7 +125,8 @@ serve(async (req) => {
 
     for (const student of students as any[]) {
       const group = student.group_name || "بدون مجموعة";
-      const workingDaysSet = workingDaysCache.get(group) || new Set<string>();
+      const groupKey = student.teacher_id + "|" + student.group_name;
+      const workingDaysSet = workingDaysCache.get(groupKey) || new Set<string>();
       const totalWorkingDays = workingDaysSet.size;
 
       const teacher = teacherMap.get(student.teacher_id);

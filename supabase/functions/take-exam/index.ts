@@ -24,15 +24,30 @@ Deno.serve(async (req) => {
       // ✅ (طلب) وقت غلق الاختبار — لو المدرس حدده وفات، الاختبار يبقى مقفول تماماً (رسمي أو
       // تدريب)، مايفتحش لأي محاولة جديدة حتى لو الطالب لسه ماخدش الاختبار خالص
       if (exam.closes_at && new Date(exam.closes_at).getTime() <= Date.now()) throw new Error("⚠️ اتقفل الاختبار ده، مش متاح تدخليه دلوقتي");
-      const { data: student } = await supabase.from("students").select("group_name, name").eq("uid", studentUid).maybeSingle();
+      const { data: student } = await supabase.from("students").select("group_name, name, teacher_id").eq("uid", studentUid).maybeSingle();
       if (!student) throw new Error("⛔ الاختبار ده مش لمجموعتك");
-      // ✅ (طلب) الطالب ممكن يكون مربوط بأكتر من مجموعة (تعدد المواد/المدرسين) — لازم نتأكد من
-      // مجموعته الأساسية + كل المجموعات المربوطة، مش بس مجموعته الأساسية (نفس الباتش اللي صلح
-      // نفس المشكلة في get-exams-for-student و get-student-full-profile)
-      const { data: groupLinks } = await supabase
-        .from("student_group_links").select("group_name").eq("student_uid", studentUid);
-      const allGroups = new Set([student.group_name, ...((groupLinks || []).map((l: any) => l.group_name))].filter(Boolean));
-      if (!allGroups.has(exam.group_name)) throw new Error("⛔ الاختبار ده مش لمجموعتك");
+      // ✅ (أمان حرج) الفحص القديم كان بيقارن اسم المجموعة بس (من student_group_links) من غير
+      // أي تحقق من هوية المدرس صاحب الاختبار — فطالب عند مدرس تاني تمامًا كان يقدر ياخد اختبار
+      // مدرس مش بتاعه لو أسماء المجموعات اتصادفت (زي "مجموعة 1" اللي شائعة جداً بين المدرسين).
+      // دلوقتي: لازم exam.teacher_id يبقى إما مدرس الطالب الأساسي (ونتأكد من المجموعة عن طريق
+      // student_group_links المقيّدة بنفس المدرس ده، تعدد مواد/مجموعات عند نفس المدرس)، أو مدرس
+      // ثانوي مربوط بيه فعلاً عن طريق student_teacher_links لنفس المجموعة بالظبط (طالب مشترك بين
+      // مدرسين) — نفس منطق التحقق المستخدم في manage-grade لبالظبط نفس السيناريو
+      let isEligibleGroup = false;
+      if (exam.teacher_id === student.teacher_id) {
+        if (student.group_name === exam.group_name) {
+          isEligibleGroup = true;
+        } else {
+          const { data: groupLink } = await supabase
+            .from("student_group_links").select("id").eq("student_uid", studentUid).eq("teacher_id", exam.teacher_id).eq("group_name", exam.group_name).maybeSingle();
+          isEligibleGroup = !!groupLink;
+        }
+      } else {
+        const { data: teacherLink } = await supabase
+          .from("student_teacher_links").select("id").eq("student_uid", studentUid).eq("teacher_id", exam.teacher_id).eq("group_name", exam.group_name).maybeSingle();
+        isEligibleGroup = !!teacherLink;
+      }
+      if (!isEligibleGroup) throw new Error("⛔ الاختبار ده مش لمجموعتك");
 
       // ✅ لو المدرس حدد طلاب معيّنين للاختبار ده، لازم الطالب يكون من ضمنهم
       const { data: targets } = await supabase.from("exam_target_students").select("student_uid").eq("exam_id", examId);
@@ -196,7 +211,11 @@ Deno.serve(async (req) => {
   } catch (error) {
     if (error instanceof AuthError) return authErrorResponse(error);
     const message = error instanceof Error ? error.message : "حدث خطأ داخلي";
+    // ✅ رسائل "⚠️" هنا كلها أخطاء تحقق/نتيجة أعمال عادية (اختبار مش موجود/مقفول/خلص وقته)،
+    // مش أعطال سيرفر فعلية — كانت بترجع 500 زي أي خطأ غير متوقع، وده ممكن يضلّل أي كود عميل
+    // بيفرّق في التعامل بين 4xx و5xx
+    const status = message.includes("⛔") ? 403 : (message.includes("⚠️") ? 400 : 500);
     return new Response(JSON.stringify({ success: false, message }),
-      { status: message.includes("⛔") ? 403 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

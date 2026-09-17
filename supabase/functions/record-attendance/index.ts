@@ -168,13 +168,16 @@ serve(async (req) => {
       );
     }
     const {
-      clientId, uid, secret, manual, notes, assistantId, instructorNameId, groupName, sessionId,
+      clientId, secret, manual, notes, assistantId, instructorNameId, groupName, sessionId,
       // ✅ (طلب) لما يكون فيه "إنشاء حصة جديدة" مع الحضور اليدوي، بقينا ننشئها ونستخدمها في
       // نفس الطلب ده مباشرة (بدل طلبين منفصلين: طلب إنشاء ثم طلب تسجيل) — كان ده بيسبب فشل
       // صامت في تسجيل أول طالب لما التحقق اللاحق من الحصة (في طلب منفصل) مايتحققش، فيتسجل
       // الحضور من غير ما يترتبط بالحصة خالص (session_id فاضي) من غير أي رسالة خطأ واضحة
       newSessionLabel, newSessionThresholdMinutes, newSessionDurationMinutes,
     } = body || {};
+    // ✅ uid بقى قابل لإعادة التعيين — لازم يفضل let عشان مسار القارئ (secret) تحت يقدر يستبدله
+    // بـuid الطالب الحقيقي بعد ما يترجم كارت الـRFID الممسوح (card_uid) عن طريق system_cards
+    let uid = body?.uid;
 
     if (!clientId || !uid) {
       return new Response(
@@ -222,7 +225,15 @@ serve(async (req) => {
       // ✅ لو الكارت ده معطّل رسمياً من الأدمن، نرفض تسجيل الحضور بيه فوراً
       // (البورد بيبعت لدالة submit-rfid-scan ودالة تسجيل الحضور دي كل مرة بشكل مستقل، فلازم نفس التحقق هنا كمان)
       const { data: knownCard } = await supabase
-        .from("system_cards").select("id, is_active, teacher_id, center_id").eq("card_uid", uid).maybeSingle();
+        .from("system_cards").select("id, is_active, teacher_id, center_id, student_uid").eq("card_uid", uid).maybeSingle();
+
+      // ✅ (أمان/وظيفي حرج) uid هنا هو الكود المطبوع على الكارت الفيزيائي (card_uid)، مش بالضرورة
+      // نفس uid الطالب — الاتنين بيتصادفوا بس في حالة "تسجيل طالب جديد" (الواجهة بتنسخ الكود
+      // المسحوب ليبقى uid الطالب نفسه وقت الإنشاء). لما الكارت بيتربط بطالب موجود بالفعل عن طريق
+      // "ربط كارت RFID" (manage-card-registration)، الطالب له uid مختلف تمامًا عن كود الكارت،
+      // وكان تسجيل الحضور بيدوّر على students.uid = card_uid مباشرة فيرجع "UNREGISTERED" دايمًا —
+      // يعني تسجيل الحضور بالقارئ كان مستحيل عمليًا لأي كارت اتربط بطالب موجود من قبل
+      if (knownCard?.student_uid) uid = knownCard.student_uid;
 
       // ✅ الكارت ممكن يكون مربوط مباشرة بالمدرس، أو مربوط بالسنتر اللي المدرس تابع له
       // (لو المدرس تابع لسنتر، الكروت المخصصة للسنتر كله متاحة لكل مدرسيه)
