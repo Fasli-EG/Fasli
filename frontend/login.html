@@ -1143,6 +1143,29 @@
       const assistantId = sessionStorage.getItem('assistantId');
       const parentPhone = sessionStorage.getItem('parentPhone');
 
+      // ✅ (أمان/وظيفي حرج) الصفحة اللي بتستقبل التنقل (admin-teachers.html/dashboard.html/...)
+      // بتتحقق من clientId/isAdmin/userRole من sessionStorage بنفسها، مش من التوكن — وده
+      // عادةً مضبوط من أول تسجيل دخول تفاعلي عادي (saveAuth). لكن لو أول تسجيل دخول للحساب
+      // ده مرّ بخطوة إجبارية (زي تأكيد إيميل الاسترجاع) واتقفل التطبيق قبل ما تخلص كل خطوات
+      // الحفظ، القيم دي ممكن متتسجّلش في localStorage خالص من الأساس — فكل مرة بعد كده التطبيق
+      // بيتفتح، التوكن نفسه سليم لكن الصفحة الهدف بترفضه وترجّعه لتسجيل الدخول تاني وتاني بلا نهاية.
+      // الحل: نعيد كتابة القيم دي من التوكن نفسه هنا في كل مرة، عشان الاسترجاع يصلّح أي نقص قديم.
+      if (clientId) {
+        const isRemembered = localStorage.getItem('fasliRememberMe') === 'true';
+        const backfill = (key, value) => {
+          value = String(value);
+          sessionStorage.setItem(key, value);
+          if (!isRemembered) return;
+          localStorage.setItem(key, value);
+          if (Preferences) Preferences.set({ key, value }).catch(() => {});
+          if (window.electronStore) window.electronStore.set(key, value).catch(() => {});
+        };
+        backfill('clientId', clientId);
+        backfill('isAdmin', clientId === 'Fasli-admin' || payload?.app_metadata?.isAdmin ? 'true' : 'false');
+        backfill('userRole', role);
+        if (payload?.app_metadata?.name) backfill('teacherName', payload.app_metadata.name);
+      }
+
       if (role === 'teacher') {
         if (clientId === 'Fasli-admin') { window.location.href = 'admin-teachers.html'; return; }
         else if (clientId) { window.location.href = 'dashboard.html'; return; }
